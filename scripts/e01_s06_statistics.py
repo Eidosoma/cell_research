@@ -779,6 +779,10 @@ def update_run_manifest(artifacts_dir: Path, status_payload: dict[str, Any], art
     manifest.setdefault("experimentId", EXPERIMENT_ID)
     manifest["generatedAt"] = utc_now()
     manifest["researchStepId"] = STEP_ID
+    manifest["status"] = status_payload["status"]
+    manifest["success"] = status_payload["success"]
+    manifest["validationResult"] = status_payload["validationResult"]
+    manifest["outcomeClassification"] = status_payload["outcomeClassification"]
     manifest["recommendedNextAction"] = status_payload["recommendedNextAction"]
     manifest["caveatsOrBlockers"] = status_payload["caveatsOrBlockers"]
     manifest["artifactsWritten"] = status_payload["artifactsWritten"]
