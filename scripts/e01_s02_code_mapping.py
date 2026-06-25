@@ -344,7 +344,7 @@ def mapping_rows() -> list[dict[str, Any]]:
             "symbols": [
                 ("modules/multithread/StatusProbe.py", "StatusProbe"),
                 ("modules/multithread/StatusProbe.py", "StatusProbe.record_sorting_step"),
-                ("modules/multithread/StatusProbe.py", "StatusProbe.record_compare"),
+                ("modules/multithread/StatusProbe.py", "StatusProbe.record_compare_and_swap"),
                 ("modules/multithread/MultiThreadCell.py", "MultiThreadCell.swap"),
             ],
             "evidence": "StatusProbe records sorting_steps, swap_count, compare_and_swap_count, cell_types, and frozen_swap_attempts. MultiThreadCell.swap writes sorting-step and cell-type snapshots after swaps.",
@@ -463,7 +463,7 @@ def mapping_rows() -> list[dict[str, Any]]:
             "requiredTopic": "stop conditions",
             "mappingStatus": "ambiguous",
             "symbols": [
-                ("modules/multithread/StatusProbe.py", "StatusProbe.record_compare"),
+                ("modules/multithread/StatusProbe.py", "StatusProbe.record_compare_and_swap"),
                 ("analysis/efficiency_analysis.py", None),
                 ("multi_dimentions/multi_dimention_monotonicity.py", "cell_original_efficiency_compare"),
                 ("multi_dimentions/multi_dimention_monotonicity.py", "cell_original_efficiency_compare_include_read"),
@@ -625,7 +625,7 @@ def mapping_rows() -> list[dict[str, Any]]:
             "symbols": [
                 ("multi_dimentions/multi_dimention_monotonicity.py", "cell_original_efficiency_compare"),
                 ("analysis/cell_type_aggregation_analysis.py", "get_ttest_value"),
-                ("analysis/frozen_spearmans_distance_results.py", "get_ttest_value"),
+                ("analysis/frozen_spearmans_distance_results.py", "compare_algorithms"),
             ],
             "evidence": "Some scripts use statsmodels ztest for efficiency, while aggregation and frozen scripts use scipy t-tests or commented-out z-test code.",
             "missingOrAmbiguous": "The paper reports z-tests, but the repository does not consistently implement z-tests across all claim families.",
