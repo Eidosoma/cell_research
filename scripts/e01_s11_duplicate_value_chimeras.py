@@ -261,6 +261,8 @@ def collect_artifacts(paths: list[Path], manifest_path: Path | None = None) -> l
     for path in paths:
         if manifest_path is not None and path.resolve() == manifest_path.resolve():
             continue
+        if path.name == "run_manifest.json" and "provenance" in path.parts:
+            continue
         if path.exists() and path.is_file() and path.resolve() not in seen:
             seen.add(path.resolve())
             artifacts.append(
@@ -1744,6 +1746,7 @@ def run_s11(args: argparse.Namespace) -> int:
         "success": bool(success),
         "generatedAt": generated_at,
         "manifestSelfPath": str(artifact_manifest_json),
+        "provenanceManifestPath": str(run_manifest_path),
         "artifactCount": 0,
         "artifacts": [],
         "validationResult": validation_result,
