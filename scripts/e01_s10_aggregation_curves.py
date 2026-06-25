@@ -986,10 +986,16 @@ def build_validation(
     }
 
 
-def artifact_manifest(artifacts_written: list[Path], source_artifacts: dict[str, str]) -> dict[str, Any]:
+def artifact_manifest(
+    artifacts_written: list[Path],
+    source_artifacts: dict[str, str],
+    manifest_path: Path | None = None,
+) -> dict[str, Any]:
     entries = []
     for path in sorted(set(artifacts_written)):
         if not path.exists():
+            continue
+        if manifest_path is not None and path.resolve() == manifest_path.resolve():
             continue
         entries.append(
             {
@@ -1003,6 +1009,7 @@ def artifact_manifest(artifacts_written: list[Path], source_artifacts: dict[str,
         "stepNumber": STEP_NUMBER,
         "generatedAt": utc_now_iso(),
         "sourceArtifacts": source_artifacts,
+        "manifestSelfPath": str(manifest_path) if manifest_path is not None else None,
         "artifacts": entries,
     }
 
@@ -1020,7 +1027,7 @@ def render_validation_md(validation: dict[str, Any], artifacts_written: list[Pat
         f"- Step number: {STEP_NUMBER}",
         "- Completion status: completed",
         f"- Validation result: {validation['validationResult']}",
-        f"- Artifacts written: {len(artifacts_written)} files; see `artifact_manifest.json` and `status.json`.",
+        "- Artifacts written: see `artifact_manifest.json` and `status.json`.",
         "- Caveats or blockers:",
     ]
     lines.extend([f"- {item}" for item in caveats])
@@ -1287,35 +1294,13 @@ def main() -> int:
     shutil.copy2(Path(__file__), code_path)
     artifacts_written.append(code_path)
 
-    manifest = artifact_manifest(artifacts_written, source_artifacts)
     manifest_path = output_paths.step_dir / "artifact_manifest.json"
-    write_json(manifest_path, manifest)
-    artifacts_written.append(manifest_path)
-
     status_path = output_paths.step_dir / "status.json"
-    status["artifactsWritten"] = [str(path) for path in sorted(set(artifacts_written))]
-    write_json(status_path, status)
-    artifacts_written.append(status_path)
-
     summary_path = output_paths.step_dir / "summary.md"
-    status["artifactsWritten"] = [str(path) for path in sorted(set(artifacts_written))]
-    write_markdown(
-        summary_path,
-        render_summary_md(
-            status=status,
-            peak_summary=peak_summary,
-            statistics_table=statistics_table,
-            artifacts_written=artifacts_written,
-        ),
-    )
-    artifacts_written.append(summary_path)
+    run_manifest_path = output_paths.provenance_dir / "run_manifest.json"
+    artifacts_written.extend([manifest_path, status_path, summary_path, run_manifest_path])
+    artifacts_written = sorted(set(artifacts_written))
 
-    run_manifest_path = update_run_manifest(output_paths, status)
-    artifacts_written.append(run_manifest_path)
-
-    # Refresh manifest/status now that all step files and run_manifest are present.
-    manifest = artifact_manifest(artifacts_written, source_artifacts)
-    write_json(manifest_path, manifest)
     status["artifactsWritten"] = [str(path) for path in sorted(set(artifacts_written))]
     write_json(status_path, status)
     write_markdown(
@@ -1327,6 +1312,10 @@ def main() -> int:
             artifacts_written=artifacts_written,
         ),
     )
+    update_run_manifest(output_paths, status)
+
+    manifest = artifact_manifest(artifacts_written, source_artifacts, manifest_path)
+    write_json(manifest_path, manifest)
 
     print(json.dumps({"status": status["status"], "validationResult": status["validationResult"]}, indent=2))
     return 0 if validation["success"] else 2
