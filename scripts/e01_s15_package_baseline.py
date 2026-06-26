@@ -570,7 +570,10 @@ def source_summaries(artifacts_dir: Path) -> dict[str, Any]:
     s10_peaks = pd.read_parquet(artifacts_dir / "results" / "e01_aggregation_peak_summary.parquet")
     s14_peaks = pd.read_parquet(artifacts_dir / "results" / "e01_scaled_aggregation_peak_summary.parquet")
     dg_trends = pd.read_parquet(artifacts_dir / "results" / "e01_scaled_delayed_gratification_trends.parquet")
-    ci_focus = scaled_ci[scaled_ci["ciWidthRatioS14OverBaseline"].notna()].copy()
+    ci_focus = scaled_ci[
+        scaled_ci["ciWidthRatioS14OverBaseline"].notna()
+        & np.isfinite(scaled_ci["ciWidthRatioS14OverBaseline"].to_numpy(dtype=float))
+    ].copy()
     return {
         "classificationCounts": classification["classification"].value_counts().to_dict(),
         "notReplicatedClaims": classification.loc[classification["classification"] == "not replicated", "claimId"].tolist(),
