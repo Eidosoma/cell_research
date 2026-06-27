@@ -888,6 +888,7 @@ def main(argv: list[str] | None = None) -> int:
     write_json(status_path, status_payload)
     artifacts_written.append(status_path)
 
+    checksummed_artifacts = collect_artifacts(artifacts_written)
     manifest_payload = {
         "researchStepId": STEP_ID,
         "stepNumber": STEP_NUMBER,
@@ -898,7 +899,12 @@ def main(argv: list[str] | None = None) -> int:
         "caveatsOrBlockers": caveats,
         "recommendedNextAction": recommended_next_action,
         "artifactCount": len(artifacts_written) + 1,
-        "artifacts": collect_artifacts(artifacts_written + [manifest_path]),
+        "checksummedArtifactCount": len(checksummed_artifacts),
+        "artifacts": checksummed_artifacts,
+        "manifestSelfReference": {
+            "path": str(manifest_path),
+            "sha256": "omitted_self_referential_manifest",
+        },
         "git": git_metadata,
         "corpusVersion": POLICY_CORPUS_VERSION,
         "dslVersion": DSL_VERSION,
