@@ -17,6 +17,15 @@ from .memory import (
     reset_memory_state,
     serialize_memory_state,
 )
+from .fatigue import (
+    FATIGUE_DAMAGE_VARIANTS,
+    FATIGUE_DAMAGE_VERSION,
+    FatigueDamageConfig,
+    FatigueDamageEventSimulator,
+    fatigue_summary_record,
+    initial_fatigue_state,
+    serialize_fatigue_state,
+)
 from .repair import (
     REPAIR_REPAIR_VERSION,
     REPAIR_RULE_VARIANTS,
@@ -64,6 +73,13 @@ __all__ = [
     "reset_all_memory",
     "reset_memory_state",
     "serialize_memory_state",
+    "FATIGUE_DAMAGE_VARIANTS",
+    "FATIGUE_DAMAGE_VERSION",
+    "FatigueDamageConfig",
+    "FatigueDamageEventSimulator",
+    "fatigue_summary_record",
+    "initial_fatigue_state",
+    "serialize_fatigue_state",
     "REPAIR_REPAIR_VERSION",
     "REPAIR_RULE_VARIANTS",
     "RepairRuleConfig",
