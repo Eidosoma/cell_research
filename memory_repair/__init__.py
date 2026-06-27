@@ -216,6 +216,22 @@ from .field_predictors import (
     summarize_field_predictors,
     validate_field_predictor_outputs,
 )
+from .overfitting_transfer import (
+    OVERFITTING_PROXY_SCOPE_NOTE,
+    OVERFITTING_TRANSFER_VERSION,
+    S13_SCORE_COLUMN,
+    S13_SPLIT_ROLES,
+    OverfittingTransferTask,
+    build_s13_policies,
+    build_s13_tasks,
+    condition_rows_for_transfer_policy,
+    overfitting_replay_fingerprint,
+    run_transfer_condition,
+    select_policies_from_selection_results,
+    summarize_transfer_gaps,
+    transfer_group_summary,
+    validate_overfitting_outputs,
+)
 
 __all__ = [
     "MEMORY_REPAIR_VERSION",
@@ -410,4 +426,18 @@ __all__ = [
     "run_field_condition",
     "summarize_field_predictors",
     "validate_field_predictor_outputs",
+    "OVERFITTING_PROXY_SCOPE_NOTE",
+    "OVERFITTING_TRANSFER_VERSION",
+    "S13_SCORE_COLUMN",
+    "S13_SPLIT_ROLES",
+    "OverfittingTransferTask",
+    "build_s13_policies",
+    "build_s13_tasks",
+    "condition_rows_for_transfer_policy",
+    "overfitting_replay_fingerprint",
+    "run_transfer_condition",
+    "select_policies_from_selection_results",
+    "summarize_transfer_gaps",
+    "transfer_group_summary",
+    "validate_overfitting_outputs",
 ]

@@ -662,7 +662,13 @@ def _energy_efficiency_proxy(energy_proxy: float, *, horizon: int, initial_lengt
     return float(max(0.0, min(1.0, 1.0 - float(energy_proxy) / denominator)))
 
 
-def run_competence_condition(policy_spec: CompetencePolicySpec, condition: Mapping[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def run_competence_condition(
+    policy_spec: CompetencePolicySpec,
+    condition: Mapping[str, Any],
+    *,
+    implementation: str = "e04_s11_competence_proxy_cpu_reference",
+    research_step_id: str = "S11",
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     task = json.loads(str(condition["taskSpecJson"]))
     policy = policy_for_competence_condition(policy_spec)
     signal_config = SignalConfig.from_spec(json.loads(str(condition["signalConfigJson"])))
@@ -679,8 +685,8 @@ def run_competence_condition(policy_spec: CompetencePolicySpec, condition: Mappi
         repair_config=repair_config,
         fatigue_config=fatigue_config,
         condition_id=str(condition["conditionId"]),
-        implementation="e04_s11_competence_proxy_cpu_reference",
-        research_step_id="S11",
+        implementation=implementation,
+        research_step_id=research_step_id,
     )
     task_family = str(task["taskFamily"])
     threshold = float(task["sortednessThresholdPercent"])
