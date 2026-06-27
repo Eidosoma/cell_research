@@ -253,6 +253,20 @@ from .centralized_comparison import (
     summarize_local_global_deltas,
     validate_centralized_outputs,
 )
+from .synthesis import (
+    HANDOFF_REPLAY_VERSION,
+    SYNTHESIS_PROXY_SCOPE_NOTE,
+    SYNTHESIS_VERSION,
+    aggregate_mechanism_metrics,
+    build_mechanism_conclusions,
+    build_traceability_matrix,
+    policy_evidence_table,
+    required_s15_evidence_sources,
+    select_handoff_candidates,
+    stable_id as synthesis_stable_id,
+    step_status_rows,
+    validate_synthesis_outputs,
+)
 
 __all__ = [
     "MEMORY_REPAIR_VERSION",
@@ -480,4 +494,16 @@ __all__ = [
     "summarize_centralized_groups",
     "summarize_local_global_deltas",
     "validate_centralized_outputs",
+    "HANDOFF_REPLAY_VERSION",
+    "SYNTHESIS_PROXY_SCOPE_NOTE",
+    "SYNTHESIS_VERSION",
+    "aggregate_mechanism_metrics",
+    "build_mechanism_conclusions",
+    "build_traceability_matrix",
+    "policy_evidence_table",
+    "required_s15_evidence_sources",
+    "select_handoff_candidates",
+    "synthesis_stable_id",
+    "step_status_rows",
+    "validate_synthesis_outputs",
 ]
