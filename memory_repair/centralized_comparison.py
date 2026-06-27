@@ -291,6 +291,11 @@ def local_condition_rows_for_s14(
                         "oracleBaseline": False,
                         "oracleBaselineLabel": None,
                         "usesGlobalController": False,
+                        "usesGlobalSortednessSignal": False,
+                        "usesWholeArrayValues": False,
+                        "usesWholeArrayRanks": False,
+                        "usesWholeArrayTargetSignal": False,
+                        "usesTargetPositionOracle": False,
                         "policyAuditSuccess": bool(policy.policy_audit_success),
                         "pairedTaskSeedRequired": True,
                         "fairnessBlockId": task["fairnessBlockId"],
@@ -648,6 +653,11 @@ def run_s14_local_condition(policy_spec: CompetencePolicySpec, condition: Mappin
             "oracleBaseline": False,
             "oracleBaselineLabel": None,
             "usesGlobalController": False,
+            "usesGlobalSortednessSignal": False,
+            "usesWholeArrayValues": False,
+            "usesWholeArrayRanks": False,
+            "usesWholeArrayTargetSignal": False,
+            "usesTargetPositionOracle": False,
             "claimBoundary": CENTRALIZED_PROXY_SCOPE_NOTE,
             "centralizedComparisonVersion": CENTRALIZED_COMPARISON_VERSION,
         }
@@ -851,6 +861,11 @@ def validate_centralized_outputs(
         and (~local_conditions["oracleAllowed"].astype(bool)).all()
         and (~local_conditions["oracleBaseline"].astype(bool)).all()
         and (~local_conditions["usesGlobalController"].astype(bool)).all()
+        and (~local_conditions["usesGlobalSortednessSignal"].astype(bool)).all()
+        and (~local_conditions["usesWholeArrayValues"].astype(bool)).all()
+        and (~local_conditions["usesWholeArrayRanks"].astype(bool)).all()
+        and (~local_conditions["usesWholeArrayTargetSignal"].astype(bool)).all()
+        and (~local_conditions["usesTargetPositionOracle"].astype(bool)).all()
     )
     add("local_rows_not_oracle_labeled", local_unlabeled, f"localConditionRows={len(local_conditions)}")
     add("local_policy_audits_passed", bool(local_conditions["policyAuditSuccess"].astype(bool).all()), "all local policy specs pass the S07 no-oracle audit")

@@ -49,9 +49,20 @@ class TestE04CentralizedComparison(unittest.TestCase):
         global_rows = global_condition_rows_for_s14(tasks, seed_count=2, seed_base=18100)
         df = pd.DataFrame(local_rows + global_rows)
         self.assertEqual(set(df["taskFamily"]), {"sorting", "repairable", "fatigue", "homeostasis"})
-        self.assertFalse(df.loc[df["controllerKind"] == "local", "oracleAllowed"].any())
-        self.assertFalse(df.loc[df["controllerKind"] == "local", "usesGlobalController"].any())
-        self.assertTrue(df.loc[df["controllerKind"] == "local", "policyAuditSuccess"].all())
+        local_df = df[df["controllerKind"] == "local"]
+        for column in (
+            "oracleAllowed",
+            "oracleBaseline",
+            "usesGlobalController",
+            "usesGlobalSortednessSignal",
+            "usesWholeArrayValues",
+            "usesWholeArrayRanks",
+            "usesWholeArrayTargetSignal",
+            "usesTargetPositionOracle",
+        ):
+            with self.subTest(column=column):
+                self.assertFalse(local_df[column].any())
+        self.assertTrue(local_df["policyAuditSuccess"].all())
         global_df = df[df["controllerKind"] == "global_oracle"]
         self.assertTrue(global_df["oracleAllowed"].all())
         self.assertTrue(global_df["oracleBaseline"].all())
