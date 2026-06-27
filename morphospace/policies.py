@@ -563,6 +563,13 @@ def policy_from_spec(spec: PolicySpec | Mapping[str, Any] | str | LocalRulePolic
         return NullPolicy(**parameters)
     if key in {"random_walk", "random_walk_adjacent"} or family == "randomized":
         return RandomWalkPolicy(**parameters)
+    if key == "dsl" or family == "dsl":
+        from .rule_dsl import DSLPolicy
+
+        program = parameters.get("program")
+        if program is None:
+            raise ValueError("DSL policy specs require parameters.program")
+        return DSLPolicy(program)
     raise ValueError(f"unknown policy spec: {spec!r}")
 
 

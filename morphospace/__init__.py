@@ -17,6 +17,17 @@ from .policies import (
     policy_from_spec,
     policy_to_json,
 )
+from .rule_dsl import (
+    DSLPolicy,
+    DSL_VERSION,
+    RuleDslError,
+    RuleProgram,
+    local_inversion_program,
+    null_program,
+    parse_rule_program,
+    policy_from_dsl_json,
+    stochastic_right_program,
+)
 
 __all__ = [
     "BubblePolicy",
@@ -31,7 +42,16 @@ __all__ = [
     "ProposedAction",
     "RandomWalkPolicy",
     "SelectionPolicy",
+    "DSLPolicy",
+    "DSL_VERSION",
+    "RuleDslError",
+    "RuleProgram",
+    "local_inversion_program",
+    "null_program",
+    "parse_rule_program",
+    "policy_from_dsl_json",
     "policy_from_json",
     "policy_from_spec",
     "policy_to_json",
+    "stochastic_right_program",
 ]
