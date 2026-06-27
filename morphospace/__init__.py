@@ -78,6 +78,14 @@ from .policy_corpus import (
     policy_lineage_table,
     validate_corpus_records,
 )
+from .quality_diversity import (
+    QD_SEARCH_VERSION,
+    aggregate_s07_policy_metrics,
+    build_map_elites_archive,
+    qd_config_dict,
+    run_qd_smoke_check,
+    validate_qd_archive,
+)
 from .rule_dsl import (
     DSLPolicy,
     DSL_VERSION,
@@ -105,6 +113,7 @@ __all__ = [
     "NullPolicy",
     "PolicyCell",
     "POLICY_CORPUS_VERSION",
+    "QD_SEARCH_VERSION",
     "PolicyEventSimulator",
     "PolicySpec",
     "PolicyCorpusRecord",
@@ -115,9 +124,11 @@ __all__ = [
     "NORMALIZATION_VERSION",
     "MetricSpec",
     "available_jax_devices",
+    "aggregate_s07_policy_metrics",
     "batch_support_report",
     "batch_result_to_run_records",
     "bubble_template",
+    "build_map_elites_archive",
     "classic_template_programs",
     "classic_template_records",
     "classic_template_table",
@@ -146,7 +157,9 @@ __all__ = [
     "policy_from_spec",
     "policy_lineage_table",
     "policy_to_json",
+    "qd_config_dict",
     "run_batch_simulator",
+    "run_qd_smoke_check",
     "run_record_validation",
     "run_cpu_reference_case",
     "run_records_to_competence_vectors",
@@ -164,6 +177,7 @@ __all__ = [
     "toy_competence_examples",
     "trajectory_curvature_metrics",
     "validate_corpus_records",
+    "validate_qd_archive",
     "vector_from_summary_record",
     "value_counts_conserved",
 ]
