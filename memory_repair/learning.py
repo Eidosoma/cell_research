@@ -104,6 +104,14 @@ class LocalLearningConfig:
     max_action_probability: float = 0.92
     reward_clip: float = 1.0
     random_seed: int = 0
+    successful_swap_reward: float = 0.45
+    local_inversion_reward: float = 0.35
+    blocked_neighbor_reward: float = 0.18
+    blocked_swap_penalty: float = -0.30
+    non_improving_swap_penalty: float = -0.25
+    recent_failure_bonus: float = 0.10
+    locally_ordered_wait_reward: float = 0.04
+    disordered_wait_penalty: float = -0.06
     initial_action_probabilities: Mapping[str, float] = field(
         default_factory=lambda: {"swap_left": 0.45, "swap_right": 0.45, "wait": 0.10}
     )
@@ -151,6 +159,26 @@ class LocalLearningConfig:
             ),
             reward_clip=float(payload.get("rewardClip", payload.get("reward_clip", 1.0))),
             random_seed=int(payload.get("randomSeed", payload.get("random_seed", 0))),
+            successful_swap_reward=float(
+                payload.get("successfulSwapReward", payload.get("successful_swap_reward", 0.45))
+            ),
+            local_inversion_reward=float(
+                payload.get("localInversionReward", payload.get("local_inversion_reward", 0.35))
+            ),
+            blocked_neighbor_reward=float(
+                payload.get("blockedNeighborReward", payload.get("blocked_neighbor_reward", 0.18))
+            ),
+            blocked_swap_penalty=float(payload.get("blockedSwapPenalty", payload.get("blocked_swap_penalty", -0.30))),
+            non_improving_swap_penalty=float(
+                payload.get("nonImprovingSwapPenalty", payload.get("non_improving_swap_penalty", -0.25))
+            ),
+            recent_failure_bonus=float(payload.get("recentFailureBonus", payload.get("recent_failure_bonus", 0.10))),
+            locally_ordered_wait_reward=float(
+                payload.get("locallyOrderedWaitReward", payload.get("locally_ordered_wait_reward", 0.04))
+            ),
+            disordered_wait_penalty=float(
+                payload.get("disorderedWaitPenalty", payload.get("disordered_wait_penalty", -0.06))
+            ),
             initial_action_probabilities=probabilities
             or {"swap_left": 0.45, "swap_right": 0.45, "wait": 0.10},
         )
@@ -163,6 +191,14 @@ class LocalLearningConfig:
             "maxActionProbability": float(self.max_action_probability),
             "rewardClip": float(self.reward_clip),
             "randomSeed": int(self.random_seed),
+            "successfulSwapReward": float(self.successful_swap_reward),
+            "localInversionReward": float(self.local_inversion_reward),
+            "blockedNeighborReward": float(self.blocked_neighbor_reward),
+            "blockedSwapPenalty": float(self.blocked_swap_penalty),
+            "nonImprovingSwapPenalty": float(self.non_improving_swap_penalty),
+            "recentFailureBonus": float(self.recent_failure_bonus),
+            "locallyOrderedWaitReward": float(self.locally_ordered_wait_reward),
+            "disorderedWaitPenalty": float(self.disordered_wait_penalty),
             "initialActionProbabilities": dict(self.initial_action_probabilities),
             "localLearningVersion": LOCAL_LEARNING_VERSION,
             "usesGlobalSortednessSignal": False,
@@ -333,18 +369,18 @@ def compute_local_learning_reward(
     components: dict[str, float] = {}
 
     if outcome.swapped:
-        components["successful_swap"] = 0.45
+        components["successful_swap"] = float(config.successful_swap_reward)
         if chosen_inversion:
-            components["local_inversion_reduced"] = 0.35
+            components["local_inversion_reduced"] = float(config.local_inversion_reward)
         else:
-            components["non_improving_swap_penalty"] = -0.25
+            components["non_improving_swap_penalty"] = float(config.non_improving_swap_penalty)
         if prior_failures > 0:
-            components["lower_frustration_proxy"] = 0.10
+            components["lower_frustration_proxy"] = float(config.recent_failure_bonus)
     elif outcome.blocked_move_attempt and selected in {"swap_left", "swap_right"}:
         if target_frozen:
-            components["blocked_neighbor_recovery_proxy"] = 0.18
+            components["blocked_neighbor_recovery_proxy"] = float(config.blocked_neighbor_reward)
         else:
-            components["blocked_swap_penalty"] = -0.30
+            components["blocked_swap_penalty"] = float(config.blocked_swap_penalty)
     elif selected in {"swap_left", "swap_right"} and not chosen_inversion:
         components["no_local_improvement_penalty"] = -0.12
     elif selected == "wait" and (observation.left is None and observation.right is None):
@@ -353,7 +389,9 @@ def compute_local_learning_reward(
         locally_ordered = not _local_inversion_would_improve(observation, "swap_left") and not _local_inversion_would_improve(
             observation, "swap_right"
         )
-        components["locally_ordered_wait"] = 0.04 if locally_ordered else -0.06
+        components["locally_ordered_wait"] = (
+            float(config.locally_ordered_wait_reward) if locally_ordered else float(config.disordered_wait_penalty)
+        )
 
     reward = float(sum(components.values()))
     reward = _clip(reward, -float(config.reward_clip), float(config.reward_clip))
