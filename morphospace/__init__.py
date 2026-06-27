@@ -1,5 +1,14 @@
 """Reusable policy interfaces for E03 morphospace experiments."""
 
+from .classic_templates import (
+    ClassicTemplateRecord,
+    bubble_template,
+    classic_template_programs,
+    classic_template_records,
+    classic_template_table,
+    insertion_template,
+    selection_template,
+)
 from .policies import (
     BubblePolicy,
     CellSnapshot,
@@ -31,6 +40,7 @@ from .rule_dsl import (
 
 __all__ = [
     "BubblePolicy",
+    "ClassicTemplateRecord",
     "CellSnapshot",
     "InsertionPolicy",
     "LocalObservation",
@@ -42,10 +52,15 @@ __all__ = [
     "ProposedAction",
     "RandomWalkPolicy",
     "SelectionPolicy",
+    "bubble_template",
+    "classic_template_programs",
+    "classic_template_records",
+    "classic_template_table",
     "DSLPolicy",
     "DSL_VERSION",
     "RuleDslError",
     "RuleProgram",
+    "insertion_template",
     "local_inversion_program",
     "null_program",
     "parse_rule_program",
@@ -53,5 +68,6 @@ __all__ = [
     "policy_from_json",
     "policy_from_spec",
     "policy_to_json",
+    "selection_template",
     "stochastic_right_program",
 ]
