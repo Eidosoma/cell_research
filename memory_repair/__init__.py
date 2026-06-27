@@ -17,6 +17,15 @@ from .memory import (
     reset_memory_state,
     serialize_memory_state,
 )
+from .repair import (
+    REPAIR_REPAIR_VERSION,
+    REPAIR_RULE_VARIANTS,
+    RepairRuleConfig,
+    RepairableFrozenEventSimulator,
+    initial_repair_state,
+    repair_summary_record,
+    serialize_repair_state,
+)
 from .signals import (
     SIGNAL_CHANNELS,
     SIGNAL_REPAIR_VERSION,
@@ -55,6 +64,13 @@ __all__ = [
     "reset_all_memory",
     "reset_memory_state",
     "serialize_memory_state",
+    "REPAIR_REPAIR_VERSION",
+    "REPAIR_RULE_VARIANTS",
+    "RepairRuleConfig",
+    "RepairableFrozenEventSimulator",
+    "initial_repair_state",
+    "repair_summary_record",
+    "serialize_repair_state",
     "SIGNAL_CHANNELS",
     "SIGNAL_REPAIR_VERSION",
     "SIGNAL_STATE_KEY",
