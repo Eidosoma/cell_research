@@ -652,9 +652,9 @@ def vector_from_summary_record(
         "policyId": str(first("policyId", "algorithm", default="unknown")),
         "policyFamily": str(first("policyFamily", default="classic")),
         "algorithm": str(first("algorithm", default="unknown")),
-        "taskId": str(first("condition_id", "conditionId", "sourceConditionId", default="unknown")),
-        "taskFamily": "artifact_context",
-        "taskPanel": str(first("sourceContext", "contextForResearchStepId", default="artifact_ingest")),
+        "taskId": str(first("taskId", "condition_id", "conditionId", "sourceConditionId", default="unknown")),
+        "taskFamily": str(first("taskFamily", default="artifact_context")),
+        "taskPanel": str(first("taskPanel", "sourceContext", "contextForResearchStepId", default="artifact_ingest")),
         "n": int(n),
         "inputProfile": str(first("input_profile", "inputProfile", default="unknown")),
         "frozenVariant": frozen_variant,
@@ -849,4 +849,3 @@ def run_metric_unit_cases() -> tuple[bool, pd.DataFrame]:
     record("toy_null_records_failure", examples.iloc[1]["failureFlag"], 1, int(examples.iloc[1]["failureFlag"]) == 1)
     df = pd.DataFrame(cases)
     return bool(df["passed"].all()), df
-
