@@ -30,12 +30,19 @@ from .goals import (
     run_s04_goal_compatibility,
     select_s04_base_conditions,
 )
+from .compatibility import (
+    COMPATIBILITY_VECTOR_VERSION,
+    compute_compatibility_metrics,
+    metric_definitions,
+    run_s05_compatibility_metrics,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
     "ARRANGEMENT_TYPES",
     "GOAL_MODES",
     "GOAL_SWEEP_VERSION",
+    "COMPATIBILITY_VECTOR_VERSION",
     "MIXTURE_SWEEP_VERSION",
     "PANEL_SCHEMA_VERSION",
     "STEP_ID",
@@ -43,13 +50,16 @@ __all__ = [
     "build_arrangement_condition_matrix",
     "build_condition_matrix",
     "build_goal_condition_matrix",
+    "compute_compatibility_metrics",
     "generate_arrangement",
     "instantiate_panel_policy",
+    "metric_definitions",
     "policy_goal_specs",
     "run_s01_algotype_panel",
     "run_s02_mixture_ratios",
     "run_s03_initial_arrangements",
     "run_s04_goal_compatibility",
+    "run_s05_compatibility_metrics",
     "run_validation_panel",
     "select_priority_policy_ids",
     "select_s03_base_groups",
