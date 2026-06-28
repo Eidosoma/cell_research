@@ -22,22 +22,36 @@ from .arrangements import (
     run_s03_initial_arrangements,
     select_s03_base_groups,
 )
+from .goals import (
+    GOAL_MODES,
+    GOAL_SWEEP_VERSION,
+    build_goal_condition_matrix,
+    policy_goal_specs,
+    run_s04_goal_compatibility,
+    select_s04_base_conditions,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
     "ARRANGEMENT_TYPES",
+    "GOAL_MODES",
+    "GOAL_SWEEP_VERSION",
     "MIXTURE_SWEEP_VERSION",
     "PANEL_SCHEMA_VERSION",
     "STEP_ID",
     "build_algotype_panel",
     "build_arrangement_condition_matrix",
     "build_condition_matrix",
+    "build_goal_condition_matrix",
     "generate_arrangement",
     "instantiate_panel_policy",
+    "policy_goal_specs",
     "run_s01_algotype_panel",
     "run_s02_mixture_ratios",
     "run_s03_initial_arrangements",
+    "run_s04_goal_compatibility",
     "run_validation_panel",
     "select_priority_policy_ids",
     "select_s03_base_groups",
+    "select_s04_base_conditions",
 ]

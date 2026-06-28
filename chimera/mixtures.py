@@ -459,12 +459,17 @@ def run_mixture_condition(
     assigned_ids, numeric_labels, arrangement_hash = policy_assignment(condition)
     policy_cache = {pid: instantiate_panel_policy(panel_lookup[pid]) for pid in ids}
     policies = [policy_cache[pid] for pid in assigned_ids]
+    reverse_payload = parse_json_maybe(condition.get("goalReverseDirectionsJson", ""), [])
+    reverse_directions = [bool(value) for value in reverse_payload] if reverse_payload else [False] * int(condition["n"])
+    if len(reverse_directions) != int(condition["n"]):
+        raise ValueError("goalReverseDirectionsJson length must match n")
     values = initial_values(int(condition["valueSeed"]), int(condition["n"]))
     backend = simulator_backend(records)
     research_step_id = str(condition.get("researchStepId", STEP_ID))
     implementation_prefix = str(condition.get("implementationPrefix", "e06_s02"))
     common = {
         "labels": numeric_labels,
+        "reverse_directions": reverse_directions,
         "scheduler_seed": int(condition["schedulerSeed"]),
         "tie_breaker_seed": int(condition["tieBreakerSeed"]),
         "condition_id": str(condition["conditionId"]),
