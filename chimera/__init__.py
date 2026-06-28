@@ -61,10 +61,16 @@ from .governance import (
     governance_configs,
     run_s09_governance_mechanisms,
 )
+from .grafts import (
+    GRAFT_VERSION,
+    graft_positions,
+    run_s10_graft_experiments,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
     "ARRANGEMENT_TYPES",
+    "GRAFT_VERSION",
     "GOVERNANCE_VERSION",
     "GOAL_MODES",
     "GOAL_SWEEP_VERSION",
@@ -86,6 +92,7 @@ __all__ = [
     "classify_mosaic_formations",
     "compute_compatibility_metrics",
     "generate_arrangement",
+    "graft_positions",
     "governance_configs",
     "interface_rule_configs",
     "instantiate_panel_policy",
@@ -100,6 +107,7 @@ __all__ = [
     "run_s07_mosaic_formation",
     "run_s08_interface_rules",
     "run_s09_governance_mechanisms",
+    "run_s10_graft_experiments",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
