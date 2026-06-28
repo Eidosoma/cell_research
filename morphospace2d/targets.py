@@ -233,13 +233,20 @@ def _numeric_distance(left: Any, right: Any) -> float:
         return 0.0 if left == right else 1.0
 
 
-def _component_penalty(expected: CellIdentity, observed: CellIdentity, weights: Mapping[str, float]) -> float:
+def _component_penalty(
+    expected: CellIdentity,
+    observed: CellIdentity,
+    weights: Mapping[str, float],
+    numeric_normalizers: Mapping[str, float] | None = None,
+) -> float:
+    numeric_normalizers = {} if numeric_normalizers is None else dict(numeric_normalizers)
     penalty = 0.0
     for component, weight in weights.items():
         expected_value = expected.components.get(component)
         observed_value = observed.components.get(component)
         if component in {"scalar_value", "ap_coordinate"}:
-            penalty += float(weight) * _numeric_distance(expected_value, observed_value)
+            normalizer = max(1.0, float(numeric_normalizers.get(component, 1.0)))
+            penalty += float(weight) * _numeric_distance(expected_value, observed_value) / normalizer
         elif component == "polarity":
             expected_vec = np.asarray(expected_value, dtype=float)
             observed_vec = np.asarray(observed_value, dtype=float)
@@ -259,6 +266,13 @@ def evaluate_target_energy(
     """Evaluate global target constraints. This is not a local policy payload."""
 
     observed = {_as_position(position): identity for position, identity in observed_by_position.items()}
+    scalar_values = [
+        float(identity.components["scalar_value"])
+        for identity in target.identities_by_position.values()
+        if "scalar_value" in identity.components
+    ]
+    scalar_range = max(scalar_values) - min(scalar_values) if scalar_values else 1.0
+    numeric_normalizers = {"scalar_value": max(1.0, scalar_range), "ap_coordinate": 1.0}
     component_penalty = 0.0
     missing_penalty = 0.0
     extra_penalty = 0.0
@@ -268,7 +282,12 @@ def evaluate_target_energy(
         if observed_identity is None:
             missing_penalty += 1.0
             continue
-        component_penalty += _component_penalty(expected_identity, observed_identity, target.component_weights)
+        component_penalty += _component_penalty(
+            expected_identity,
+            observed_identity,
+            target.component_weights,
+            numeric_normalizers=numeric_normalizers,
+        )
         neighbor_identities = [
             observed[neighbor_position]
             for neighbor_position in target.substrate.neighbors(position)
@@ -388,7 +407,7 @@ def build_gradient_target(width: int = 5, height: int = 4) -> TargetMorphology:
         ap = x / max(1, width - 1)
         roles[(x, y)] = (1 + x + y * width, ap, "axis", [1.0, 0.0], "adhesion_a" if x < width / 2 else "adhesion_b")
     return _build_target(
-        "gradient_x_5x4",
+        f"gradient_x_{width}x{height}",
         "Left-right gradient",
         "gradient",
         substrate,
@@ -409,7 +428,14 @@ def build_stripes_target(width: int = 6, height: int = 4) -> TargetMorphology:
             [0.0, 1.0],
             "adhesion_boundary" if is_boundary_stripe else "adhesion_a",
         )
-    return _build_target("vertical_stripes_6x4", "Vertical stripes", "stripes", substrate, roles, "Alternating vertical computational role stripes.")
+    return _build_target(
+        f"vertical_stripes_{width}x{height}",
+        "Vertical stripes",
+        "stripes",
+        substrate,
+        roles,
+        "Alternating vertical computational role stripes.",
+    )
 
 
 def build_ring_target(size: int = 7) -> TargetMorphology:
@@ -418,17 +444,19 @@ def build_ring_target(size: int = 7) -> TargetMorphology:
     roles = {}
     for x, y in substrate.nodes:
         dist = math.sqrt((x - center) ** 2 + (y - center) ** 2)
-        if 1.8 <= dist <= 2.8:
+        outer_threshold = max(1.0, center) * 0.9333333333333333
+        inner_threshold = max(1.0, center) * 0.6
+        if inner_threshold <= dist <= outer_threshold:
             organ_type = "boundary"
             adhesion = "adhesion_boundary"
-        elif dist < 1.8:
+        elif dist < inner_threshold:
             organ_type = "core"
             adhesion = "adhesion_a"
         else:
             organ_type = "axis"
             adhesion = "adhesion_b"
         roles[(x, y)] = (1 + x + y * size, x / max(1, size - 1), organ_type, [0.0, 1.0], adhesion)
-    return _build_target("ring_7x7", "Ring motif", "ring", substrate, roles, "Concentric computational ring around a core.")
+    return _build_target(f"ring_{size}x{size}", "Ring motif", "ring", substrate, roles, "Concentric computational ring around a core.")
 
 
 def build_sorted_row_target(length: int = 8) -> TargetMorphology:
@@ -437,7 +465,7 @@ def build_sorted_row_target(length: int = 8) -> TargetMorphology:
         (x,): (x + 1, x / max(1, length - 1), "axis", [1.0, 0.0], "adhesion_a" if x % 2 == 0 else "adhesion_b")
         for x in range(length)
     }
-    return _build_target("sorted_row_8", "Sorted row", "sorted_row", substrate, roles, "One-dimensional sorted scalar baseline target.")
+    return _build_target(f"sorted_row_{length}", "Sorted row", "sorted_row", substrate, roles, "One-dimensional sorted scalar baseline target.")
 
 
 def build_boundary_target(width: int = 6, height: int = 5) -> TargetMorphology:
@@ -452,23 +480,34 @@ def build_boundary_target(width: int = 6, height: int = 5) -> TargetMorphology:
             [1.0, 0.0] if is_boundary else [0.0, 1.0],
             "adhesion_boundary" if is_boundary else "adhesion_a",
         )
-    return _build_target("perimeter_boundary_6x5", "Boundary and core", "boundary", substrate, roles, "Perimeter boundary around computational core.")
+    return _build_target(
+        f"perimeter_boundary_{width}x{height}",
+        "Boundary and core",
+        "boundary",
+        substrate,
+        roles,
+        "Perimeter boundary around computational core.",
+    )
 
 
 def build_organ_like_target(width: int = 7, height: int = 5) -> TargetMorphology:
     substrate = Substrate.square_grid(width, height)
-    center = (3, 2)
+    center = (width // 2, height // 2)
+    band_radius = max(1, round(height / 5))
+    y_min = max(1, center[1] - band_radius)
+    y_max = min(height - 2, center[1] + band_radius) if height > 2 else center[1]
+    core_left = max(1, center[0] - max(1, round(width / 3)))
     roles = {}
     for x, y in substrate.nodes:
         if (x, y) == center:
             organ_type = "organizer"
             adhesion = "adhesion_boundary"
             polarity = [1.0, 0.0]
-        elif x >= 4 and 1 <= y <= 3:
+        elif x >= center[0] + 1 and y_min <= y <= y_max:
             organ_type = "appendage"
             adhesion = "adhesion_b"
             polarity = [1.0, 0.0]
-        elif 1 <= x <= 3 and 1 <= y <= 3:
+        elif core_left <= x <= center[0] and y_min <= y <= y_max:
             organ_type = "core"
             adhesion = "adhesion_a"
             polarity = [0.0, 1.0]
@@ -478,7 +517,7 @@ def build_organ_like_target(width: int = 7, height: int = 5) -> TargetMorphology
             polarity = [-1.0, 0.0]
         roles[(x, y)] = (1 + x + y * width, x / max(1, width - 1), organ_type, polarity, adhesion)
     return _build_target(
-        "abstract_organ_like_7x5",
+        f"abstract_organ_like_{width}x{height}",
         "Abstract organ-like motif",
         "organ_like",
         substrate,
