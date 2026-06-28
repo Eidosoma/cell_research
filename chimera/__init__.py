@@ -73,6 +73,11 @@ from .mutants import (
     mutant_clone_positions,
     run_s11_mutant_clone_experiments,
 )
+from .history import (
+    HISTORY_VERSION,
+    history_protocol_table,
+    run_s12_developmental_history_experiments,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
@@ -81,6 +86,7 @@ __all__ = [
     "GOVERNANCE_VERSION",
     "GOAL_MODES",
     "GOAL_SWEEP_VERSION",
+    "HISTORY_VERSION",
     "INTERFACE_RULE_VERSION",
     "COMPATIBILITY_VECTOR_VERSION",
     "DOMINANCE_SWEEP_VERSION",
@@ -103,6 +109,7 @@ __all__ = [
     "generate_arrangement",
     "graft_positions",
     "governance_configs",
+    "history_protocol_table",
     "interface_rule_configs",
     "instantiate_panel_policy",
     "metric_definitions",
@@ -120,6 +127,7 @@ __all__ = [
     "run_s09_governance_mechanisms",
     "run_s10_graft_experiments",
     "run_s11_mutant_clone_experiments",
+    "run_s12_developmental_history_experiments",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
