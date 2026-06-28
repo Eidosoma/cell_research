@@ -398,10 +398,22 @@ def build_condition_matrix(
     return condition_df, pd.DataFrame(selection_rows)
 
 
-def initial_values(seed: int, n: int) -> list[int]:
+def initial_values(seed: int, n: int, value_profile: str = "random_unique") -> list[int]:
     rng = np.random.default_rng(int(seed))
-    values = np.arange(1, int(n) + 1, dtype=np.int16)
-    rng.shuffle(values)
+    n = int(n)
+    profile = str(value_profile or "random_unique")
+    if profile == "random_unique":
+        values = np.arange(1, n + 1, dtype=np.int16)
+        rng.shuffle(values)
+    elif profile == "reversed_unique":
+        values = np.arange(n, 0, -1, dtype=np.int16)
+    elif profile == "duplicate_1_10_x10":
+        if n != 100:
+            raise ValueError("duplicate_1_10_x10 requires n=100")
+        values = np.repeat(np.arange(1, 11, dtype=np.int16), 10)
+        rng.shuffle(values)
+    else:
+        raise ValueError(f"unsupported valueProfile: {profile}")
     return [int(value) for value in values]
 
 
@@ -463,7 +475,11 @@ def run_mixture_condition(
     reverse_directions = [bool(value) for value in reverse_payload] if reverse_payload else [False] * int(condition["n"])
     if len(reverse_directions) != int(condition["n"]):
         raise ValueError("goalReverseDirectionsJson length must match n")
-    values = initial_values(int(condition["valueSeed"]), int(condition["n"]))
+    values = initial_values(
+        int(condition["valueSeed"]),
+        int(condition["n"]),
+        str(condition.get("valueProfile", "random_unique")),
+    )
     backend = simulator_backend(records)
     research_step_id = str(condition.get("researchStepId", STEP_ID))
     implementation_prefix = str(condition.get("implementationPrefix", "e06_s02"))
