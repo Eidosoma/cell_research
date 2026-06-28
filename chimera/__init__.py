@@ -44,6 +44,11 @@ from .dominance import (
     score_dominance_results,
     select_s06_pairs,
 )
+from .mosaics import (
+    MOSAIC_CLASSIFIER_VERSION,
+    classify_mosaic_formations,
+    run_s07_mosaic_formation,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
@@ -53,6 +58,7 @@ __all__ = [
     "COMPATIBILITY_VECTOR_VERSION",
     "DOMINANCE_SWEEP_VERSION",
     "MIXTURE_SWEEP_VERSION",
+    "MOSAIC_CLASSIFIER_VERSION",
     "PANEL_SCHEMA_VERSION",
     "STEP_ID",
     "WINNER_CRITERIA_VERSION",
@@ -61,6 +67,7 @@ __all__ = [
     "build_condition_matrix",
     "build_dominance_condition_matrix",
     "build_goal_condition_matrix",
+    "classify_mosaic_formations",
     "compute_compatibility_metrics",
     "generate_arrangement",
     "instantiate_panel_policy",
@@ -72,6 +79,7 @@ __all__ = [
     "run_s04_goal_compatibility",
     "run_s05_compatibility_metrics",
     "run_s06_dominance_hierarchy",
+    "run_s07_mosaic_formation",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
