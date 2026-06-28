@@ -55,10 +55,17 @@ from .interfaces import (
     interface_rule_configs,
     run_s08_interface_rules,
 )
+from .governance import (
+    GOVERNANCE_VERSION,
+    GovernanceConfig,
+    governance_configs,
+    run_s09_governance_mechanisms,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
     "ARRANGEMENT_TYPES",
+    "GOVERNANCE_VERSION",
     "GOAL_MODES",
     "GOAL_SWEEP_VERSION",
     "INTERFACE_RULE_VERSION",
@@ -68,6 +75,7 @@ __all__ = [
     "MOSAIC_CLASSIFIER_VERSION",
     "PANEL_SCHEMA_VERSION",
     "STEP_ID",
+    "GovernanceConfig",
     "InterfaceRuleConfig",
     "WINNER_CRITERIA_VERSION",
     "build_algotype_panel",
@@ -78,6 +86,7 @@ __all__ = [
     "classify_mosaic_formations",
     "compute_compatibility_metrics",
     "generate_arrangement",
+    "governance_configs",
     "interface_rule_configs",
     "instantiate_panel_policy",
     "metric_definitions",
@@ -90,6 +99,7 @@ __all__ = [
     "run_s06_dominance_hierarchy",
     "run_s07_mosaic_formation",
     "run_s08_interface_rules",
+    "run_s09_governance_mechanisms",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
