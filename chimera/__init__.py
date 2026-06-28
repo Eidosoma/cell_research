@@ -66,6 +66,13 @@ from .grafts import (
     graft_positions,
     run_s10_graft_experiments,
 )
+from .mutants import (
+    MUTANT_VERSION,
+    MutantCloneConfig,
+    mutant_clone_configs,
+    mutant_clone_positions,
+    run_s11_mutant_clone_experiments,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
@@ -79,10 +86,12 @@ __all__ = [
     "DOMINANCE_SWEEP_VERSION",
     "MIXTURE_SWEEP_VERSION",
     "MOSAIC_CLASSIFIER_VERSION",
+    "MUTANT_VERSION",
     "PANEL_SCHEMA_VERSION",
     "STEP_ID",
     "GovernanceConfig",
     "InterfaceRuleConfig",
+    "MutantCloneConfig",
     "WINNER_CRITERIA_VERSION",
     "build_algotype_panel",
     "build_arrangement_condition_matrix",
@@ -97,6 +106,8 @@ __all__ = [
     "interface_rule_configs",
     "instantiate_panel_policy",
     "metric_definitions",
+    "mutant_clone_configs",
+    "mutant_clone_positions",
     "policy_goal_specs",
     "run_s01_algotype_panel",
     "run_s02_mixture_ratios",
@@ -108,6 +119,7 @@ __all__ = [
     "run_s08_interface_rules",
     "run_s09_governance_mechanisms",
     "run_s10_graft_experiments",
+    "run_s11_mutant_clone_experiments",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
