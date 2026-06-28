@@ -408,6 +408,19 @@ def initial_values(seed: int, n: int) -> list[int]:
 def policy_assignment(condition: Mapping[str, Any]) -> tuple[list[str], list[int], str]:
     ids = [str(item) for item in parse_json_maybe(condition["policyIdsJson"], [])]
     counts = [int(item) for item in parse_json_maybe(condition["policyCountsJson"], [])]
+    explicit_assignment = parse_json_maybe(condition.get("arrangementPolicyIdsJson", ""), [])
+    if explicit_assignment:
+        assigned = [str(item) for item in explicit_assignment]
+        if len(assigned) != int(condition["n"]):
+            raise ValueError("arrangementPolicyIdsJson length must match n")
+        actual = Counter(assigned)
+        expected = dict(zip(ids, counts, strict=True))
+        if dict(actual) != expected:
+            raise ValueError("arrangementPolicyIdsJson counts must match policyCountsJson")
+        label_by_id = {pid: label for label, pid in enumerate(ids)}
+        labels = [int(label_by_id[pid]) for pid in assigned]
+        assignment_hash = sha256_text(compact_json(assigned))
+        return assigned, labels, assignment_hash
     labels: list[int] = []
     for label, count in enumerate(counts):
         labels.extend([label] * int(count))
@@ -448,12 +461,14 @@ def run_mixture_condition(
     policies = [policy_cache[pid] for pid in assigned_ids]
     values = initial_values(int(condition["valueSeed"]), int(condition["n"]))
     backend = simulator_backend(records)
+    research_step_id = str(condition.get("researchStepId", STEP_ID))
+    implementation_prefix = str(condition.get("implementationPrefix", "e06_s02"))
     common = {
         "labels": numeric_labels,
         "scheduler_seed": int(condition["schedulerSeed"]),
         "tie_breaker_seed": int(condition["tieBreakerSeed"]),
         "condition_id": str(condition["conditionId"]),
-        "research_step_id": STEP_ID,
+        "research_step_id": research_step_id,
     }
     if backend == "signal_event":
         first_signal = next((policy for policy in policy_cache.values() if hasattr(policy, "signal_config")), None)
@@ -465,7 +480,7 @@ def run_mixture_condition(
             auto_wrap_policies=False,
             trace_signal_activations=False,
             trace_memory_activations=False,
-            implementation="e06_s02_signal_mixture",
+            implementation=f"{implementation_prefix}_signal_mixture",
             **common,
         )
         signal_config_json = compact_json(signal_config.to_dict()) if hasattr(signal_config, "to_dict") else compact_json(signal_config)
@@ -474,12 +489,12 @@ def run_mixture_condition(
             values,
             policies,
             trace_memory_activations=False,
-            implementation="e06_s02_memory_mixture",
+            implementation=f"{implementation_prefix}_memory_mixture",
             **common,
         )
         signal_config_json = ""
     else:
-        simulator = PolicyEventSimulator(values, policies, implementation="e06_s02_policy_mixture", **common)
+        simulator = PolicyEventSimulator(values, policies, implementation=f"{implementation_prefix}_policy_mixture", **common)
         signal_config_json = ""
 
     started = time.perf_counter()
