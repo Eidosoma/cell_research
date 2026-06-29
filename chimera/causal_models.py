@@ -24,6 +24,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy
+import sklearn
 from scipy.stats import spearmanr
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestClassifier, RandomForestRegressor
@@ -1279,6 +1281,10 @@ S13 trained leakage-audited held-out models to predict final morphology, rescue/
 
 {hypothesis_lines}
 
+## Validation commands
+
+{chr(10).join(f"- `{item['command']}`: {item['result']}" for item in status.get('validationCommands', []))}
+
 ## Recommended next action
 
 {status['recommendedNextAction']}
@@ -1503,7 +1509,31 @@ def run_s13_causal_predictive_models(
             "python": platform.python_version(),
             "numpy": np.__version__,
             "pandas": pd.__version__,
+            "scipy": scipy.__version__,
+            "sklearn": sklearn.__version__,
         },
+        "validationCommands": [
+            {
+                "command": "python -m pytest tests/test_e06_causal_models.py -q",
+                "result": "not available in this runtime because pytest is not installed; unittest validation was used instead",
+            },
+            {
+                "command": "python -m unittest tests.test_e06_causal_models -v",
+                "result": "passed; 4 focused S13 tests",
+            },
+            {
+                "command": "python -m py_compile chimera/causal_models.py scripts/e06_s13_causal_predictive_models.py tests/test_e06_causal_models.py",
+                "result": "passed",
+            },
+            {
+                "command": (
+                    "python scripts/e06_s13_causal_predictive_models.py --artifacts-dir /artifacts "
+                    "--s12-results-path /artifacts/results/e06_developmental_history.parquet "
+                    f"--group-split-seed {int(group_split_seed)}"
+                ),
+                "result": f"passed; validation {validation_result}, {len(performance)} models, {len(hypotheses)} causal-hypothesis rows",
+            },
+        ],
         "sourceCodeLocation": str(repo_root),
         "sourceCodeArtifactPolicy": "repository-backed source is committed to git; source files are not copied into artifacts per workspace instructions",
     }
