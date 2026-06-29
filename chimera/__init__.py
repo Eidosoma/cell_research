@@ -78,6 +78,10 @@ from .history import (
     history_protocol_table,
     run_s12_developmental_history_experiments,
 )
+from .causal_models import (
+    CAUSAL_MODEL_VERSION,
+    run_s13_causal_predictive_models,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
@@ -87,6 +91,7 @@ __all__ = [
     "GOAL_MODES",
     "GOAL_SWEEP_VERSION",
     "HISTORY_VERSION",
+    "CAUSAL_MODEL_VERSION",
     "INTERFACE_RULE_VERSION",
     "COMPATIBILITY_VECTOR_VERSION",
     "DOMINANCE_SWEEP_VERSION",
@@ -128,6 +133,7 @@ __all__ = [
     "run_s10_graft_experiments",
     "run_s11_mutant_clone_experiments",
     "run_s12_developmental_history_experiments",
+    "run_s13_causal_predictive_models",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
