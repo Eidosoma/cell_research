@@ -82,6 +82,10 @@ from .causal_models import (
     CAUSAL_MODEL_VERSION,
     run_s13_causal_predictive_models,
 )
+from .interventions import (
+    INTERVENTION_SEARCH_VERSION,
+    run_s14_intervention_search,
+)
 
 __all__ = [
     "ARRANGEMENT_SWEEP_VERSION",
@@ -93,6 +97,7 @@ __all__ = [
     "HISTORY_VERSION",
     "CAUSAL_MODEL_VERSION",
     "INTERFACE_RULE_VERSION",
+    "INTERVENTION_SEARCH_VERSION",
     "COMPATIBILITY_VECTOR_VERSION",
     "DOMINANCE_SWEEP_VERSION",
     "MIXTURE_SWEEP_VERSION",
@@ -134,6 +139,7 @@ __all__ = [
     "run_s11_mutant_clone_experiments",
     "run_s12_developmental_history_experiments",
     "run_s13_causal_predictive_models",
+    "run_s14_intervention_search",
     "run_validation_panel",
     "score_dominance_results",
     "select_priority_policy_ids",
