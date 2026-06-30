@@ -2,6 +2,11 @@
 
 from .behavior_corpus import build_behavior_corpus, validate_behavior_corpus
 from .behavior_predictor import build_modeling_frame, target_coverage, train_evaluate_predictor
+from .counterfactual_tests import (
+    score_heldout_predictions,
+    select_counterfactual_candidates,
+    validate_candidates,
+)
 from .goal_embeddings import build_goal_profiles, fit_goal_embedding
 from .goal_catalog import build_goal_catalog, goal_schema_document, validate_goal_catalog
 from .invariant_search import build_invariant_feature_frame, cross_world_holdout_search
@@ -36,10 +41,13 @@ __all__ = [
     "fit_behavior_embedding",
     "fit_world_embedding",
     "pairwise_distance_tables",
+    "score_heldout_predictions",
+    "select_counterfactual_candidates",
     "goal_schema_document",
     "target_coverage",
     "target_error_weights",
     "train_evaluate_predictor",
+    "validate_candidates",
     "validate_behavior_corpus",
     "validate_goal_catalog",
     "validate_policy_catalog",
