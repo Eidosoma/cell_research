@@ -38,6 +38,17 @@ from .inverse_design import (
     validation_checks as validate_inverse_design_outputs,
     write_designed_policy_files,
 )
+from .periodic_table import (
+    PERIODIC_TABLE_CLAIM_BOUNDARY,
+    PERIODIC_TABLE_MODEL_VERSION,
+    PERIODIC_TABLE_SCHEMA_VERSION,
+    S13_S14_CAVEAT,
+    build_periodic_table_bundle,
+    extract_html_links,
+    periodic_table_outcome_classification,
+    render_periodic_table_html,
+    validate_periodic_table_outputs,
+)
 from .platonic_distances import build_world_profiles, fit_world_embedding, pairwise_distance_tables
 from .policy_embeddings import build_policy_profiles, fit_behavior_embedding, target_error_weights
 from .policy_catalog import build_policy_catalog, validate_policy_catalog
@@ -75,6 +86,7 @@ __all__ = [
     "build_invariant_feature_frame",
     "build_inverse_design_target_profiles",
     "build_modeling_frame",
+    "build_periodic_table_bundle",
     "build_policy_profiles",
     "build_policy_catalog",
     "build_policy_taxonomy_features",
@@ -115,6 +127,7 @@ __all__ = [
     "validate_substrate_transfer_outputs",
     "validate_behavior_corpus",
     "validate_goal_catalog",
+    "validate_periodic_table_outputs",
     "validate_policy_catalog",
     "validate_world_catalog",
     "world_schema_document",
@@ -133,4 +146,11 @@ __all__ = [
     "EMPIRICAL_LAW_MODEL_VERSION",
     "EMPIRICAL_LAW_SCHEMA_VERSION",
     "law_outcome_classification",
+    "PERIODIC_TABLE_CLAIM_BOUNDARY",
+    "PERIODIC_TABLE_MODEL_VERSION",
+    "PERIODIC_TABLE_SCHEMA_VERSION",
+    "S13_S14_CAVEAT",
+    "extract_html_links",
+    "periodic_table_outcome_classification",
+    "render_periodic_table_html",
 ]
