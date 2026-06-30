@@ -8,6 +8,7 @@ from .invariant_search import build_invariant_feature_frame, cross_world_holdout
 from .platonic_distances import build_world_profiles, fit_world_embedding, pairwise_distance_tables
 from .policy_embeddings import build_policy_profiles, fit_behavior_embedding, target_error_weights
 from .policy_catalog import build_policy_catalog, validate_policy_catalog
+from .universality_classes import build_policy_taxonomy_features, build_taxonomy_tables
 from .world_schema import (
     SCHEMA_VERSION,
     build_world_catalog,
@@ -25,6 +26,8 @@ __all__ = [
     "build_modeling_frame",
     "build_policy_profiles",
     "build_policy_catalog",
+    "build_policy_taxonomy_features",
+    "build_taxonomy_tables",
     "build_world_profiles",
     "build_world_catalog",
     "catalog_to_dataframe",
