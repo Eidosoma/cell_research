@@ -4,6 +4,7 @@ from .behavior_corpus import build_behavior_corpus, validate_behavior_corpus
 from .behavior_predictor import build_modeling_frame, target_coverage, train_evaluate_predictor
 from .goal_embeddings import build_goal_profiles, fit_goal_embedding
 from .goal_catalog import build_goal_catalog, goal_schema_document, validate_goal_catalog
+from .invariant_search import build_invariant_feature_frame, cross_world_holdout_search
 from .platonic_distances import build_world_profiles, fit_world_embedding, pairwise_distance_tables
 from .policy_embeddings import build_policy_profiles, fit_behavior_embedding, target_error_weights
 from .policy_catalog import build_policy_catalog, validate_policy_catalog
@@ -20,12 +21,14 @@ __all__ = [
     "build_behavior_corpus",
     "build_goal_profiles",
     "build_goal_catalog",
+    "build_invariant_feature_frame",
     "build_modeling_frame",
     "build_policy_profiles",
     "build_policy_catalog",
     "build_world_profiles",
     "build_world_catalog",
     "catalog_to_dataframe",
+    "cross_world_holdout_search",
     "fit_goal_embedding",
     "fit_behavior_embedding",
     "fit_world_embedding",
