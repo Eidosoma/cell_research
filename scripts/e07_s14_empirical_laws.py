@@ -430,7 +430,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "researchStepId": STEP_ID,
         "stepNumber": STEP_NUMBER,
         "createdUtc": utc_now(),
-        "artifacts": collect_artifacts(artifact_paths),
+        "artifacts": collect_artifacts(path for path in artifact_paths if path != manifest_path),
         "repositoryCodePaths": status["repositoryCodePaths"],
         "git": status["git"],
         "claimBoundary": EMPIRICAL_LAW_CLAIM_BOUNDARY,
@@ -443,4 +443,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
