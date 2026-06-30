@@ -7,6 +7,15 @@ from .counterfactual_tests import (
     select_counterfactual_candidates,
     validate_candidates,
 )
+from .empirical_laws import (
+    EMPIRICAL_LAW_CLAIM_BOUNDARY,
+    EMPIRICAL_LAW_MODEL_VERSION,
+    EMPIRICAL_LAW_SCHEMA_VERSION,
+    build_anchor_metrics,
+    build_empirical_law_synthesis,
+    law_outcome_classification,
+    validation_checks as validate_empirical_law_outputs,
+)
 from .goal_embeddings import build_goal_profiles, fit_goal_embedding
 from .goal_catalog import build_goal_catalog, goal_schema_document, validate_goal_catalog
 from .invariant_search import build_invariant_feature_frame, cross_world_holdout_search
@@ -58,7 +67,9 @@ from .world_schema import (
 
 __all__ = [
     "SCHEMA_VERSION",
+    "build_anchor_metrics",
     "build_behavior_corpus",
+    "build_empirical_law_synthesis",
     "build_goal_profiles",
     "build_goal_catalog",
     "build_invariant_feature_frame",
@@ -99,6 +110,7 @@ __all__ = [
     "train_evaluate_predictor",
     "training_panel",
     "validate_candidates",
+    "validate_empirical_law_outputs",
     "validate_inverse_design_outputs",
     "validate_substrate_transfer_outputs",
     "validate_behavior_corpus",
@@ -117,4 +129,8 @@ __all__ = [
     "INVERSE_DESIGN_CLAIM_BOUNDARY",
     "INVERSE_DESIGN_MODEL_VERSION",
     "INVERSE_DESIGN_SCHEMA_VERSION",
+    "EMPIRICAL_LAW_CLAIM_BOUNDARY",
+    "EMPIRICAL_LAW_MODEL_VERSION",
+    "EMPIRICAL_LAW_SCHEMA_VERSION",
+    "law_outcome_classification",
 ]
