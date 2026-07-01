@@ -584,6 +584,8 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
     activation_log: list[dict[str, Any]] = []
     event_count = 0
     no_progress_events = 0
+    cached_legal_signature: tuple[tuple[Any, ...], ...] | None = None
+    cached_legal_action_exists: bool | None = None
     cursor = 0 if config.activation_distribution != "right_to_left_active" else len(cells) - 1
     stop_reason = "max_events_exceeded"
     max_guard_hit = False
@@ -620,12 +622,20 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
         made_progress = after_swap_count != before_swap_count or state_changed
         legal_action_exists = True
         if not made_progress:
-            legal_action_exists = has_public_legal_action(
-                cells,
-                cell_status,
-                config.label_to_behavior,
-                config.frozen_semantics,
-            )
+            if cached_legal_signature == after_signature and cached_legal_action_exists is not None:
+                legal_action_exists = cached_legal_action_exists
+            else:
+                legal_action_exists = has_public_legal_action(
+                    cells,
+                    cell_status,
+                    config.label_to_behavior,
+                    config.frozen_semantics,
+                )
+                cached_legal_signature = after_signature
+                cached_legal_action_exists = legal_action_exists
+        else:
+            cached_legal_signature = None
+            cached_legal_action_exists = None
         activation_log.append(
             {
                 "event_step": event_step,
