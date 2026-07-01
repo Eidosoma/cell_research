@@ -61,6 +61,7 @@ from src.e02.deterministic_simulator import (
     cell_state_signature,
     cell_values,
     count_json,
+    has_public_legal_action,
     is_sorted,
     label_code,
     monotonicity_error_count,
@@ -337,6 +338,12 @@ def run_assignment(task: DummyTask, assignments: tuple[str, ...], scope: str) ->
             stop_reason = "max_successful_swaps_exceeded"
             max_guard_hit = True
             break
+        legal_action_exists = has_public_legal_action(
+            cells,
+            cell_status,
+            DEFAULT_LABEL_TO_BEHAVIOR,
+            task.condition["frozen_semantics"],
+        )
         before_signature = cell_state_signature(cells)
         before_swap_count = int(probe.swap_count)
         item_kind, items = scheduler_items(cells, cell_status, "synchronous_round_ltr_resolution", rng)
@@ -366,10 +373,10 @@ def run_assignment(task: DummyTask, assignments: tuple[str, ...], scope: str) ->
         sweep_count += 1
         after_signature = cell_state_signature(cells)
         made_progress = int(probe.swap_count) != before_swap_count or after_signature != before_signature
-        if not made_progress:
+        if not made_progress and not legal_action_exists:
             no_progress_sweeps += 1
             if no_progress_sweeps >= task.stall_sweeps:
-                stop_reason = "no_progress_window"
+                stop_reason = "no_legal_action_window"
                 break
         else:
             no_progress_sweeps = 0
