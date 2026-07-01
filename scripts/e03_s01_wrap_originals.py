@@ -322,7 +322,7 @@ def render_report(
 {artifact_md}
 - Validation result: {validation_line}
 - Outcome classification: {outcome}
-- Caveats or blockers: The interface wraps public cell-view methods and exposes deterministic proposals for the original three policies, but it does not yet define the S02 DSL or replace every E02 simulator path. Selection target-position updates are exposed as state updates; the public method can also classify no-swap target shifts as applied waits because it mutates `ideal_position` inside `should_move_to`.
+- Caveats or blockers: The interface wraps public cell-view methods and exposes deterministic proposals for the original three policies, but it does not yet define the S02 DSL or replace every E02 simulator path. Selection target-position updates are exposed as state updates because the public method mutates `ideal_position` inside `should_move_to`.
 - Lay summary: S01 created a common policy wrapper so Bubble, Insertion, and Selection cells can be viewed as local-rule policies with observations, state, proposed actions, constraints, and updates. The wrapper path preserved direct public-method behavior on small fixtures, so S02 can build a rule language on top of this interface.
 - Recommended next action: Proceed to S02 to create the rule DSL, using `OriginalCellPolicyWrapper` as the compatibility baseline for classic Algotypes.
 
