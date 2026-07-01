@@ -152,6 +152,66 @@ class DeterministicSimulatorTests(unittest.TestCase):
         self.assertEqual(first.final_frozen_positions, (1,))
         self.assertGreaterEqual(first.frozen_attempt_count, 1)
 
+    def test_dynamic_frozen_behavior_recovers_passive_and_stuck_limits(self) -> None:
+        common = dict(
+            values=(3, 1, 2, 4),
+            algorithm="bubble",
+            frozen_indices=(1,),
+            activation_seed=4401,
+            policy_seed=5401,
+            max_events=10_000,
+            stall_events=100,
+        )
+        passive = simulate(SimulatorConfig(**common, frozen_semantics="passive"))
+        passive_dynamic = simulate(
+            SimulatorConfig(
+                **common,
+                frozen_semantics="dynamic",
+                frozen_behavior={"type": "passive_limit", "label": "unit_passive_limit", "seed": 5401},
+            )
+        )
+        stuck = simulate(SimulatorConfig(**common, frozen_semantics="stuck"))
+        stuck_dynamic = simulate(
+            SimulatorConfig(
+                **common,
+                frozen_semantics="dynamic",
+                frozen_behavior={"type": "stuck_limit", "label": "unit_stuck_limit", "seed": 5401},
+            )
+        )
+        self.assertEqual(passive_dynamic.final_values, passive.final_values)
+        self.assertEqual(passive_dynamic.records, passive.records)
+        self.assertEqual(passive_dynamic.activation_log, passive.activation_log)
+        self.assertEqual(stuck_dynamic.final_values, stuck.final_values)
+        self.assertEqual(stuck_dynamic.records, stuck.records)
+        self.assertEqual(stuck_dynamic.activation_log, stuck.activation_log)
+        self.assertGreaterEqual(passive_dynamic.frozen_behavior_summary["transition_count"], 1)
+        self.assertGreaterEqual(stuck_dynamic.frozen_behavior_summary["blocked_attempt_count"], 1)
+
+    def test_dynamic_frozen_behavior_logs_state_and_attempts(self) -> None:
+        config = SimulatorConfig(
+            values=(4, 1, 3, 2),
+            algorithm="bubble",
+            frozen_indices=(1,),
+            frozen_semantics="dynamic",
+            frozen_behavior={
+                "type": "time_varying",
+                "label": "unit_time_varying",
+                "window_events": 1,
+                "seed": 5501,
+            },
+            activation_seed=4501,
+            policy_seed=5501,
+            max_events=200,
+            stall_events=20,
+            stop_when_sorted=False,
+        )
+        result = simulate(config)
+        summary = result.frozen_behavior_summary
+        self.assertGreaterEqual(summary["transition_count"], 2)
+        self.assertGreaterEqual(summary["attempt_count"], 1)
+        self.assertTrue(result.frozen_behavior_transition_log)
+        self.assertTrue(result.frozen_behavior_attempt_log)
+
     def test_trace_hash_changes_when_activation_seed_changes(self) -> None:
         base = SimulatorConfig(values=(4, 1, 3, 2), algorithm="bubble", activation_seed=4501, policy_seed=5501)
         changed = SimulatorConfig(values=(4, 1, 3, 2), algorithm="bubble", activation_seed=4502, policy_seed=5501)
