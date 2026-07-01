@@ -1006,7 +1006,8 @@ Are efficiency, robustness, DG, and Aggregation claims stable across original th
 
 ## Inputs
 
-- S01 simulator commit: `{git_commit}`
+- Repository commit at S02 run time: `{git_commit}`
+- S01 simulator source: `src/e02/deterministic_simulator.py` included in the source snapshot manifest
 - E01 baseline config: `/previous-artifacts/E01/configs/e01_baseline_configs.json`
 - E01 recorded baseline tables: `/previous-artifacts/E01/results/e01_efficiency_counts.parquet`, `/previous-artifacts/E01/results/e01_frozen_cell_robustness.parquet`, `/previous-artifacts/E01/results/e01_chimera_efficiency.parquet`, `/previous-artifacts/E01/results/e01_delayed_gratification.parquet`
 - Selected E01 conditions: `{', '.join(SELECTED_CONDITION_IDS)}`
