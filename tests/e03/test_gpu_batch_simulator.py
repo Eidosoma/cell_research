@@ -41,6 +41,19 @@ end
         self.assertTrue(bool(comparison.loc[0, "within_tolerance"]), comparison.to_string(index=False))
         self.assertEqual(int(comparison.loc[0, "cpu_ideal_position"]), int(comparison.loc[0, "gpu_ideal_position"]))
 
+    def test_next_ideal_preserves_none_state(self) -> None:
+        policy = parse_policy(
+            """policy next_without_ideal_unit v1
+state ideal_position=none
+rule if always then set_ideal(next)
+end
+"""
+        )
+        comparison = compare_batch_to_cpu([policy], validation_fixtures(1), steps=1, seed=5)
+        self.assertTrue(bool(comparison.loc[0, "within_tolerance"]), comparison.to_string(index=False))
+        self.assertEqual(int(comparison.loc[0, "cpu_ideal_position"]), -1)
+        self.assertEqual(int(comparison.loc[0, "gpu_ideal_position"]), -1)
+
     def test_jax_cpu_backend_fallback_matches_cpu_reference(self) -> None:
         policy = deterministic_validation_policies()[0]
         fixture = validation_fixtures(1)[0]

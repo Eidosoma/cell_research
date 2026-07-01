@@ -443,7 +443,11 @@ def _resolve_state_value(
     reverse_direction: Any,
     jnp: Any,
 ) -> Any:
-    next_position = jnp.where(reverse_direction, ideal_position - 1, ideal_position + 1)
+    next_position = jnp.where(
+        ideal_position < 0,
+        -1,
+        jnp.where(reverse_direction, ideal_position - 1, ideal_position + 1),
+    )
     return jnp.where(
         state_code >= 0,
         state_code,
