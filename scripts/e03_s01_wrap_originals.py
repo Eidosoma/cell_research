@@ -272,6 +272,8 @@ def render_report(
     result_path: Path,
     result_alias_path: Path,
     manifest_path: Path,
+    run_manifest_path: Path,
+    checksums_path: Path,
     validation_df: pd.DataFrame,
     unit_tests: dict[str, Any],
     e02_tests: dict[str, Any] | None,
@@ -291,6 +293,8 @@ def render_report(
         str(result_path),
         str(result_alias_path),
         str(manifest_path),
+        str(run_manifest_path),
+        str(checksums_path),
     ]
     artifact_md = "\n".join(f"- `{item}`" for item in artifact_list)
     commands = [
@@ -383,6 +387,7 @@ Machine-readable results were written to `{result_path}` and the current-step al
 - E03 policy-interface unit tests: {'passed' if unit_tests['success'] else 'failed'}.
 - E02 deterministic simulator regression subset: {'passed' if e02_tests and e02_tests['success'] else 'not run or failed'}.
 - Artifact presence and checksums are recorded in `{manifest_path}`.
+- Experiment-level provenance is recorded in `{run_manifest_path}` and `{checksums_path}`.
 - Validation dataframe success count: {int(validation_df['success'].sum())}/{len(validation_df)}.
 
 ## Caveats, Blockers, Failed Assumptions, And Limitations
@@ -416,10 +421,14 @@ def main() -> int:
     result_path = artifacts_dir / "results" / "e03_policy_interface_tests.parquet"
     result_alias_path = artifacts_dir / "results" / "e03_original_policy_wrapper_tests.parquet"
     manifest_path = artifacts_dir / "src_snapshot" / "e03_policy_interface_manifest.json"
+    run_manifest_path = artifacts_dir / "run_manifest.json"
+    checksums_path = artifacts_dir / "checksums" / "sha256sums.txt"
     report_path = step_dir / "research_step_full_results.md"
     step_dir.mkdir(parents=True, exist_ok=True)
     result_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    run_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    checksums_path.parent.mkdir(parents=True, exist_ok=True)
 
     validation_df = run_decision_validation()
     validation_df.to_parquet(result_path, index=False)
@@ -483,19 +492,69 @@ def main() -> int:
         result_path=result_path,
         result_alias_path=result_alias_path,
         manifest_path=manifest_path,
+        run_manifest_path=run_manifest_path,
+        checksums_path=checksums_path,
         validation_df=validation_df,
         unit_tests=unit_tests,
         e02_tests=e02_tests,
         manifest=manifest,
     )
     write_text(report_path, report)
+    run_manifest = {
+        "schema": "eidosoma.run_manifest.v1",
+        "experimentId": EXPERIMENT_ID,
+        "lastResearchStepId": STEP_ID,
+        "createdAtUtc": utc_now(),
+        "gitCommit": manifest["gitCommit"],
+        "gitStatusShort": manifest["gitStatusShort"],
+        "repository": {
+            "path": str(repo_dir),
+            "branch": git_output(repo_dir, ["branch", "--show-current"]),
+        },
+        "runtime": {
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "cpuCountVisible": os.cpu_count(),
+            "workerCount": 1,
+            "threadingPolicy": "serial S01 validation; no parallel workers",
+        },
+        "dependencies": manifest["dependencies"],
+        "seedPolicy": {
+            "decisionFixtureSeeds": [int(case["policy_seed"]) for case in decision_cases()],
+            "rng": "Python random module; wrapper proposal clones global RNG state before public move execution",
+        },
+        "artifacts": [
+            {"path": str(report_path), "role": "S01 full-results report"},
+            {"path": str(result_path), "role": "S01 validation table"},
+            {"path": str(result_alias_path), "role": "S01 validation table alias"},
+            {"path": str(manifest_path), "role": "S01 source snapshot manifest"},
+            {"path": str(checksums_path), "role": "artifact checksums"},
+        ],
+        "validation": manifest["validation"],
+    }
+    write_json(run_manifest_path, run_manifest)
     manifest["artifactsWritten"] = [
         artifact_entry(report_path, artifacts_dir, "S01 full-results handoff report"),
         artifact_entry(result_path, artifacts_dir, "S01 policy-interface decision validation results"),
         artifact_entry(result_alias_path, artifacts_dir, "S01 original-policy wrapper validation result alias"),
         manifest_self_entry(manifest_path, artifacts_dir, "S01 source snapshot and provenance manifest"),
+        artifact_entry(run_manifest_path, artifacts_dir, "Experiment-level run manifest"),
+        {
+            "path": str(checksums_path),
+            "relativePath": str(checksums_path.relative_to(artifacts_dir)),
+            "description": "SHA256 checksums for compact S01 artifacts",
+            "sha256": None,
+            "sizeBytes": None,
+            "note": "Checksum file is written after the manifest so it can include the final manifest hash.",
+        },
     ]
     write_json(manifest_path, manifest)
+    checksum_targets = [report_path, result_path, result_alias_path, manifest_path, run_manifest_path]
+    checksum_lines = [
+        f"{sha256_file(path)}  {path.relative_to(artifacts_dir)}"
+        for path in checksum_targets
+    ]
+    write_text(checksums_path, "\n".join(checksum_lines) + "\n")
     print(json.dumps(manifest["validation"], indent=2, sort_keys=True))
     return 0 if manifest["validation"]["allValidationPassed"] else 1
 
