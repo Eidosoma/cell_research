@@ -1395,7 +1395,8 @@ def main() -> int:
     }
     write_json(src_manifest_path, src_manifest)
 
-    manifest_entries = [artifact_entry(path, artifacts_dir, description) for path, description in planned_artifacts if path.exists()]
+    manifest_artifacts = [(path, description) for path, description in planned_artifacts if path != manifest_path]
+    manifest_entries = [artifact_entry(path, artifacts_dir, description) for path, description in manifest_artifacts if path.exists()]
     manifest = {
         "schema": "eidosoma.research_step_artifact_manifest.v1",
         "experimentId": EXPERIMENT_ID,
@@ -1406,7 +1407,7 @@ def main() -> int:
         "artifacts": manifest_entries,
     }
     write_json(manifest_path, manifest)
-    manifest["artifacts"] = [artifact_entry(path, artifacts_dir, description) for path, description in planned_artifacts if path.exists()]
+    manifest["artifacts"] = [artifact_entry(path, artifacts_dir, description) for path, description in manifest_artifacts if path.exists()]
     write_json(manifest_path, manifest)
 
     return 0 if validation["success"] else 1
