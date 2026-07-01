@@ -212,6 +212,78 @@ class DeterministicSimulatorTests(unittest.TestCase):
         self.assertTrue(result.frozen_behavior_transition_log)
         self.assertTrue(result.frozen_behavior_attempt_log)
 
+    def test_sortedness_threshold_can_stop_before_exact_sort(self) -> None:
+        result = simulate(
+            SimulatorConfig(
+                values=(2, 1, 3),
+                algorithm="bubble",
+                activation_seed=4601,
+                policy_seed=5601,
+                stop_when_sorted=False,
+                stop_sortedness_threshold=60.0,
+                max_events=100,
+            )
+        )
+        self.assertEqual(result.stop_reason, "sortedness_threshold_reached")
+        self.assertEqual(result.event_count, 0)
+        self.assertEqual(result_summary(result)["stop_sortedness_threshold"], 60.0)
+
+    def test_convergence_criteria_stop_with_distinct_reasons(self) -> None:
+        cases = [
+            ("no_state_change", "no_state_change_window"),
+            ("no_swap", "no_swap_window"),
+            ("sortedness_plateau", "sortedness_plateau_window"),
+        ]
+        for criterion, reason in cases:
+            with self.subTest(criterion=criterion):
+                result = simulate(
+                    SimulatorConfig(
+                        values=(1, 2, 3),
+                        algorithm="bubble",
+                        activation_seed=4701,
+                        policy_seed=5701,
+                        stop_when_sorted=False,
+                        convergence_criterion=criterion,
+                        stall_events=4,
+                        max_events=100,
+                    )
+                )
+                self.assertEqual(result.stop_reason, reason)
+                self.assertEqual(result.event_count, 4)
+
+    def test_convergence_none_runs_until_event_cap_when_sorted_stop_disabled(self) -> None:
+        result = simulate(
+            SimulatorConfig(
+                values=(1, 2, 3),
+                algorithm="bubble",
+                activation_seed=4801,
+                policy_seed=5801,
+                stop_when_sorted=False,
+                convergence_criterion="none",
+                max_events=5,
+            )
+        )
+        self.assertEqual(result.stop_reason, "max_events_exceeded")
+        self.assertTrue(result.max_guard_hit)
+        self.assertEqual(result.event_count, 5)
+
+    def test_max_successful_swap_cap_is_encoded_and_reported(self) -> None:
+        result = simulate(
+            SimulatorConfig(
+                values=(3, 2, 1),
+                algorithm="bubble",
+                activation_seed=4901,
+                policy_seed=5901,
+                max_successful_swaps=1,
+                max_events=10_000,
+                stop_when_sorted=False,
+            )
+        )
+        self.assertEqual(result.stop_reason, "max_successful_swaps_exceeded")
+        self.assertTrue(result.max_guard_hit)
+        self.assertGreaterEqual(result.swap_count, 1)
+        self.assertEqual(result_summary(result)["max_successful_swaps"], 1)
+
     def test_trace_hash_changes_when_activation_seed_changes(self) -> None:
         base = SimulatorConfig(values=(4, 1, 3, 2), algorithm="bubble", activation_seed=4501, policy_seed=5501)
         changed = SimulatorConfig(values=(4, 1, 3, 2), algorithm="bubble", activation_seed=4502, policy_seed=5501)

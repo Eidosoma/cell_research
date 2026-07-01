@@ -39,6 +39,13 @@ SUPPORTED_ACTIVATION_DISTRIBUTIONS = (
     "left_to_right_active",
     "right_to_left_active",
 )
+SUPPORTED_CONVERGENCE_CRITERIA = (
+    "no_legal_action",
+    "no_state_change",
+    "no_swap",
+    "sortedness_plateau",
+    "none",
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +67,8 @@ class SimulatorConfig:
     max_successful_swaps: int | None = 50_000
     stall_events: int = 1_000
     stop_when_sorted: bool = True
+    stop_sortedness_threshold: float | None = None
+    convergence_criterion: str = "no_legal_action"
     sort_direction: str = "increasing"
     repo_dir: Path | None = None
 
@@ -251,6 +260,10 @@ def _validate_config(config: SimulatorConfig) -> None:
         raise ValueError("frozen_behavior is only supported with dynamic frozen_semantics.")
     if config.activation_distribution not in SUPPORTED_ACTIVATION_DISTRIBUTIONS:
         raise ValueError(f"Unsupported activation_distribution: {config.activation_distribution}")
+    if config.convergence_criterion not in SUPPORTED_CONVERGENCE_CRITERIA:
+        raise ValueError(f"Unsupported convergence_criterion: {config.convergence_criterion}")
+    if config.stop_sortedness_threshold is not None and not 0.0 <= float(config.stop_sortedness_threshold) <= 100.0:
+        raise ValueError("stop_sortedness_threshold must be in [0, 100].")
     if config.max_events <= 0:
         raise ValueError("max_events must be positive.")
     if config.stall_events <= 0:
@@ -898,8 +911,12 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
         if frozen_behavior_controller is not None:
             frozen_behavior_controller.before_event(event_count + 1, cells)
         current_values = cell_values(cells)
+        current_sortedness = sortedness_percent(current_values, config.sort_direction)
         if config.stop_when_sorted and is_sorted(current_values, config.sort_direction):
             stop_reason = "sorted"
+            break
+        if config.stop_sortedness_threshold is not None and current_sortedness >= float(config.stop_sortedness_threshold):
+            stop_reason = "sortedness_threshold_reached"
             break
         if config.max_successful_swaps is not None and probe.swap_count >= config.max_successful_swaps:
             stop_reason = "max_successful_swaps_exceeded"
@@ -927,7 +944,7 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
         state_changed = after_signature != before_signature
         made_progress = after_swap_count != before_swap_count or state_changed
         legal_action_exists = True
-        if not made_progress:
+        if config.convergence_criterion == "no_legal_action" and not made_progress:
             legal_signature: tuple[Any, ...] = after_signature
             if frozen_behavior_controller is not None:
                 legal_signature = (*after_signature, ("frozen_behavior", frozen_behavior_controller.state_signature()))
@@ -943,7 +960,7 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
                 )
                 cached_legal_signature = legal_signature
                 cached_legal_action_exists = legal_action_exists
-        else:
+        elif made_progress:
             cached_legal_signature = None
             cached_legal_action_exists = None
         activation_log.append(
@@ -963,10 +980,28 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
             }
         )
         event_count = event_step
-        if not made_progress and not legal_action_exists:
+        convergence_reason: str | None = None
+        if config.convergence_criterion == "no_legal_action":
+            if not made_progress and not legal_action_exists:
+                convergence_reason = "no_legal_action_window"
+        elif config.convergence_criterion == "no_state_change":
+            if not made_progress:
+                convergence_reason = "no_state_change_window"
+        elif config.convergence_criterion == "no_swap":
+            if after_swap_count == before_swap_count:
+                convergence_reason = "no_swap_window"
+        elif config.convergence_criterion == "sortedness_plateau":
+            after_sortedness = sortedness_percent(cell_values(cells), config.sort_direction)
+            if abs(after_sortedness - current_sortedness) <= 1e-12:
+                convergence_reason = "sortedness_plateau_window"
+        elif config.convergence_criterion == "none":
+            convergence_reason = None
+        else:  # pragma: no cover - guarded by config validation
+            raise ValueError(f"Unsupported convergence_criterion: {config.convergence_criterion}")
+        if convergence_reason is not None:
             no_progress_events += 1
             if no_progress_events >= config.stall_events:
-                stop_reason = "no_legal_action_window"
+                stop_reason = convergence_reason
                 break
         else:
             no_progress_events = 0
@@ -977,6 +1012,13 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
     final_labels = cell_labels(cells)
     if config.stop_when_sorted and is_sorted(final_values, config.sort_direction):
         stop_reason = "sorted"
+        max_guard_hit = False
+    elif (
+        config.stop_sortedness_threshold is not None
+        and stop_reason == "max_events_exceeded"
+        and sortedness_percent(final_values, config.sort_direction) >= float(config.stop_sortedness_threshold)
+    ):
+        stop_reason = "sortedness_threshold_reached"
         max_guard_hit = False
     records = _records_from_probe(
         config,
@@ -1018,6 +1060,16 @@ def result_summary(result: SimulatorResult) -> dict[str, Any]:
         "activation_seed": int(result.config.activation_seed),
         "policy_seed": int(result.config.policy_seed if result.config.policy_seed is not None else result.config.activation_seed),
         "activation_distribution": result.config.activation_distribution,
+        "max_events": int(result.config.max_events),
+        "max_successful_swaps": None
+        if result.config.max_successful_swaps is None
+        else int(result.config.max_successful_swaps),
+        "stall_events": int(result.config.stall_events),
+        "stop_when_sorted": bool(result.config.stop_when_sorted),
+        "stop_sortedness_threshold": None
+        if result.config.stop_sortedness_threshold is None
+        else float(result.config.stop_sortedness_threshold),
+        "convergence_criterion": result.config.convergence_criterion,
         "frozen_semantics": result.config.frozen_semantics,
         "frozen_behavior": dict(result.config.frozen_behavior) if result.config.frozen_behavior is not None else None,
         "frozen_indices": list(result.config.frozen_indices),
@@ -1064,6 +1116,16 @@ def trace_rows(result: SimulatorResult, metadata: Mapping[str, Any] | None = Non
             "initial_array_seed": None,
             "scheduler_seed": int(result.config.activation_seed),
             "policy_seed": int(result.config.policy_seed if result.config.policy_seed is not None else result.config.activation_seed),
+            "max_events": int(result.config.max_events),
+            "max_successful_swaps": None
+            if result.config.max_successful_swaps is None
+            else int(result.config.max_successful_swaps),
+            "stall_events": int(result.config.stall_events),
+            "stop_when_sorted": bool(result.config.stop_when_sorted),
+            "stop_sortedness_threshold": None
+            if result.config.stop_sortedness_threshold is None
+            else float(result.config.stop_sortedness_threshold),
+            "convergence_criterion": result.config.convergence_criterion,
             "frozen_semantics": result.config.frozen_semantics,
             "frozen_behavior_json": json.dumps(result.config.frozen_behavior, sort_keys=True, separators=(",", ":"), default=str)
             if result.config.frozen_behavior is not None
