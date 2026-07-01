@@ -601,12 +601,6 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
         if not active_positions:
             stop_reason = "no_active_cells"
             break
-        legal_action_exists = has_public_legal_action(
-            cells,
-            cell_status,
-            config.label_to_behavior,
-            config.frozen_semantics,
-        )
         position, cursor = _choose_active_position(
             active_positions,
             config.activation_distribution,
@@ -623,6 +617,15 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
         after_signature = cell_state_signature(cells)
         after_swap_count = int(probe.swap_count)
         state_changed = after_signature != before_signature
+        made_progress = after_swap_count != before_swap_count or state_changed
+        legal_action_exists = True
+        if not made_progress:
+            legal_action_exists = has_public_legal_action(
+                cells,
+                cell_status,
+                config.label_to_behavior,
+                config.frozen_semantics,
+            )
         activation_log.append(
             {
                 "event_step": event_step,
@@ -640,7 +643,6 @@ def simulate(config: SimulatorConfig) -> SimulatorResult:
             }
         )
         event_count = event_step
-        made_progress = after_swap_count != before_swap_count or state_changed
         if not made_progress and not legal_action_exists:
             no_progress_events += 1
             if no_progress_events >= config.stall_events:
