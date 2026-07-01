@@ -369,6 +369,29 @@ def _target_is_movable(target: Any, semantics: str, cell_status: Any) -> bool:
     return target.status == cell_status.ACTIVE or (semantics == "passive" and target.status == cell_status.FREEZE)
 
 
+def _insertion_enable_flags(cells: Sequence[Any], cell_status: Any, reverse: bool) -> tuple[bool, ...]:
+    """Vectorized equivalent of public InsertionSortCell.is_enable_to_move()."""
+
+    flags: list[bool] = []
+    enabled = True
+    prev = 100000 if reverse else -1
+    for cell in cells:
+        flags.append(enabled)
+        if cell.status == cell_status.FREEZE:
+            # The public method resets to -1 even for reverse-direction cells.
+            prev = -1
+            enabled = True
+            continue
+        if reverse:
+            if cell.value > prev:
+                enabled = False
+        else:
+            if cell.value < prev:
+                enabled = False
+        prev = cell.value
+    return tuple(flags)
+
+
 def has_public_legal_action(
     cells: Sequence[Any],
     cell_status: Any,
@@ -378,6 +401,7 @@ def has_public_legal_action(
     """Return whether some active cell could swap or update local target state."""
 
     behavior_map = label_to_behavior or DEFAULT_LABEL_TO_BEHAVIOR
+    insertion_enable_cache: dict[bool, tuple[bool, ...]] = {}
     for cell in cells:
         if cell.status != cell_status.ACTIVE:
             continue
@@ -400,7 +424,9 @@ def has_public_legal_action(
                 continue
             if not _target_is_movable(cells[left_idx], frozen_semantics, cell_status):
                 continue
-            if not cell.is_enable_to_move():
+            if reverse not in insertion_enable_cache:
+                insertion_enable_cache[reverse] = _insertion_enable_flags(cells, cell_status, reverse)
+            if not insertion_enable_cache[reverse][current_idx]:
                 continue
             if (reverse and cell.value > cells[left_idx].value) or ((not reverse) and cell.value < cells[left_idx].value):
                 return True
@@ -733,4 +759,3 @@ def trace_rows(result: SimulatorResult, metadata: Mapping[str, Any] | None = Non
         }
         rows.append(row)
     return rows
-

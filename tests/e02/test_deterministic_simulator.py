@@ -5,8 +5,11 @@ from __future__ import annotations
 import unittest
 
 from src.e02.deterministic_simulator import (
+    EventTracingStatusProbe,
     SimulatorConfig,
+    _build_cells,
     is_sorted,
+    has_public_legal_action,
     result_summary,
     simulate,
     stable_json_sha256,
@@ -14,6 +17,75 @@ from src.e02.deterministic_simulator import (
 
 
 class DeterministicSimulatorTests(unittest.TestCase):
+    def slow_public_legal_action(self, config: SimulatorConfig) -> bool:
+        probe = EventTracingStatusProbe()
+        cells, cell_status = _build_cells(config, probe)
+        behavior_map = config.label_to_behavior
+        for cell in cells:
+            if cell.status != cell_status.ACTIVE:
+                continue
+            label = str(cell.label)
+            behavior = behavior_map.get(label, label if label in {"bubble", "insertion", "selection"} else str(cell.cell_type).lower())
+            current_idx = int(cell.current_position[0])
+            reverse = bool(cell.reverse_direction)
+            if behavior == "bubble":
+                left_idx = current_idx - 1
+                right_idx = current_idx + 1
+                if left_idx >= 0 and (cells[left_idx].status == cell_status.ACTIVE or (config.frozen_semantics == "passive" and cells[left_idx].status == cell_status.FREEZE)):
+                    if (reverse and cell.value > cells[left_idx].value) or ((not reverse) and cell.value < cells[left_idx].value):
+                        return True
+                if right_idx < len(cells) and (cells[right_idx].status == cell_status.ACTIVE or (config.frozen_semantics == "passive" and cells[right_idx].status == cell_status.FREEZE)):
+                    if (reverse and cell.value < cells[right_idx].value) or ((not reverse) and cell.value > cells[right_idx].value):
+                        return True
+            elif behavior == "insertion":
+                left_idx = current_idx - 1
+                if left_idx < 0:
+                    continue
+                if not (cells[left_idx].status == cell_status.ACTIVE or (config.frozen_semantics == "passive" and cells[left_idx].status == cell_status.FREEZE)):
+                    continue
+                if not cell.is_enable_to_move():
+                    continue
+                if (reverse and cell.value > cells[left_idx].value) or ((not reverse) and cell.value < cells[left_idx].value):
+                    return True
+            elif behavior == "selection":
+                if cell.current_position == cell.ideal_position:
+                    continue
+                target_idx = int(cell.ideal_position[0])
+                if 0 <= target_idx < len(cells) and (cells[target_idx].status == cell_status.ACTIVE or (config.frozen_semantics == "passive" and cells[target_idx].status == cell_status.FREEZE)):
+                    return True
+            else:
+                raise ValueError(behavior)
+        return False
+
+    def test_fast_legal_action_scan_matches_public_insertion_scan(self) -> None:
+        configs = [
+            SimulatorConfig(
+                values=(6, 4, 5, 1, 3, 2),
+                algorithm="insertion",
+                frozen_indices=(2,),
+                frozen_semantics="passive",
+            ),
+            SimulatorConfig(
+                values=(6, 4, 5, 1, 3, 2),
+                algorithm="insertion",
+                frozen_indices=(2,),
+                frozen_semantics="stuck",
+            ),
+            SimulatorConfig(
+                values=(1, 3, 2, 5, 4, 6),
+                algotypes=("bubble", "insertion", "selection", "insertion", "bubble", "insertion"),
+                reverse_directions=(False, True, False, False, False, True),
+                frozen_indices=(3,),
+                frozen_semantics="passive",
+            ),
+        ]
+        for config in configs:
+            with self.subTest(config=config):
+                probe = EventTracingStatusProbe()
+                cells, cell_status = _build_cells(config, probe)
+                fast = has_public_legal_action(cells, cell_status, config.label_to_behavior, config.frozen_semantics)
+                self.assertEqual(fast, self.slow_public_legal_action(config))
+
     def test_fixed_seed_repeats_identical_trace_and_activation_log(self) -> None:
         config = SimulatorConfig(
             values=(4, 1, 3, 2),
@@ -90,4 +162,3 @@ class DeterministicSimulatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
