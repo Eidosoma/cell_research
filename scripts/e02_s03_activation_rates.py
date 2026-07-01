@@ -707,6 +707,25 @@ def build_report(
 ) -> str:
     outcome = outcome_from_classification(classification)
     sensitivity_counts = classification["classification"].value_counts().to_dict() if len(classification) else {}
+    efficiency_large = classification[
+        (classification["claim_family"] == "efficiency")
+        & (classification["classification"] == "activation_rate_sensitive_large")
+    ]
+    efficiency_moderate = classification[
+        (classification["claim_family"] == "efficiency")
+        & (classification["classification"] == "activation_rate_sensitive_moderate")
+    ]
+    aggregation_rows = classification[classification["claim_family"] == "aggregation"]
+    max_aggregation_spread = (
+        float(pd.to_numeric(aggregation_rows["absolute_spread"], errors="coerce").max()) if len(aggregation_rows) else np.nan
+    )
+    same_code_aggregation = classification[
+        (classification["algotype_mix"] == "same_algorithm_bubble_label_control")
+        & (classification["claim_family"] == "aggregation")
+    ]
+    same_code_aggregation_spread = (
+        float(same_code_aggregation["absolute_spread"].iloc[0]) if len(same_code_aggregation) else np.nan
+    )
     validation_result = (
         f"passed: {validation['observedRows']}/{validation['expectedRows']} activation-rate rows, "
         f"configured activation shares matched={validation['activationRateValidationPassedForAllRows']}, "
@@ -738,10 +757,16 @@ def build_report(
         ["condition_id", "algotype_mix", "claim_family", "metric", "absolute_spread", "relative_spread", "classification"]
     ]
     lay_summary = (
-        "Deliberately giving one Algotype more activation opportunities changed efficiency and/or Aggregation metrics in this bounded "
-        "matrix, so activation tempo is a real control variable that downstream null tests must account for."
+        "Deliberately giving one Algotype more activation opportunities substantially changed efficiency in some mixed-policy arrays, "
+        "while Aggregation changes stayed below the S03 sensitivity threshold, so activation tempo is a real efficiency control but not a sufficient Aggregation explanation here."
         if outcome == "Supportive"
         else "Within this bounded matrix, deliberately unequal activation opportunities did not materially change the tested efficiency or Aggregation metrics."
+    )
+    anchor_result = (
+        f"Large efficiency sensitivity appeared in {len(efficiency_large)} condition(s), moderate efficiency sensitivity in "
+        f"{len(efficiency_moderate)} condition(s), and the largest peak-Aggregation spread was "
+        f"{max_aggregation_spread:.3g} percentage points. The same-code Bubble label control had peak-Aggregation spread "
+        f"{same_code_aggregation_spread:.3g} percentage points, below the S03 moderate threshold."
     )
     return f"""# E02 S03 Activation-Rate Artifact Test
 
@@ -801,6 +826,8 @@ The public Bubble, Insertion, and Selection cell classes and their public `move(
 ## Results
 
 Sensitivity classification counts: `{json.dumps(sensitivity_counts, sort_keys=True)}`.
+
+Anchor result: {anchor_result}
 
 ### Activation-Rate Summary
 
