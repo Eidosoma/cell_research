@@ -233,13 +233,8 @@ def condition_seed_component(condition_id: str) -> int:
 
 def activation_seed(base_seed: int, condition_id: str, distribution_name: str, repeat_idx: int) -> int:
     condition_num = condition_seed_component(condition_id)
-    return (
-        base_seed * 1_000_000
-        + 1_100_000
-        + condition_num * 10_000
-        + INPUT_DISTRIBUTION_INDEX[distribution_name] * 100
-        + repeat_idx
-    )
+    _ = distribution_name
+    return base_seed * 1_000_000 + 900_000 + condition_num * 1_000 + repeat_idx
 
 
 def gini(values: Sequence[int]) -> float:
@@ -950,6 +945,8 @@ def validate_outputs(
     observed_keys = set(zip(result_df["condition_id"], result_df["input_distribution"], result_df["repeat_index"]))
     expected_distributions = sorted({task.input_distribution for task in tasks})
     observed_distributions = sorted(result_df["input_distribution"].unique())
+    duplicate_required = "duplicate_heavy" in expected_distributions
+    heavy_tail_required = "heavy_tailed" in expected_distributions
     duplicate_rows = result_df[result_df["input_distribution"] == "duplicate_heavy"]
     heavy_rows = result_df[result_df["input_distribution"] == "heavy_tailed"]
     alt_metric_columns = [f"{metric}_final_progress_percent" for metric in ALT_PROGRESS_METRICS]
@@ -962,11 +959,11 @@ def validate_outputs(
         and bool(sanity["duplicateHandlingValidationPassed"])
         and bool(reproducibility["inputSeedRegenerationPassed"])
         and bool(reproducibility["simulationDeterminismSamplePassed"])
-        and not duplicate_rows.empty
-        and bool(duplicate_rows["has_duplicate_values"].all())
-        and bool(duplicate_rows[alt_metric_columns].notna().all().all())
-        and not heavy_rows.empty
-        and bool((heavy_rows["input_gini"] >= 0.6).all())
+        and (not duplicate_required or not duplicate_rows.empty)
+        and (not duplicate_required or bool(duplicate_rows["has_duplicate_values"].all()))
+        and (not duplicate_required or bool(duplicate_rows[alt_metric_columns].notna().all().all()))
+        and (not heavy_tail_required or not heavy_rows.empty)
+        and (not heavy_tail_required or bool((heavy_rows["input_gini"] >= 0.6).all()))
         and classification_classes <= {
             "baseline_random_permutation",
             "input_stable",
@@ -1007,11 +1004,11 @@ def validate_outputs(
         "runInputConstraintsPassed": bool(result_df["input_constraints_passed"].all()),
         "metricSanityChecksPassed": bool(sanity["metricSanityChecksPassed"]),
         "duplicateHandlingValidationPassed": bool(sanity["duplicateHandlingValidationPassed"]),
-        "duplicateDistributionRowsPresent": bool(not duplicate_rows.empty),
-        "duplicateRowsHaveDuplicateValues": bool(not duplicate_rows.empty and duplicate_rows["has_duplicate_values"].all()),
-        "duplicateAltMetricColumnsComplete": bool(not duplicate_rows.empty and duplicate_rows[alt_metric_columns].notna().all().all()),
-        "heavyTailRowsPresent": bool(not heavy_rows.empty),
-        "heavyTailGiniConstraintPassed": bool(not heavy_rows.empty and (heavy_rows["input_gini"] >= 0.6).all()),
+        "duplicateDistributionRowsPresent": bool(not duplicate_required or not duplicate_rows.empty),
+        "duplicateRowsHaveDuplicateValues": bool(not duplicate_required or (not duplicate_rows.empty and duplicate_rows["has_duplicate_values"].all())),
+        "duplicateAltMetricColumnsComplete": bool(not duplicate_required or (not duplicate_rows.empty and duplicate_rows[alt_metric_columns].notna().all().all())),
+        "heavyTailRowsPresent": bool(not heavy_tail_required or not heavy_rows.empty),
+        "heavyTailGiniConstraintPassed": bool(not heavy_tail_required or (not heavy_rows.empty and (heavy_rows["input_gini"] >= 0.6).all())),
         "classificationClasses": sorted(classification_classes),
         "inputGeneralizationClassCounts": classification_df["input_generalization_class"].value_counts().sort_index().to_dict(),
         "figureNonempty": bool(figure_path.exists() and figure_path.stat().st_size > 0),
@@ -1123,7 +1120,7 @@ No external datasets were required and no new dependencies were installed.
 
 ## Methods
 
-The S10 matrix holds the public cell-policy semantics fixed and varies only initial values. For each selected E01 cell-view condition and repeat, the script reconstructed Algotype labels and Frozen Cell metadata from the E01 config, generated one of seven value distributions, and ran the S01 deterministic single-event simulator with public `move()` methods.
+The S10 matrix holds the public cell-policy semantics fixed and varies only initial values. For each selected E01 cell-view condition and repeat, the script reconstructed Algotype labels and Frozen Cell metadata from the E01 config, generated one of seven value distributions, and ran the S01 deterministic single-event simulator with public `move()` methods. Activation seeds reuse the S09 condition/repeat schedule and are matched across input distributions so the distribution contrast is not confounded with a new scheduler draw.
 
 The seven input families were:
 
