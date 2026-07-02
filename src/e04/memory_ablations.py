@@ -640,6 +640,8 @@ def simulate_memory_ablation(
     config: S09EvaluationConfig,
     genome: EvolutionGenome,
     spec: MemoryAblationSpec,
+    *,
+    schedule_override: Sequence[PerturbationSpec] | None = None,
 ) -> dict[str, Any]:
     """Run one S08 selected policy under one S09 memory-capacity ablation."""
 
@@ -673,7 +675,7 @@ def simulate_memory_ablation(
     reliability = FatigueDamageController(config.to_fatigue_config())
     reliability.initialize(cells)
     policy = S08LocalEvolutionPolicy(genome)
-    schedule = build_homeostatic_schedule(config.to_homeostatic_config())
+    schedule = tuple(schedule_override) if schedule_override is not None else build_homeostatic_schedule(config.to_homeostatic_config())
     schedule_by_step: dict[int, list[PerturbationSpec]] = {}
     for item in schedule:
         schedule_by_step.setdefault(int(item.event_step), []).append(item)
