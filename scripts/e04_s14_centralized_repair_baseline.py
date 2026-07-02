@@ -167,7 +167,7 @@ def write_report(
 - Research step ID: S14.
 - Completion status: complete.
 - Outcome classification: {outcome}.
-- Artifacts written: `{RESULT_PATH}`, `{PAIRED_PATH}`, `{SUMMARY_PATH}`, `{FIGURE_PATH}`, `{VALIDATION_PATH}`, `{MANIFEST_PATH}`, `{STATUS_PATH}`.
+- Artifacts written: `{REPORT_PATH}`, `{RESULT_PATH}`, `{PAIRED_PATH}`, `{SUMMARY_PATH}`, `{FIGURE_PATH}`, `{VALIDATION_PATH}`, `{MANIFEST_PATH}`, `{STATUS_PATH}`.
 - Validation result: {"pass" if checks.get("all_passed") else "fail"}; centralized rows are explicitly global-access baselines and ineligible for local-only claims.
 - Main result: centralized-global rows and best local S13/S09-supported neighbor-memory rows were matched by frozen S13 config, seed set, and schedule hash for {len(paired)} paired comparisons.
 - Caveats or blockers: centralized rows intentionally access forbidden target/global fields and therefore must not be included in local-only evidence claims.
