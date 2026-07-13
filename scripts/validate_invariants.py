@@ -677,6 +677,7 @@ def source_manifest() -> dict[str, Any]:
     paths = [
         ROOT / "reference_simulator" / "__init__.py",
         ROOT / "reference_simulator" / "invariants.py",
+        ROOT / "shared_events" / "__init__.py",
         ROOT / "shared_events" / "validation.py",
         ROOT / "shared_events" / "invariants.py",
         ROOT / "scripts" / "validate_invariants.py",
