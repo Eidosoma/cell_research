@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "e01.s10.preregistration.v1",
+  "researchStepId": "S10",
+  "frozenQuestion": "Do the Figure 4 efficiency rankings reproduce under successful swaps alone and the publication swap-plus-comparison projection, and how do they change under the complete clean-room reference operation ledger?",
+  "freezeBoundary": {
+    "frozenBeforeS10ConfirmatoryLedgerAnalysis": true,
+    "qualification": "S09 had already disclosed endpoint, trajectory, and accepted-swap results, including the Selection swap contrast. The S10 cost projections, publication-ratio equivalence margins, full-ledger rankings, and comparison/read outcomes were frozen before those S10 outcomes were summarized.",
+    "sourcePopulation": "Reuse every declared no-fault paper_scale and confirmatory_holdout run from S09; launch no replacement simulations and make no post hoc exclusions."
+  },
+  "analysisPopulations": {
+    "paperScale": {
+      "split": "paper_scale",
+      "replicatesPerCondition": 100,
+      "purpose": "Figure 4 reconstruction and bounded historical z-formula reconstructions"
+    },
+    "confirmatory": {
+      "split": "confirmatory_holdout",
+      "pairsPerPolicy": 1000,
+      "pairingUnit": "pairing_block_id within policy",
+      "purpose": "Primary paired effects, equivalence tests, and ranking sensitivity"
+    },
+    "protectedSplitRule": "Only paper_scale and confirmatory_holdout rows already admitted by the S09 preregistration may be analyzed; exploratory and policy_search_holdout remain forbidden."
+  },
+  "costConventions": {
+    "swapOnly": "acceptedSwaps for R; successful recorded swaps for C",
+    "publicationSwapPlusComparisonR": "acceptedSwaps + valueComparisons under the S03 logical comparison convention",
+    "publicationSourceProjectionC": "successful recorded swaps + frozen StatusProbe compare_and_swap_count; retain as source-specific and non-parity because the probe is not a logical comparison count",
+    "targetCalculationsR": "Exactly one target-selection calculation per no-fault proposal/activation, including boundary and terminal-policy NoOp proposals; therefore targetCalculations equals proposals in the S10 no-fault population. This is an S10 derived operation convention, not a new S03 state counter.",
+    "rejectedActionsR": "rejections + conflictLosses; policy NoOps are reported separately and are not reclassified as rejections",
+    "unitWeightFullLedgerR": "activations + observationReads + valueComparisons + targetCalculations + proposals + noOps + rejections + memoryUpdates + acceptedSwaps + displacedCells + conflictLosses. This is a transparent sensitivity projection of overlapping unit operations, not a physical or privileged cost.",
+    "wallTime": "Report elapsed seconds separately by backend, split, condition, and architecture; never add wall time to an algorithmic cost or use it for cross-backend inference."
+  },
+  "pairedEffects": {
+    "orientation": "cell_view minus traditional for differences and cell_view divided by traditional for ratios",
+    "metrics": [
+      "swap_only_cost",
+      "publication_swap_plus_comparison_cost",
+      "observation_reads",
+      "value_comparisons",
+      "target_calculations",
+      "proposals",
+      "rejected_actions",
+      "activations",
+      "accepted_swaps",
+      "displaced_cells",
+      "unit_weight_full_ledger"
+    ],
+    "effectSizes": [
+      "paired mean difference",
+      "paired median difference",
+      "paired standardized mean difference dz when the paired SD is nonzero",
+      "ratio of condition means"
+    ],
+    "uncertainty": "10000 deterministic paired bootstrap resamples; report ordinary 95 percent and six-claim Bonferroni-adjusted 99.1667 percent intervals for the six Figure 4 cost-definition claims."
+  },
+  "equivalenceTests": {
+    "method": "Bootstrap TOST by confidence-interval inclusion on the ratio of paired condition means. Report nominal 90 percent and six-claim Bonferroni-adjusted 98.3333 percent intervals; confirm equivalence only when the adjusted interval is wholly inside the frozen bounds.",
+    "claims": {
+      "Bubble.swap_only_cost": {"paperTargetRatio": 1.0, "relativeMargin": 0.01},
+      "Insertion.swap_only_cost": {"paperTargetRatio": 1.0, "relativeMargin": 0.01},
+      "Selection.swap_only_cost": {"paperTargetRatio": 11.0, "relativeMargin": 0.10},
+      "Bubble.publication_swap_plus_comparison_cost": {"paperTargetRatio": 0.6666666666666666, "relativeMargin": 0.10},
+      "Insertion.publication_swap_plus_comparison_cost": {"paperTargetRatio": 0.49261083743842365, "relativeMargin": 0.10},
+      "Selection.publication_swap_plus_comparison_cost": {"paperTargetRatio": 1.17, "relativeMargin": 0.10}
+    },
+    "bounds": "Multiplicative bounds are target * (1 - relativeMargin) through target * (1 + relativeMargin)."
+  },
+  "historicalZReconstruction": {
+    "status": "historical sensitivity analysis only; never confirmatory inference",
+    "paperTargets": {
+      "Bubble.swap_only_cost": 0.73,
+      "Insertion.swap_only_cost": 1.26,
+      "Selection.swap_only_cost": 120.43,
+      "Bubble.publication_swap_plus_comparison_cost": -68.96,
+      "Insertion.publication_swap_plus_comparison_cost": -71.19,
+      "Selection.publication_swap_plus_comparison_cost": 106.55
+    },
+    "unpairedPopulationFormula": "(mean_cell - mean_traditional) / sqrt(population_variance_cell / N + population_variance_traditional / N)",
+    "pairedCandidateFormula": "mean(cell - traditional) / (sample_sd(cell - traditional) / sqrt(N))",
+    "interpretation": "Because the paper does not specify pairing, variance estimator, sidedness, multiplicity, or raw inputs, neither candidate is represented as the paper's recovered test. Undefined zero-standard-error cases remain undefined."
+  },
+  "claimClassification": {
+    "supportive": "The confirmatory reference effect has the paper-reported direction and the adjusted equivalence interval lies inside the frozen paper-target bounds.",
+    "approximatelyReproduced": "The direction is reproduced but adjusted equivalence to the paper target fails.",
+    "notReproduced": "The adjusted paired interval excludes the paper-reported direction or the ratio is on the opposite side of one.",
+    "notTestableHistorically": "Required historical traditional arrays or operation fields are unavailable."
+  },
+  "validation": [
+    "hand-counted proposal and ledger toys",
+    "R ledger identities and C source-counter identities",
+    "complete paper and confirmatory pairing and run accounting",
+    "deterministic bootstrap and bootstrap-stability diagnostics",
+    "wall-clock separation from algorithmic costs",
+    "backend- and architecture-specific ranking tables",
+    "explicit null plus availability reason for every unavailable historical field"
+  ]
+}
