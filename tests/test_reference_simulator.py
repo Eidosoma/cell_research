@@ -122,6 +122,20 @@ class S03FixtureTests(unittest.TestCase):
 
 
 class DeterminismTests(unittest.TestCase):
+    def test_legacy_with_replacement_profile_preserves_requested_and_realized_counts(self):
+        scenario = Scenario.create(
+            (
+                Cell("a", 1, Policy.BUBBLE, fault=FaultMode.PASSIVE),
+                Cell("b", 2, Policy.BUBBLE),
+            ),
+            requested_fault_count=3,
+            fault_placement="legacy_with_replacement",
+            generation_key="legacy-placement-test",
+        )
+        self.assertEqual(scenario.requested_fault_count, 3)
+        self.assertEqual(scenario.realized_fault_count, 1)
+        self.assertEqual(Scenario.from_dict(scenario.to_dict()), scenario)
+
     def test_rng_known_vector(self):
         self.assertEqual(u64(7, "scenario-A", "actor_activation", 3, 0), 2584083456120664033)
 

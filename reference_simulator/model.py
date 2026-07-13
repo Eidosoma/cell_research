@@ -266,7 +266,11 @@ class Scenario:
             raise ValueError("reference fault placement must realize exactly the requested count")
         if self.fault_placement == "explicit" and self.requested_fault_count != realized:
             raise ValueError("explicit fault placement count must match scenario cells")
-        if self.fault_placement not in {"explicit", "reference_without_replacement"}:
+        if self.fault_placement == "legacy_with_replacement" and realized > self.requested_fault_count:
+            raise ValueError("legacy placement cannot realize more distinct faults than requested draws")
+        if self.fault_placement not in {
+            "explicit", "reference_without_replacement", "legacy_with_replacement"
+        }:
             raise ValueError("unsupported reference fault placement profile")
         if self.architecture == Architecture.TRADITIONAL:
             if self.traditional_policy is None or self.scheduler != "traditional_controller" or self.batch_width != 1:
