@@ -207,7 +207,7 @@ def main() -> int:
         "schemaVersion": "e01.s11.provenance.v1",
         "researchStepId": "S11",
         "generatedUtc": datetime.now(timezone.utc).isoformat(),
-        "repositoryHeadBeforeS11Commit": git("rev-parse", "HEAD"),
+        "repositoryHeadAtPackaging": git("rev-parse", "HEAD"),
         "repositoryBranch": git("branch", "--show-current"),
         "preregistrationSha256": preregistration_sha256(),
         "inputs": [file_record(path) for path in inputs if path.exists()],
