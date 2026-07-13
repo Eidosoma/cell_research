@@ -23,13 +23,18 @@ from analysis.no_fault_sorting import (  # noqa: E402
     run_reference_population,
     sha256_file,
     validate_artifacts,
+    write_artifact_manifest,
+    write_provenance,
 )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "command", choices=("reference", "historical", "replay", "variability", "analyze", "validate")
+        "command", choices=(
+            "reference", "historical", "replay", "variability", "analyze",
+            "validate", "provenance", "manifest",
+        )
     )
     parser.add_argument("--split", choices=("paper_scale", "confirmatory_holdout"))
     parser.add_argument("--cache", type=Path, default=Path("/cache/e01_s09"))
@@ -49,6 +54,14 @@ def main() -> int:
     if args.command == "validate":
         result = validate_artifacts(args.output)
         print(json.dumps({"command": "validate", "passed": result["passed"], "checks": result["checkCount"]}))
+        return 0
+    if args.command == "provenance":
+        result = write_provenance(args.output)
+        print(json.dumps({"command": "provenance", **result}))
+        return 0
+    if args.command == "manifest":
+        result = write_artifact_manifest(args.output)
+        print(json.dumps({"command": "manifest", "artifacts": result["artifactCount"]}))
         return 0
     if args.command in {"reference", "historical"}:
         if args.split is None:

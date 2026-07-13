@@ -16,6 +16,7 @@ from __future__ import annotations
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 import hashlib
+from importlib.metadata import version as package_version
 import json
 import math
 import os
@@ -1146,3 +1147,170 @@ def validate_artifacts(output: Path) -> dict[str, Any]:
     }
     _write_json(output / "validation_summary.json", result)
     return result
+
+
+def write_provenance(output: Path) -> dict[str, Any]:
+    """Write compact input, source, environment, and command provenance."""
+    input_paths = [
+        Path("/workspace/AGENTS.md"),
+        Path("/workspace/FULL_PLAN.md"),
+        Path("/workspace/RESEARCH_PLAN.md"),
+        Path("/workspace/DATASETS.md"),
+        Path("/workspace/DATASET_CATALOG.json"),
+        Path("/workspace/DATASET_AVAILABILITY.json"),
+        Path("/workspace/CAPABILITIES.md"),
+        Path("/workspace/CAPABILITY_AVAILABILITY.json"),
+        Path("/workspace/input-attachments/MANIFEST.json"),
+        Path("/workspace/input-attachments/21c2278b-9950-4e39-a2c8-df578a2508ec/_metadata/ATTACHMENT.md"),
+        Path("/workspace/input-attachments/21c2278b-9950-4e39-a2c8-df578a2508ec/pdf-markdown.md"),
+        Path("/workspace/input-attachments/21c2278b-9950-4e39-a2c8-df578a2508ec/figures/figure-03.png"),
+        Path("/artifacts/research_steps/S01/claim_registry.parquet"),
+        Path("/artifacts/research_steps/S03/transition_spec.md"),
+        Path("/artifacts/research_steps/S03/transition_contract.json"),
+        Path("/artifacts/research_steps/S04/patch_ledger.json"),
+        Path("/artifacts/research_steps/S04/scheduler_variability.json"),
+        Path("/artifacts/research_steps/S05/research_step_full_results.md"),
+        Path("/artifacts/research_steps/S06/event_schema.json"),
+        Path("/artifacts/research_steps/S06/field_availability_matrix.csv"),
+        Path("/artifacts/research_steps/S07/invariant_coverage_matrix.csv"),
+        S08_DIR / "paired_scenario_bank.parquet",
+        S08_DIR / "base_draw_bank.parquet",
+        S08_DIR / "condition_catalog.parquet",
+        S08_DIR / "holdout_integrity.json",
+        S08_DIR / "split_manifest.json",
+        PREREGISTRATION,
+        S02_MANIFEST,
+    ]
+    inputs = [
+        {
+            "path": str(path),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for path in input_paths
+        if path.exists()
+    ]
+    input_record = {
+        "schemaVersion": "e01.s09.input_provenance.v1",
+        "researchStepId": "S09",
+        "inputs": inputs,
+        "s08BankExpectedSha256": "7e4a11ede8ba7f24d3cfb90c6436758df692a76a2041105d60c80fc35eb970b0",
+        "s08BankObservedSha256": sha256_file(S08_DIR / "paired_scenario_bank.parquet"),
+        "historicalPublicCommit": "1fd2bd5921c1f6b423a71f691d5189106a8a1020",
+        "historicalPublicationSnapshotClaimed": False,
+    }
+    _write_json(output / "input_provenance.json", input_record)
+
+    source_files = [
+        REPOSITORY / path for path in (
+            "analysis/no_fault_sorting.py",
+            "analysis/s09_confirmatory_preregistration.json",
+            "reference_simulator/engine.py",
+            "reference_simulator/model.py",
+            "reference_simulator/policies.py",
+            "reference_simulator/rng.py",
+            "reference_simulator/scheduler.py",
+            "scripts/replicate_no_fault.py",
+            "scripts/s09_historical_worker.py",
+            "tests/test_no_fault_sorting.py",
+        )
+    ]
+    git_head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPOSITORY, text=True
+    ).strip()
+    git_tree = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^{tree}"], cwd=REPOSITORY, text=True
+    ).strip()
+    source_record = {
+        "schemaVersion": "e01.s09.source_provenance.v1",
+        "researchStepId": "S09",
+        "repository": "https://github.com/Eidosoma/cell_research",
+        "branch": "eidosoma/groups/28",
+        "commit": git_head,
+        "tree": git_tree,
+        "files": [
+            {
+                "path": str(path.relative_to(REPOSITORY)),
+                "bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+            for path in source_files
+        ],
+        "historicalSourceCopiedIntoArtifacts": False,
+    }
+    _write_json(output / "source_package_manifest.json", source_record)
+
+    environment = {
+        "schemaVersion": "e01.s09.environment.v1",
+        "researchStepId": "S09",
+        "python": sys.version,
+        "pythonExecutable": sys.executable,
+        "platform": sys.platform,
+        "cpuCountVisible": os.cpu_count(),
+        "maximumReplicateWorkers": 8,
+        "historicalWorkerProcesses": 8,
+        "historicalThreadsPerN100Run": 101,
+        "historicalPython": str(HISTORICAL_PYTHON),
+        "historicalAdapterSafetyTimeoutSeconds": 300,
+        "packages": {
+            name: package_version(name)
+            for name in ("numpy", "pandas", "pyarrow", "matplotlib", "pytest")
+        },
+        "threadEnvironment": {
+            key: os.environ.get(key)
+            for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS")
+        },
+        "dependencyAddition": "uv pip install --python /usr/local/bin/python pytest==8.4.2",
+    }
+    _write_json(output / "environment_provenance.json", environment)
+
+    commands = [
+        "python scripts/replicate_no_fault.py reference --split paper_scale --workers 8",
+        "python scripts/replicate_no_fault.py historical --split paper_scale --workers 8",
+        "python -m pytest -q tests/test_no_fault_sorting.py tests/test_reference_simulator.py tests/test_invariants.py",
+        "python scripts/replicate_no_fault.py reference --split confirmatory_holdout --workers 8 --preregistration-sha256 ee6f33766445a16b5e0640e08189dfa65de977c345f1befc6b74d9ff95c93fca",
+        "python scripts/replicate_no_fault.py historical --split confirmatory_holdout --workers 8 --preregistration-sha256 ee6f33766445a16b5e0640e08189dfa65de977c345f1befc6b74d9ff95c93fca",
+        "python scripts/replicate_no_fault.py replay --workers 8",
+        "python scripts/replicate_no_fault.py variability --workers 1",
+        "python scripts/replicate_no_fault.py analyze --workers 8",
+        "python scripts/replicate_no_fault.py validate",
+        "python -m pytest -q",
+    ]
+    (output / "execution_commands.log").write_text(
+        "\n".join(commands) + "\n", encoding="utf-8"
+    )
+    return {
+        "inputs": len(inputs),
+        "sourceFiles": len(source_files),
+        "commit": git_head,
+    }
+
+
+def write_artifact_manifest(output: Path) -> dict[str, Any]:
+    records = []
+    for path in sorted(output.iterdir()):
+        if not path.is_file() or path.name == "artifact_manifest.json":
+            continue
+        records.append(
+            {
+                "path": str(path),
+                "bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        )
+    stable = Path("/artifacts/results/replication_summary.parquet")
+    manifest = {
+        "schemaVersion": "e01.s09.artifact_manifest.v1",
+        "researchStepId": "S09",
+        "artifactCount": len(records),
+        "artifacts": records,
+        "stableOutputs": [
+            {
+                "path": str(stable),
+                "bytes": stable.stat().st_size,
+                "sha256": sha256_file(stable),
+            }
+        ],
+    }
+    _write_json(output / "artifact_manifest.json", manifest)
+    return manifest
