@@ -898,7 +898,8 @@ def source_manifest() -> dict[str, Any]:
         "researchStepId": "S10",
         "repository": "https://github.com/Eidosoma/cell_research",
         "branch": git_output("branch", "--show-current"),
-        "preS10Commit": git_output("rev-parse", "HEAD"),
+        "parentCommitBeforeS10": "d7c1d18b3f8d21096a6521d3163193b39272f357",
+        "repositoryCommitAtGeneration": git_output("rev-parse", "HEAD"),
         "files": [
             {"path": str(path.relative_to(REPOSITORY)), "sha256": sha256_file(path), "sizeBytes": path.stat().st_size}
             for path in paths
