@@ -44,7 +44,9 @@ class FreezeHistoricalArtifactTests(unittest.TestCase):
             self.assertEqual(len(imports), 1)
             self.assertEqual(len(raw), 2)
             self.assertEqual(summary["activeAllowPickleTrueLoads"], 1)
-            self.assertEqual(summary["absoluteAuthorPathReferenceLines"], 1)
+            self.assertEqual(summary["absoluteAuthorNpyPathReferenceLines"], 1)
+            self.assertEqual(summary["absoluteAuthorPathReferenceLinesAll"], 1)
+            self.assertEqual(scripts[0]["absoluteAuthorPathLines"], 1)
             self.assertEqual(scripts[0]["astParseResult"], "pass")
             self.assertTrue(scripts[0]["hasMainGuard"])
 

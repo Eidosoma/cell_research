@@ -362,6 +362,7 @@ def source_analysis(
     availability_cache: dict[tuple[str, str], tuple[bool | None, str]] = {}
     active_pickle_loads = 0
     absolute_author_path_lines = 0
+    absolute_author_path_lines_all = 0
     top_level_execution_files = 0
 
     python_paths = sorted(row["path"] for row in tree_rows if row["suffix"] == ".py")
@@ -369,6 +370,8 @@ def source_analysis(
         path = worktree / relative
         source = path.read_text(encoding="utf-8", errors="surrogateescape")
         lines = source.splitlines()
+        file_absolute_path_lines = sum(1 for line in lines if "/Users/" in line)
+        absolute_author_path_lines_all += file_absolute_path_lines
         try:
             parsed = ast.parse(source, filename=relative)
             parse_ok = True
@@ -508,6 +511,7 @@ def source_analysis(
                 "activeNpyLoads": active_loads,
                 "activeNpySaves": active_saves,
                 "npyReferenceLines": sum(1 for line in lines if ".npy" in line.lower()),
+                "absoluteAuthorPathLines": file_absolute_path_lines,
                 "hasMatplotlibOrPlotCalls": has_plot,
                 "hasSavefig": has_savefig,
                 "hasMainGuard": main_guard,
@@ -529,7 +533,8 @@ def source_analysis(
             {row["topLevelModule"] for row in import_rows if row["scope"] == "third_party"}
         ),
         "activeAllowPickleTrueLoads": active_pickle_loads,
-        "absoluteAuthorPathReferenceLines": absolute_author_path_lines,
+        "absoluteAuthorNpyPathReferenceLines": absolute_author_path_lines,
+        "absoluteAuthorPathReferenceLinesAll": absolute_author_path_lines_all,
         "filesWithTopLevelExecutableStatements": top_level_execution_files,
     }
     return import_rows, raw_rows, script_rows, summary
