@@ -1,0 +1,308 @@
+"""Atomic deterministic execution engine for the clean-room reference semantics."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+import hashlib
+from typing import Any, Literal, Mapping
+
+from .model import (
+    Architecture,
+    Direction,
+    FaultMode,
+    Policy,
+    Proposal,
+    ProposalKind,
+    RunResult,
+    RunState,
+    Scenario,
+    canonical_json_bytes,
+    state_hash,
+)
+from .policies import cell_view_proposal, has_admissible_change, traditional_proposal
+from .scheduler import resolve_conflicts, scheduled_actor, scheduled_priority, scheduled_side
+
+
+TRACE_SCHEMA = "E01.reference-event-pre-S06.v1"
+EMPTY_DIGEST = hashlib.sha256(b"E01/reference/trace/v1").hexdigest()
+
+
+def initial_state(scenario: Scenario) -> RunState:
+    return RunState(
+        occupancy=list(scenario.initial_occupancy),
+        selection_cursors=dict(scenario.initial_selection_cursors),
+    )
+
+
+def invariant_error(scenario: Scenario, state: RunState) -> str | None:
+    expected = {cell.cell_id for cell in scenario.cells}
+    if len(state.occupancy) != len(expected) or set(state.occupancy) != expected:
+        return "occupancy_not_bijection"
+    if state.activation_count < 0:
+        return "negative_activation_count"
+    for cell_id, cursor in state.selection_cursors.items():
+        cell = scenario.cell_map.get(cell_id)
+        if cell is None or cell.policy != Policy.SELECTION or not isinstance(cursor, int):
+            return "invalid_selection_cursor"
+    if any(value < 0 for value in state.stream_counters.values()):
+        return "negative_stream_counter"
+    if any(value < 0 for value in state.ledger.values()):
+        return "negative_ledger"
+    return None
+
+
+def is_complete(scenario: Scenario, state: RunState) -> bool:
+    cells = scenario.cell_map
+    directions = {cell.direction for cell in scenario.cells}
+    if len(directions) != 1:
+        return False
+    direction = next(iter(directions))
+    values = [cells[cell_id].value for cell_id in state.occupancy]
+    if direction == Direction.ASCENDING:
+        return all(left <= right for left, right in zip(values, values[1:]))
+    return all(left >= right for left, right in zip(values, values[1:]))
+
+
+def evaluate_terminal(scenario: Scenario, state: RunState) -> str | None:
+    """Apply S03 terminal precedence exactly."""
+    if invariant_error(scenario, state) is not None:
+        return "invariant_error"
+    if is_complete(scenario, state):
+        return "complete"
+    if not has_admissible_change(scenario, state):
+        return "quiescent"
+    if state.activation_count >= scenario.max_activations:
+        return "event_budget"
+    return None
+
+
+def _is_valid_swap(scenario: Scenario, state: RunState, proposal: Proposal) -> tuple[bool, str]:
+    if proposal.target_pos is None or not 0 <= proposal.target_pos < len(state.occupancy):
+        return False, "rejected_invalid_target"
+    if not 0 <= proposal.actor_pos < len(state.occupancy):
+        return False, "rejected_invalid_actor_position"
+    if state.occupancy[proposal.actor_pos] != proposal.actor_id:
+        return False, "rejected_stale_actor"
+    cells = scenario.cell_map
+    actor = cells[proposal.actor_id]
+    target = cells[state.occupancy[proposal.target_pos]]
+    if actor.fault == FaultMode.STUCK:
+        return False, "rejected_actor_stuck"
+    if target.fault == FaultMode.STUCK:
+        return False, "rejected_target_stuck"
+    return True, "valid"
+
+
+def _update_counter(state: RunState, stream: str, count: int = 1) -> None:
+    state.stream_counters[stream] = state.stream_counters.get(stream, 0) + count
+
+
+def _proposal_for_slot(
+    scenario: Scenario,
+    snapshot: RunState,
+    event_index: int,
+    ordinal: int,
+) -> Proposal:
+    draws: list[tuple[str, int, int, int]] = []
+    if scenario.architecture == Architecture.TRADITIONAL:
+        proposal = traditional_proposal(scenario, snapshot)
+        return replace(proposal, ordinal=ordinal)
+
+    actor_id, actor_draws, actor_consumed = scheduled_actor(scenario, event_index)
+    draws.extend(actor_draws)
+    _update_counter(snapshot, "actor_activation", actor_consumed)
+    actor = scenario.cell_map[actor_id]
+    side = None
+    if actor.policy == Policy.BUBBLE and actor.fault == FaultMode.NORMAL:
+        side, side_draw = scheduled_side(scenario, event_index)
+        draws.append(side_draw)
+        _update_counter(snapshot, "bubble_side")
+    proposal = cell_view_proposal(scenario, snapshot, actor_id, side=side)
+    priority = 0
+    if scenario.batch_width > 1:
+        priority, priority_draw = scheduled_priority(scenario, event_index)
+        draws.append(priority_draw)
+        _update_counter(snapshot, "conflict_priority")
+    return replace(
+        proposal,
+        ordinal=ordinal,
+        priority=priority,
+        random_draws=tuple(draws),
+    )
+
+
+def _event_actor_fields(scenario: Scenario, proposal: Proposal) -> tuple[str, str]:
+    cell = scenario.cell_map.get(proposal.actor_id)
+    if cell is None:
+        policy = scenario.traditional_policy.value if scenario.traditional_policy else "controller"
+        return f"Traditional:{policy}", "controller"
+    return cell.policy.value, cell.direction.value
+
+
+def execute_batch(
+    scenario: Scenario,
+    state: RunState,
+    *,
+    retain_events: bool,
+) -> tuple[list[dict[str, Any]], list[bytes]]:
+    """Generate from one snapshot, validate, resolve, and commit atomically."""
+    remaining = scenario.max_activations - state.activation_count
+    width = min(scenario.batch_width, max(remaining, 0))
+    if width == 0:
+        return [], []
+    snapshot = state.clone()
+    # Draw counters are part of state; generation updates the working counter
+    # copy, never transition-visible occupancy/cursors.
+    proposals: list[Proposal] = []
+    for ordinal in range(width):
+        event_index = state.activation_count + ordinal
+        proposals.append(_proposal_for_slot(scenario, snapshot, event_index, ordinal))
+
+    decisions: dict[int, str] = {}
+    valid_changes: list[Proposal] = []
+    for proposal in proposals:
+        if proposal.kind == ProposalKind.NO_OP:
+            decisions[proposal.ordinal] = "no_op"
+        elif proposal.kind == ProposalKind.SWAP:
+            valid, decision = _is_valid_swap(scenario, state, proposal)
+            decisions[proposal.ordinal] = decision
+            if valid:
+                valid_changes.append(proposal)
+        elif proposal.kind == ProposalKind.MEMORY_UPDATE:
+            if proposal.actor_id not in state.selection_cursors or proposal.new_cursor is None:
+                decisions[proposal.ordinal] = "rejected_invalid_memory_update"
+            else:
+                decisions[proposal.ordinal] = "valid"
+                valid_changes.append(proposal)
+
+    if scenario.batch_width > 1:
+        accepted, lost = resolve_conflicts(valid_changes)
+    else:
+        accepted = {proposal.ordinal for proposal in valid_changes}
+        lost = set()
+    for ordinal in lost:
+        decisions[ordinal] = "conflict_loss"
+    for ordinal in accepted:
+        decisions[ordinal] = "accepted"
+
+    pre_hash = state_hash(scenario.scenario_id, state)
+    ledger_deltas: list[dict[str, int]] = []
+    for proposal in proposals:
+        delta = {key: 0 for key in state.ledger}
+        delta["activations"] = 1
+        delta["observationReads"] = proposal.observation_reads
+        delta["valueComparisons"] = proposal.value_comparisons
+        delta["proposals"] = 1
+        decision = decisions[proposal.ordinal]
+        if proposal.kind == ProposalKind.NO_OP:
+            delta["noOps"] = 1
+        elif decision.startswith("rejected"):
+            delta["rejections"] = 1
+        elif decision == "conflict_loss":
+            delta["conflictLosses"] = 1
+        elif proposal.kind == ProposalKind.MEMORY_UPDATE and decision == "accepted":
+            delta["memoryUpdates"] = 1
+            state.selection_cursors[proposal.actor_id] = proposal.new_cursor  # type: ignore[assignment]
+        elif proposal.kind == ProposalKind.SWAP and decision == "accepted":
+            delta["acceptedSwaps"] = 1
+            delta["displacedCells"] = 2
+            assert proposal.target_pos is not None
+            state.occupancy[proposal.actor_pos], state.occupancy[proposal.target_pos] = (
+                snapshot.occupancy[proposal.target_pos],
+                snapshot.occupancy[proposal.actor_pos],
+            )
+        for key, value in delta.items():
+            state.ledger[key] += value
+        ledger_deltas.append(delta)
+
+    state.activation_count += width
+    state.stream_counters = snapshot.stream_counters
+    state.terminal = evaluate_terminal(scenario, state)
+    post_hash = state_hash(scenario.scenario_id, state)
+
+    events: list[dict[str, Any]] = []
+    event_bytes: list[bytes] = []
+    for proposal, delta in zip(proposals, ledger_deltas):
+        event_index = snapshot.activation_count + proposal.ordinal
+        actor_policy, actor_direction = _event_actor_fields(scenario, proposal)
+        event = {
+            "schemaVersion": TRACE_SCHEMA,
+            "scenarioId": scenario.scenario_id,
+            "eventIndex": event_index,
+            "batchWidth": width,
+            "batchOrdinal": proposal.ordinal,
+            "actorId": proposal.actor_id,
+            "actorAlgotype": actor_policy,
+            "actorDirection": actor_direction,
+            "preStateHash": pre_hash,
+            "observation": {
+                "reads": proposal.observation_reads,
+                "valueComparisons": proposal.value_comparisons,
+            },
+            "randomAddressesAndDraws": proposal.to_dict()["randomDraws"],
+            "proposal": proposal.to_dict(),
+            "decision": decisions[proposal.ordinal],
+            "ledgerDelta": delta,
+            "postStateHash": post_hash,
+            "stopReasonIfAny": state.terminal,
+        }
+        encoded = canonical_json_bytes(event)
+        event_bytes.append(encoded)
+        if retain_events:
+            events.append(event)
+    return events, event_bytes
+
+
+def run(scenario: Scenario, *, trace_mode: Literal["full", "digest", "none"] = "digest") -> RunResult:
+    scenario.validate()
+    if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
+        raise ValueError("traditional controller currently requires batch_width=1")
+    state = initial_state(scenario)
+    state.terminal = evaluate_terminal(scenario, state)
+    initial_hash = state_hash(scenario.scenario_id, state)
+    retained: list[Mapping[str, Any]] = []
+    digest = bytes.fromhex(EMPTY_DIGEST)
+    while state.terminal is None:
+        events, encoded_events = execute_batch(
+            scenario,
+            state,
+            retain_events=(trace_mode == "full"),
+        )
+        if not encoded_events and state.terminal is None:
+            state.terminal = evaluate_terminal(scenario, state) or "event_budget"
+        for encoded in encoded_events:
+            digest = hashlib.sha256(digest + encoded).digest()
+        retained.extend(events)
+    final_hash = state_hash(scenario.scenario_id, state)
+    cells = scenario.cell_map
+    values = [cells[cell_id].value for cell_id in state.occupancy]
+    summary = {
+        "semanticsVersion": scenario.semantics_version,
+        "architecture": scenario.architecture.value,
+        "policy": (
+            scenario.traditional_policy.value
+            if scenario.architecture == Architecture.TRADITIONAL
+            else "cell_view_mixed_or_identity_owned"
+        ),
+        "scheduler": scenario.scheduler,
+        "faultPlacement": scenario.fault_placement,
+        "requestedFaultCount": scenario.requested_fault_count,
+        "realizedFaultCount": scenario.realized_fault_count,
+        "stopReason": state.terminal,
+        "completed": state.terminal == "complete",
+        "activationCount": state.activation_count,
+        "finalOccupancy": list(state.occupancy),
+        "finalValues": values,
+        "ledger": dict(state.ledger),
+        "traceMode": trace_mode,
+        "retainedEventCount": len(retained),
+    }
+    return RunResult(
+        scenario=scenario,
+        final_state=state.to_dict(),
+        initial_state_hash=initial_hash,
+        final_state_hash=final_hash,
+        event_digest=digest.hex(),
+        events=tuple(retained),
+        summary=summary,
+    )
