@@ -273,6 +273,25 @@ def main() -> int:
         ],
     }
     write_json(OUTPUT / "commands.json", commands)
+    release = {
+        "researchStepId": "S11",
+        "branch": git("branch", "--show-current"),
+        "commit": git("rev-parse", "HEAD"),
+        "remote": git("remote", "get-url", "origin"),
+        "publicationSnapshotClaimed": False,
+    }
+    write_json(OUTPUT / "repository_release.json", release)
+    artifact_paths = sorted(
+        path for path in OUTPUT.iterdir()
+        if path.is_file() and path.name != "artifact_manifest.json"
+    )
+    manifest = {
+        "schemaVersion": "e01.s11.artifact_manifest.v1",
+        "researchStepId": "S11",
+        "artifactCount": len(artifact_paths),
+        "artifacts": [file_record(path) for path in artifact_paths],
+    }
+    write_json(OUTPUT / "artifact_manifest.json", manifest)
     print(json.dumps({"success": validation["success"], "runs": len(frame), "stableClaimsAdded": len(additions)}, indent=2))
     return 0 if validation["success"] else 1
 
