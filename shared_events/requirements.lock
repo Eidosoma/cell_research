@@ -1,0 +1,3 @@
+# Direct S06 runtime dependencies; the validation artifact records the full host.
+jsonschema==4.26.0
+pyarrow==25.0.0
