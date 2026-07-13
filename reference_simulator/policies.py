@@ -68,9 +68,8 @@ def cell_view_proposal(
 ) -> Proposal:
     """Evaluate exactly one S03 cell-view activation against a snapshot."""
     cells = scenario.cell_map
-    positions = {cell_id: position for position, cell_id in enumerate(state.occupancy)}
     actor = cells[actor_id]
-    position = positions[actor_id]
+    position = state.occupancy.index(actor_id)
     if actor.fault != FaultMode.NORMAL:
         return _noop(actor_id, position, "actor_fault", reads=1)
 

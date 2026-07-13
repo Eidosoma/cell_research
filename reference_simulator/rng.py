@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
 
 RNG_DOMAIN = b"E01/RNG/v1\x00"
 UINT64_SPACE = 1 << 64
 
 
+@lru_cache(maxsize=8192)
 def _root(seed: int, scenario_id: str) -> bytes:
     if not 0 <= seed < (1 << 128):
         raise ValueError("seed must be an unsigned 128-bit integer")

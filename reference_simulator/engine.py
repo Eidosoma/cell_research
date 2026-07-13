@@ -25,6 +25,7 @@ from .scheduler import resolve_conflicts, scheduled_actor, scheduled_priority, s
 
 TRACE_SCHEMA = "E01.reference-event-pre-S06.v1"
 EMPTY_DIGEST = hashlib.sha256(b"E01/reference/trace/v1").hexdigest()
+_PROGRESS_GUARANTEE_CACHE: dict[str, bool] = {}
 
 
 def initial_state(scenario: Scenario) -> RunState:
@@ -63,13 +64,46 @@ def is_complete(scenario: Scenario, state: RunState) -> bool:
     return all(left >= right for left, right in zip(values, values[1:]))
 
 
+def _incomplete_state_has_progress_witness(scenario: Scenario) -> bool:
+    """Return a cached proof obligation used only to skip quiescence scans.
+
+    With no faults and one common direction, an incomplete pure Bubble or
+    Insertion line contains an adjacent inversion.  Bubble can propose that
+    inversion; the first inversion also has an ordered strict prefix and is
+    therefore an admissible Insertion proposal.  The clean-room traditional
+    controllers likewise propose a change from every incomplete no-fault
+    state, including Selection.  Cell-view Selection is intentionally excluded
+    because its identity-owned cursors can exhaust.
+    """
+    cached = _PROGRESS_GUARANTEE_CACHE.get(scenario.scenario_id)
+    if cached is not None:
+        return cached
+    no_faults = all(cell.fault == FaultMode.NORMAL for cell in scenario.cells)
+    one_direction = len({cell.direction for cell in scenario.cells}) == 1
+    policies = {cell.policy for cell in scenario.cells}
+    if scenario.architecture == Architecture.TRADITIONAL:
+        result = no_faults and one_direction and len(policies) == 1
+    else:
+        result = (
+            no_faults
+            and one_direction
+            and len(policies) == 1
+            and next(iter(policies)) in {Policy.BUBBLE, Policy.INSERTION}
+        )
+    _PROGRESS_GUARANTEE_CACHE[scenario.scenario_id] = result
+    return result
+
+
 def evaluate_terminal(scenario: Scenario, state: RunState) -> str | None:
     """Apply S03 terminal precedence exactly."""
     if invariant_error(scenario, state) is not None:
         return "invariant_error"
     if is_complete(scenario, state):
         return "complete"
-    if not has_admissible_change(scenario, state):
+    if (
+        not _incomplete_state_has_progress_witness(scenario)
+        and not has_admissible_change(scenario, state)
+    ):
         return "quiescent"
     if state.activation_count >= scenario.max_activations:
         return "event_budget"
@@ -102,13 +136,17 @@ def _proposal_for_slot(
     snapshot: RunState,
     event_index: int,
     ordinal: int,
+    *,
+    capture_random_draws: bool = True,
 ) -> Proposal:
     draws: list[tuple[str, int, int, int]] = []
     if scenario.architecture == Architecture.TRADITIONAL:
         proposal = traditional_proposal(scenario, snapshot)
         return replace(proposal, ordinal=ordinal)
 
-    actor_id, actor_draws, actor_consumed = scheduled_actor(scenario, event_index)
+    actor_id, actor_draws, actor_consumed = scheduled_actor(
+        scenario, event_index, include_draws=capture_random_draws
+    )
     draws.extend(actor_draws)
     _update_counter(snapshot, "actor_activation", actor_consumed)
     actor = scenario.cell_map[actor_id]
@@ -144,8 +182,18 @@ def execute_batch(
     state: RunState,
     *,
     retain_events: bool,
+    emit_event_records: bool = True,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
-    """Generate from one snapshot, validate, resolve, and commit atomically."""
+    """Generate from one snapshot, validate, resolve, and commit atomically.
+
+    ``emit_event_records=False`` is a summary-only execution path.  It applies
+    exactly the same proposals and state transition but avoids constructing or
+    hashing per-activation trace payloads.  The default is deliberately the
+    validated S05/S06 behavior, and callers requesting retained events may not
+    disable event emission.
+    """
+    if retain_events and not emit_event_records:
+        raise ValueError("retained events require emit_event_records=True")
     remaining = scenario.max_activations - state.activation_count
     width = min(scenario.batch_width, max(remaining, 0))
     if width == 0:
@@ -156,7 +204,12 @@ def execute_batch(
     proposals: list[Proposal] = []
     for ordinal in range(width):
         event_index = state.activation_count + ordinal
-        proposals.append(_proposal_for_slot(scenario, snapshot, event_index, ordinal))
+        proposals.append(
+            _proposal_for_slot(
+                scenario, snapshot, event_index, ordinal,
+                capture_random_draws=emit_event_records,
+            )
+        )
 
     decisions: dict[int, str] = {}
     valid_changes: list[Proposal] = []
@@ -185,7 +238,7 @@ def execute_batch(
     for ordinal in accepted:
         decisions[ordinal] = "accepted"
 
-    pre_hash = state_hash(scenario.scenario_id, state)
+    pre_hash = state_hash(scenario.scenario_id, state) if emit_event_records else None
     ledger_deltas: list[dict[str, int]] = []
     for proposal in proposals:
         delta = {key: 0 for key in state.ledger}
@@ -218,7 +271,10 @@ def execute_batch(
     state.activation_count += width
     state.stream_counters = snapshot.stream_counters
     state.terminal = evaluate_terminal(scenario, state)
-    post_hash = state_hash(scenario.scenario_id, state)
+    post_hash = state_hash(scenario.scenario_id, state) if emit_event_records else None
+
+    if not emit_event_records:
+        return [], []
 
     events: list[dict[str, Any]] = []
     event_bytes: list[bytes] = []

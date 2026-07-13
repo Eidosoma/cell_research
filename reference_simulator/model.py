@@ -7,6 +7,7 @@ from enum import Enum
 import hashlib
 import json
 import math
+from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
 
@@ -110,6 +111,17 @@ class Scenario:
     goal_profile: str = "homogeneous_direction_nonstrict_v1"
     metric_profile: str = "reference_ledger_v1"
     semantics_version: str = SEMANTICS_VERSION
+    _cell_map_cache: dict[str, Cell] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        # Scenario cells are immutable.  Caching this identity lookup avoids
+        # rebuilding the same n-entry dictionary on every activation without
+        # changing scenario serialization or transition semantics.
+        object.__setattr__(
+            self,
+            "_cell_map_cache",
+            {cell.cell_id: cell for cell in self.cells},
+        )
 
     @staticmethod
     def _content(
@@ -308,8 +320,8 @@ class Scenario:
             raise ValueError("scenario ID does not match canonical content")
 
     @property
-    def cell_map(self) -> dict[str, Cell]:
-        return {cell.cell_id: cell for cell in self.cells}
+    def cell_map(self) -> Mapping[str, Cell]:
+        return MappingProxyType(self._cell_map_cache)
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "Scenario":

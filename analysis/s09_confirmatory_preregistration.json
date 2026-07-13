@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "e01.s09.preregistration.v1",
+  "researchStepId": "S09",
+  "frozenQuestion": "Do the six no-fault n=100 reference conditions reach the reported sorted endpoint and reproduce the qualitative Figure 3 trajectories, and how does the frozen public cell-view comparator differ where it is executable?",
+  "frozenBeforeConfirmatoryOutcomes": true,
+  "analysisPopulations": {
+    "paperScale": {
+      "split": "paper_scale",
+      "replicatesPerCondition": 100,
+      "conditions": "all six unique_1_100, no-fault, pure-policy cell-view/traditional profiles"
+    },
+    "confirmatory": {
+      "split": "confirmatory_holdout",
+      "pairingUnit": "pairingBlockId within policy",
+      "pairsPerPolicy": 1000,
+      "referenceRuns": 6000,
+      "historicalComparatorRuns": 3000,
+      "conditions": "the same six unique_1_100 no-fault pure-policy profiles; historical execution is limited to the three cell-view profiles present in C"
+    }
+  },
+  "protectedSplitGate": {
+    "authorized": [
+      "confirmatory_holdout"
+    ],
+    "forbidden": [
+      "exploratory",
+      "policy_search_holdout"
+    ],
+    "unlockRule": "The confirmatory runner must receive the SHA-256 of this exact canonical JSON file and must reject every split or condition outside the declared population.",
+    "exclusions": "None. Every intended run, timeout, error, censoring event, and terminal reason remains in accounting."
+  },
+  "outcomes": {
+    "primaryEndpoint": "strict all-run completion with final non-strict ascending order and 100 percent paper Sortedness",
+    "trajectoryAxis": "successful-swap index for Figure 3; 201-point normalized successful-swap progress for paired trajectory contrasts",
+    "sortedness": "100 * count(i == 0 or value[i] > value[i-1]) / n; valid here because all values are unique",
+    "trajectoryDistance": "trapezoidal integrated absolute cell-view minus traditional Sortedness gap over normalized swap progress, in percentage points",
+    "selectionBurden": "paired accepted-swap difference and ratio, cell-view minus/over traditional",
+    "stopping": "S03 reference completion/quiescence/event-budget semantics; C historical is_sorted with an adapter safety timeout that is never reclassified as a historical stop rule"
+  },
+  "claimRules": {
+    "allEndpoints": "supportive only if every reference run completes, has final Sortedness 100, conserves the value multiset, and has no unexplained terminal state",
+    "bubbleTrajectoryDifference": "supportive if the multiplicity-adjusted lower confidence limit for mean paired trajectory distance exceeds 5 percentage points",
+    "insertionTrajectorySimilarity": "supportive if the multiplicity-adjusted upper confidence limit for mean paired trajectory distance is below the 5 percentage-point equivalence margin",
+    "selectionSwapBurden": "supportive if the multiplicity-adjusted lower confidence limit for paired cell-view minus traditional accepted swaps is above zero"
+  },
+  "uncertainty": {
+    "completion": "two-sided 95 percent Wilson interval plus strict all-run criterion",
+    "pairedContrasts": "10000 deterministic paired bootstrap resamples; both 95 percent intervals and Bonferroni family-adjusted 98.75 percent intervals for the endpoint, Bubble-shape, Insertion-similarity, and Selection-swap Figure 3 claim families",
+    "trajectoryEnvelope": "run-level mean, standard-error 95 percent interval, and empirical 2.5/97.5 percent run envelope at each normalized grid point"
+  },
+  "traceAndReplaySampling": {
+    "rule": "Within each backend-eligible condition and split, select the lexicographically smallest scenarioId before outcomes are run.",
+    "paperTrajectories": "retain every paper-scale derived successful-swap Sortedness trajectory needed for the 100-line reconstruction; these are not activation traces",
+    "confirmatoryTrajectories": "retain 201-point summary grids for all runs and raw derived successful-swap trajectories only for the preselected scenarios, failures, or anomalies",
+    "exactReplay": "run each of the 12 selected reference scenarios twice through the ordinary digest-emitting engine and require byte-exact equality plus equality with the summary-only transition path",
+    "historicalReplay": "do not demand exact replay from the thread scheduler; repeat the three selected paper-scale C scenarios five times as a separate variability diagnostic"
+  },
+  "historicalBoundary": {
+    "source": "frozen public commit 1fd2bd5921c1f6b423a71f691d5189106a8a1020 mounted from the S02 checksum-gated quarantine",
+    "publicationSnapshotClaimed": false,
+    "traditionalComparatorAvailable": false,
+    "sequenceBasis": "recorded_swap",
+    "randomStream": "unavailable_not_invented",
+    "wallClock": "descriptive only; thread scheduling and host load make it non-portable and there is no scheduler-independent historical time axis"
+  }
+}

@@ -9,7 +9,7 @@ from .rng import bounded, u64
 
 
 def scheduled_actor(
-    scenario: Scenario, event_index: int
+    scenario: Scenario, event_index: int, *, include_draws: bool = True
 ) -> tuple[str, tuple[tuple[str, int, int, int], ...], int]:
     index, consumed = bounded(
         scenario.seed,
@@ -19,14 +19,18 @@ def scheduled_actor(
         len(scenario.cells),
     )
     actor_id = scenario.cells[index].cell_id
-    draws = tuple(
-        (
-            "actor_activation",
-            event_index,
-            draw_index,
-            u64(scenario.seed, scenario.scenario_id, "actor_activation", event_index, draw_index),
+    draws = (
+        tuple(
+            (
+                "actor_activation",
+                event_index,
+                draw_index,
+                u64(scenario.seed, scenario.scenario_id, "actor_activation", event_index, draw_index),
+            )
+            for draw_index in range(consumed)
         )
-        for draw_index in range(consumed)
+        if include_draws
+        else ()
     )
     return actor_id, draws, consumed
 
