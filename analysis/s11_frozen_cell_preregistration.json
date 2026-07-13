@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "e01.s11.preregistration.v1",
+  "researchStepId": "S11",
+  "title": "Replicate passive and stuck frozen-cell results",
+  "frozenQuestion": "Under the frozen clean-room fault semantics, do cell-view Bubble, Insertion, and Selection have lower final residual monotonicity error than their separately named traditional clean-room controls for passive and stuck fault counts 1, 2, and 3, and how sensitive are Figure 5 conclusions to the exact legacy versus corrected placement rule?",
+  "freezeBoundary": {
+    "frozenBeforeConfirmatoryOutcomesOpened": true,
+    "knownPriorEvidence": [
+      "The supplied Figure 5 panel reports 36 means but no raw arrays, error-bar definition, placement rule, or stopping rule.",
+      "S01 established that the paper panel itself contradicts the blanket lower-error statement for passive Insertion at f=2 and f=3: reported cell-view minus traditional differences are +0.63 and +3.58 errors.",
+      "S03/S05 define passive identities as unable to initiate but movable, stuck identities as unable to initiate or be displaced, and traditional behavior as a separately named clean-room control rather than recovered publication code.",
+      "S02/S04 establish that frozen public HEAD is not the publication snapshot and contains passive-like FREEZE behavior only, with no traditional generator and no distinct stuck implementation.",
+      "S08 scenario metadata, including split sizes and legacy duplicate-map frequencies, is design information; no S11 simulator outcome was inspected before this freeze."
+    ],
+    "preregistrationFileMustMatchAtRunTime": true
+  },
+  "populations": {
+    "referencePaperScale": {
+      "split": "paper_scale",
+      "profiles": "all 72 unique_fault profiles: 3 policies x 2 architectures x 2 fault modes x 3 requested counts x 2 placement rules",
+      "replicatesPerProfile": 100,
+      "runCount": 7200,
+      "purpose": "Figure 5 reconstruction, reported-mean comparison, exact-legacy/corrected placement sensitivity, requested-versus-realized fault accounting"
+    },
+    "referenceConfirmatory": {
+      "split": "confirmatory_holdout",
+      "profiles": "all 36 reference_primary corrected-without-replacement unique_fault profiles: 3 policies x 2 architectures x 2 fault modes x 3 exact fault counts",
+      "pairsPerContrast": 1000,
+      "runCount": 36000,
+      "purpose": "18 selected paired architecture contrasts",
+      "protected": true
+    },
+    "historicalPaperScale": {
+      "split": "paper_scale",
+      "profiles": "the nine C_adapter_endpoint_supported_with_bank_seed_override profiles: cell-view x passive x 3 policies x f=1..3 x legacy placement",
+      "replicatesPerProfile": 100,
+      "runCount": 900,
+      "purpose": "nondeterministic frozen-public-commit endpoint comparator only"
+    },
+    "forbiddenOrUnopened": [
+      "exploratory",
+      "policy_search_holdout",
+      "confirmatory_holdout legacy_with_replacement candidate reserves",
+      "any frozen-public traditional, stuck, or corrected-placement result"
+    ],
+    "scopeRationale": "FULL_PLAN promotes selected contrasts to 1,000 pairs rather than every candidate reserve. The primary corrected-placement architecture family is promoted; all legacy profiles still receive the publication-scale 100 runs. This allocation is frozen scientifically and is not a runtime reduction."
+  },
+  "estimands": {
+    "primaryOutcome": "Final residual monotonicity error E = count of adjacent positions i with final[i] < final[i-1]; equality is not an error.",
+    "primaryContrasts": "Within corrected placement, pairing block, policy, fault mode, and requested f: cell-view E minus traditional-control E.",
+    "secondaryOutcomes": [
+      "non-strict completion and censoring",
+      "stop-reason probabilities",
+      "S10-versioned cost projections and complete R ledgers",
+      "fault-position dependence",
+      "paper-scale legacy-minus-corrected paired differences",
+      "requested versus realized distinct fault counts"
+    ],
+    "pairingUnit": "S08 pairingBlockId; pairing shares initial values and fault map within a placement/count family but does not claim coupled activation streams because scenario ID enters R counter addresses.",
+    "exclusions": "No outcome-based exclusions. Invariant errors, event-budget stops, and historical adapter safety timeouts remain in run accounting and are classified as censored/failed as applicable."
+  },
+  "inference": {
+    "primaryFamilySize": 18,
+    "bootstrapDraws": 10000,
+    "bootstrapGenerator": "NumPy PCG64DXSM with counter-derived fixed analysis seeds",
+    "adjustedTwoSidedConfidence": 0.9972222222222222,
+    "primaryClaimRule": {
+      "supportive": "Bonferroni-adjusted paired-bootstrap upper confidence bound for cell-view minus traditional error is below zero.",
+      "contradictory": "Bonferroni-adjusted paired-bootstrap lower confidence bound is above zero.",
+      "inconclusive": "The adjusted interval includes zero."
+    },
+    "paperMeanComparison": {
+      "absoluteEquivalenceMarginErrors": 1.0,
+      "reproduced": "The nominal 95% bootstrap confidence interval for the simulated paper-scale mean lies wholly inside reported mean +/- 1 adjacent error.",
+      "approximatelyReproduced": "The reported mean lies in the nominal 95% interval but the interval is not wholly inside the equivalence band.",
+      "notReproduced": "Neither condition is met.",
+      "qualification": "The margin is a clean-room practical tolerance; the paper gives no raw sampling uncertainty or error-bar definition."
+    },
+    "rankRules": {
+      "passiveCellView": "Using the mean across f=1..3 within a backend/placement/split, Bubble < Insertion < Selection.",
+      "stuckCellView": "Using the mean across f=1..3, Selection is lower than both Bubble and Insertion."
+    },
+    "passiveInsertionContradiction": "Report f=2 and f=3 separately. A positive cell-view-minus-traditional interval supports the panel-level reversal and contradicts the paper's blanket lower-error statement; it must not be averaged or smoothed away.",
+    "faultPositionModel": "On corrected paper+confirmatory R runs, summarize final error by initial fault-position decile and fit descriptive policy/fault/architecture-stratified OLS models with HC3 uncertainty using realized count, mean normalized initial position, minimum normalized edge distance, normalized position span, and mean normalized faulty value. These are dependence summaries, not causal effects.",
+    "censoring": "Report completion, quiescence, event-budget, invariant-error, and adapter-timeout counts separately. Event-budget and adapter-timeout runs are censored and never dropped from endpoint summaries."
+  },
+  "costConventions": {
+    "swapOnly": "R acceptedSwaps; C successful recorded swaps.",
+    "publicationSwapPlusComparisonR": "acceptedSwaps + S03 logical valueComparisons.",
+    "publicationSourceProjectionC": "successful recorded swaps + source compare_and_swap_count; explicitly non-parity.",
+    "targetCalculationsR": "One target-selection attempt per proposal, including boundary, actor-fault, and other NoOp proposals; targetCalculations equals proposals. This is the S10 convention extended explicitly to fault runs, not a new S03 state counter.",
+    "rejectedActionsR": "rejections + conflictLosses; NoOps remain separate.",
+    "unitWeightFullLedgerR": "activations + observationReads + valueComparisons + targetCalculations + proposals + noOps + rejections + memoryUpdates + acceptedSwaps + displacedCells + conflictLosses.",
+    "wallTime": "Descriptive and separate; never included in algorithmic cost or used for cross-backend inference."
+  },
+  "backendBoundaries": {
+    "reference": "E01-reference-v1 clean-room semantics; traditional_global_primary_action_v1 is a new control.",
+    "historical": "Frozen public commit 1fd2bd5921c1f6b423a71f691d5189106a8a1020, source-external read-only adapter, passive-like legacy placement only, successful-recorded-swap endpoint observability.",
+    "publication": "No exact snapshot, traditional code, stuck code, raw Figure 5 arrays, error-bar definition, placement rule, or historical random streams are available."
+  },
+  "validation": [
+    "all planned rows and only allowed splits are run",
+    "corrected counts equal requested counts and legacy draws/realized counts match S08",
+    "S03 passive and stuck semantics fixtures plus new hand-counted cost toys pass",
+    "pairing blocks are complete for all 18 confirmatory contrasts",
+    "fast summary path matches ordinary digest execution on selected exact replays",
+    "R ledger partitions and displacement identities hold; C unavailable fields remain null",
+    "final residual errors and completion flags recompute from retained final values",
+    "deterministic bootstrap replay and reported means recompute from the run table",
+    "frozen source checksums remain unchanged before and after C execution",
+    "all declared artifacts exist and match the final manifest"
+  ]
+}

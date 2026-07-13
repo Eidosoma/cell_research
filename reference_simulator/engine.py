@@ -309,6 +309,67 @@ def execute_batch(
     return events, event_bytes
 
 
+def execute_serial_summary_activation(scenario: Scenario, state: RunState) -> bool:
+    """Execute one serial activation without trace or snapshot allocation.
+
+    This is a performance-only projection of ``execute_batch`` for replicate
+    summaries.  It is lawful only for batch width one, returns whether an
+    accepted swap/memory update changed state, and evaluates only the event
+    budget.  Its caller must apply ``evaluate_terminal`` after every returned
+    state change.  The ordinary event-emitting path remains the validation and
+    replay authority.
+    """
+    if scenario.batch_width != 1:
+        raise ValueError("serial summary activation requires batch_width=1")
+    if state.terminal is not None:
+        return False
+    if state.activation_count >= scenario.max_activations:
+        state.terminal = "event_budget"
+        return False
+
+    proposal = _proposal_for_slot(
+        scenario,
+        state,
+        state.activation_count,
+        0,
+        capture_random_draws=False,
+    )
+    delta = {key: 0 for key in state.ledger}
+    delta["activations"] = 1
+    delta["observationReads"] = proposal.observation_reads
+    delta["valueComparisons"] = proposal.value_comparisons
+    delta["proposals"] = 1
+    changed = False
+    if proposal.kind == ProposalKind.NO_OP:
+        delta["noOps"] = 1
+    elif proposal.kind == ProposalKind.SWAP:
+        valid, _ = _is_valid_swap(scenario, state, proposal)
+        if valid:
+            delta["acceptedSwaps"] = 1
+            delta["displacedCells"] = 2
+            assert proposal.target_pos is not None
+            state.occupancy[proposal.actor_pos], state.occupancy[proposal.target_pos] = (
+                state.occupancy[proposal.target_pos],
+                state.occupancy[proposal.actor_pos],
+            )
+            changed = True
+        else:
+            delta["rejections"] = 1
+    elif proposal.kind == ProposalKind.MEMORY_UPDATE:
+        if proposal.actor_id not in state.selection_cursors or proposal.new_cursor is None:
+            delta["rejections"] = 1
+        else:
+            delta["memoryUpdates"] = 1
+            state.selection_cursors[proposal.actor_id] = proposal.new_cursor
+            changed = True
+    for key, value in delta.items():
+        state.ledger[key] += value
+    state.activation_count += 1
+    if state.activation_count >= scenario.max_activations:
+        state.terminal = "event_budget"
+    return changed
+
+
 def run(scenario: Scenario, *, trace_mode: Literal["full", "digest", "none"] = "digest") -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
