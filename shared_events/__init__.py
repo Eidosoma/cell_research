@@ -1,6 +1,7 @@
 """Versioned shared event/provenance records for E01 backends."""
 
 from .adapters import adapt_historical_run, adapt_reference_result
+from .invariants import HistoricalInvariantViolation, audit_historical_trace
 from .schema import (
     ADAPTER_VERSION,
     EVENT_SCHEMA_VERSION,
@@ -17,6 +18,7 @@ __all__ = [
     "TRACE_MANIFEST_SCHEMA_VERSION",
     "adapt_historical_run",
     "adapt_reference_result",
+    "audit_historical_trace",
     "event_schema",
     "read_jsonl_zstd",
     "read_parquet_zstd",
@@ -24,4 +26,5 @@ __all__ = [
     "validate_event",
     "validate_trace",
     "write_trace_bundle",
+    "HistoricalInvariantViolation",
 ]

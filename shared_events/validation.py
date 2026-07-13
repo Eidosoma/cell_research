@@ -63,7 +63,17 @@ def validate_event(event: Mapping[str, Any]) -> None:
             raise ValueError(f"{path} is {status} but carries a non-null value")
         if status in {"observed", "derived_exact"} and value is None:
             raise ValueError(f"{path} is {status} but carries null")
-    if event["backend"]["backendId"] == "historical_frozen_public_commit":
+    backend_id = event["backend"]["backendId"]
+    sequence_basis = event["run"]["sequenceBasis"]
+    expected_sequence_basis = (
+        "recorded_swap" if backend_id == "historical_frozen_public_commit" else "activation"
+    )
+    if sequence_basis != expected_sequence_basis:
+        raise ValueError(
+            f"{backend_id} requires sequenceBasis={expected_sequence_basis}, "
+            f"not {sequence_basis}"
+        )
+    if backend_id == "historical_frozen_public_commit":
         violations = [
             path for path in HISTORICAL_ALWAYS_LOSSY_FIELDS
             if availability[path]["status"] in {"observed", "derived_exact"}

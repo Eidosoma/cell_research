@@ -121,6 +121,20 @@ class SchemaAndWriterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "actor.id is unavailable"):
             validate_event(damaged)
 
+    def test_backend_sequence_basis_cannot_be_relabelled(self):
+        historical = adapt_historical_run(json.loads(S04_RUN.read_text()))
+        damaged = deepcopy(historical.events[0])
+        damaged["run"]["sequenceBasis"] = "activation"
+        damaged = assign_event_id(damaged)
+        with self.assertRaisesRegex(ValueError, "requires sequenceBasis=recorded_swap"):
+            validate_event(damaged)
+
+        reference = deepcopy(self.bundle.events[0])
+        reference["run"]["sequenceBasis"] = "recorded_swap"
+        reference = assign_event_id(reference)
+        with self.assertRaisesRegex(ValueError, "requires sequenceBasis=activation"):
+            validate_event(reference)
+
     def test_pre_post_chain_tamper_is_rejected(self):
         events = [deepcopy(event) for event in self.bundle.events]
         second = deepcopy(events[1])
