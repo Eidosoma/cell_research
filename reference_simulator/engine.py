@@ -20,7 +20,13 @@ from .model import (
     state_hash,
 )
 from .policies import cell_view_proposal, has_admissible_change, traditional_proposal
-from .scheduler import resolve_conflicts, scheduled_actor, scheduled_priority, scheduled_side
+from .scheduler import (
+    ScheduledOpportunity,
+    resolve_conflicts,
+    scheduled_actor,
+    scheduled_priority,
+    scheduled_side,
+)
 from .transition_primitives import commit_proposal, cost_delta, validate_proposal
 
 
@@ -40,6 +46,16 @@ class CellViewProposalFactory(Protocol):
         *,
         side: Literal["left", "right"] | None = None,
     ) -> Proposal: ...
+
+
+class ScheduleFactory(Protocol):
+    """Select the next charged batch without access to dynamic run state."""
+
+    def __call__(
+        self,
+        event_index: int,
+        remaining_opportunities: int,
+    ) -> tuple[ScheduledOpportunity, ...]: ...
 
 
 def initial_state(scenario: Scenario) -> RunState:
@@ -136,17 +152,28 @@ def _proposal_for_slot(
     *,
     capture_random_draws: bool = True,
     proposal_factory: CellViewProposalFactory | None = None,
+    scheduled_opportunity: ScheduledOpportunity | None = None,
+    actual_batch_width: int | None = None,
 ) -> Proposal:
     draws: list[tuple[str, int, int, int]] = []
     if scenario.architecture == Architecture.TRADITIONAL:
         proposal = traditional_proposal(scenario, snapshot)
         return replace(proposal, ordinal=ordinal)
 
-    actor_id, actor_draws, actor_consumed = scheduled_actor(
-        scenario, event_index, include_draws=capture_random_draws
-    )
-    draws.extend(actor_draws)
-    _update_counter(snapshot, "actor_activation", actor_consumed)
+    if scheduled_opportunity is None:
+        actor_id, actor_draws, actor_consumed = scheduled_actor(
+            scenario, event_index, include_draws=capture_random_draws
+        )
+        draws.extend(actor_draws)
+        _update_counter(snapshot, "actor_activation", actor_consumed)
+    else:
+        actor_id = scheduled_opportunity.actor_id
+        if actor_id not in scenario.cell_map:
+            raise ValueError("scheduler selected an unknown actor identity")
+        if capture_random_draws:
+            draws.extend(scheduled_opportunity.random_draws)
+        for stream, count in scheduled_opportunity.stream_consumption:
+            _update_counter(snapshot, stream, count)
     actor = scenario.cell_map[actor_id]
     side = None
     if actor.policy == Policy.BUBBLE and actor.fault == FaultMode.NORMAL:
@@ -154,9 +181,20 @@ def _proposal_for_slot(
         draws.append(side_draw)
         _update_counter(snapshot, "bubble_side")
     factory = cell_view_proposal if proposal_factory is None else proposal_factory
-    proposal = factory(scenario, snapshot, actor_id, side=side)
+    proposal_state = snapshot
+    if proposal_factory is not None and snapshot.activation_count != event_index:
+        # A synchronous batch shares occupancy/cursors but each charged slot
+        # retains its own global opportunity clock for the frozen S03 weak
+        # coordinator frequency rule.  The policy gateway cannot read this
+        # field; only the separately typed coordinator signal encoder can.
+        proposal_state = snapshot.clone()
+        proposal_state.activation_count = event_index
+    proposal = factory(scenario, proposal_state, actor_id, side=side)
     priority = 0
-    if scenario.batch_width > 1:
+    effective_batch_width = (
+        scenario.batch_width if actual_batch_width is None else actual_batch_width
+    )
+    if effective_batch_width > 1:
         priority, priority_draw = scheduled_priority(scenario, event_index)
         draws.append(priority_draw)
         _update_counter(snapshot, "conflict_priority")
@@ -183,6 +221,7 @@ def execute_batch(
     retain_events: bool,
     emit_event_records: bool = True,
     proposal_factory: CellViewProposalFactory | None = None,
+    schedule_factory: ScheduleFactory | None = None,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
     """Generate from one snapshot, validate, resolve, and commit atomically.
 
@@ -195,7 +234,16 @@ def execute_batch(
     if retain_events and not emit_event_records:
         raise ValueError("retained events require emit_event_records=True")
     remaining = scenario.max_activations - state.activation_count
-    width = min(scenario.batch_width, max(remaining, 0))
+    scheduled: tuple[ScheduledOpportunity, ...] | None = None
+    if schedule_factory is None:
+        width = min(scenario.batch_width, max(remaining, 0))
+    else:
+        scheduled = tuple(schedule_factory(state.activation_count, max(remaining, 0)))
+        width = len(scheduled)
+        if width > max(remaining, 0):
+            raise ValueError("scheduler batch exceeds remaining opportunity budget")
+        if remaining > 0 and width == 0:
+            raise ValueError("scheduler returned an empty batch before terminal state")
     if width == 0:
         return [], []
     snapshot = state.clone()
@@ -209,6 +257,8 @@ def execute_batch(
                 scenario, snapshot, event_index, ordinal,
                 capture_random_draws=emit_event_records,
                 proposal_factory=proposal_factory,
+                scheduled_opportunity=(scheduled[ordinal] if scheduled is not None else None),
+                actual_batch_width=width,
             )
         )
 
@@ -220,7 +270,7 @@ def execute_batch(
         if validation.eligible_for_commit:
             valid_changes.append(proposal)
 
-    if scenario.batch_width > 1:
+    if width > 1:
         accepted, lost = resolve_conflicts(valid_changes)
     else:
         accepted = {proposal.ordinal for proposal in valid_changes}
@@ -336,6 +386,7 @@ def run(
     *,
     trace_mode: Literal["full", "digest", "none"] = "digest",
     proposal_factory: CellViewProposalFactory | None = None,
+    schedule_factory: ScheduleFactory | None = None,
 ) -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
@@ -351,6 +402,7 @@ def run(
             state,
             retain_events=(trace_mode == "full"),
             proposal_factory=proposal_factory,
+            schedule_factory=schedule_factory,
         )
         if not encoded_events and state.terminal is None:
             state.terminal = evaluate_terminal(scenario, state) or "event_budget"

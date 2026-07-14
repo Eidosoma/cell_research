@@ -32,6 +32,19 @@ from .architectures import (
     exact_replay_architecture,
     run_architecture,
 )
+from .schedulers import (
+    PERMUTATION_STREAM,
+    SCHEDULER_INTERFACE_VERSION,
+    SCHEDULER_PRESPECIFICATION_SHA256,
+    FrozenSchedulerController,
+    SchedulerAudit,
+    SchedulerExecutionContract,
+    SchedulerFamily,
+    SchedulerRun,
+    exact_replay_scheduler,
+    run_scheduled_architecture,
+    scheduler_controller_fields,
+)
 
 __all__ = [
     "ACTION_INTERFACE_VERSION",
@@ -60,4 +73,15 @@ __all__ = [
     "exact_replay_architecture",
     "run_architecture",
     "run_with_contract",
+    "PERMUTATION_STREAM",
+    "SCHEDULER_INTERFACE_VERSION",
+    "SCHEDULER_PRESPECIFICATION_SHA256",
+    "FrozenSchedulerController",
+    "SchedulerAudit",
+    "SchedulerExecutionContract",
+    "SchedulerFamily",
+    "SchedulerRun",
+    "exact_replay_scheduler",
+    "run_scheduled_architecture",
+    "scheduler_controller_fields",
 ]

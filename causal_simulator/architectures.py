@@ -209,6 +209,18 @@ class ArchitectureExecutionContract:
         return None if not self.matched_contrast_eligible else 1
 
     def validate(self, scenario: Scenario) -> None:
+        self.validate_policy_action_boundary(scenario)
+        if self.matched_contrast_eligible and self.scheduler != "uniform_random_activation":
+            raise ValueError("matched S03 architecture cannot alter actor scheduling")
+
+    def validate_policy_action_boundary(self, scenario: Scenario) -> None:
+        """Validate S03's frozen boundary independently of an S04 treatment.
+
+        S04 owns the out-of-band scheduler assignment.  This method preserves
+        all S03 information, action, architecture, fault, retry, and base
+        scenario requirements without pretending that the S03 baseline
+        scheduler label is the active S04 scheduler family.
+        """
         if self.continuation_policy != "skip_and_continue":
             raise ValueError("unsupported continuation policy")
         if self.retry_policy != "no_retry":
@@ -233,9 +245,6 @@ class ArchitectureExecutionContract:
             raise ValueError("matched architectures reject full-global traditional scenarios")
         if scenario.scheduler != "serial_counter_addressed" or scenario.batch_width != 1:
             raise ValueError("matched S03 architectures require one serial opportunity")
-        if self.scheduler != "uniform_random_activation":
-            raise ValueError("matched S03 architecture cannot alter actor scheduling")
-
         expected_profiles = {
             ControlArchitecture.CENTRAL_LOCAL_PROPOSAL_K1: {
                 CoordinatorProfile.COMMON_VALIDATOR_ONLY

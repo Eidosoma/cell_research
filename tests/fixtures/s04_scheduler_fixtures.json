@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "E02.scheduler-fixtures.v1",
+  "seed": 19,
+  "scenarioId": "S04-controller-fixture",
+  "actorIds": ["c00", "c01", "c02", "c03"],
+  "opportunities": 16,
+  "expectedSequences": {
+    "deterministic_scan": ["c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03"],
+    "uniform_random_activation": ["c01", "c01", "c01", "c01", "c00", "c00", "c02", "c00", "c03", "c01", "c01", "c03", "c00", "c02", "c02", "c00"],
+    "random_permutation_sweep": ["c00", "c01", "c02", "c03", "c02", "c00", "c03", "c01", "c03", "c00", "c01", "c02", "c02", "c03", "c00", "c01"],
+    "synchronous_batch_deterministic_conflict": ["c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03", "c00", "c01", "c02", "c03"],
+    "fair_adversarial": ["c00", "c01", "c02", "c03", "c03", "c03", "c03", "c03", "c00", "c01", "c02", "c02", "c02", "c02", "c02", "c03"]
+  },
+  "synchronousExpectedBatches": [
+    ["c00", "c01", "c02", "c03"],
+    ["c00", "c01", "c02", "c03"],
+    ["c00", "c01", "c02", "c03"],
+    ["c00", "c01", "c02", "c03"]
+  ],
+  "conflictFixture": {
+    "values": [5, 4, 3, 2, 1],
+    "policy": "Bubble",
+    "direction": "ascending",
+    "seed": 0,
+    "maxActivations": 5,
+    "expectedConflictLosses": 1,
+    "expectedAcceptedOrdinals": [1, 2]
+  }
+}

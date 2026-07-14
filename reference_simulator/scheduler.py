@@ -2,10 +2,49 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Iterable
 
 from .model import Proposal, ProposalKind, Scenario
 from .rng import bounded, u64
+
+
+RandomDraw = tuple[str, int, int, int]
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledOpportunity:
+    """One externally selected, fully charged actor opportunity.
+
+    This is deliberately a data-only bridge.  A scheduler supplies an actor
+    identity plus any counter-addressed selection draws it consumed; it cannot
+    receive the transition state through this type.
+    """
+
+    actor_id: str
+    random_draws: tuple[RandomDraw, ...] = ()
+    stream_consumption: tuple[tuple[str, int], ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.actor_id:
+            raise ValueError("scheduled actor identity must be nonempty")
+        if any(not stream or count < 1 for stream, count in self.stream_consumption):
+            raise ValueError("scheduler stream consumption must be positive")
+        consumption = dict(self.stream_consumption)
+        if len(consumption) != len(self.stream_consumption):
+            raise ValueError("scheduler stream consumption may name each stream once")
+        observed: dict[str, int] = {}
+        for stream, event_index, draw_index, value in self.random_draws:
+            if (
+                not stream
+                or event_index < 0
+                or draw_index < 0
+                or not 0 <= value < (1 << 64)
+            ):
+                raise ValueError("invalid counter-addressed scheduler draw")
+            observed[stream] = observed.get(stream, 0) + 1
+        if observed != consumption:
+            raise ValueError("scheduler draws and stream consumption disagree")
 
 
 def scheduled_actor(
