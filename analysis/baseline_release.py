@@ -89,6 +89,15 @@ def file_record(path: Path, *, label: str | None = None) -> dict[str, Any]:
     }
 
 
+def report_input_records(report_inputs: Path) -> list[dict[str, Any]]:
+    """Inventory report inputs without creating an impossible self-hash."""
+    return [
+        file_record(path)
+        for path in sorted(report_inputs.iterdir())
+        if path.is_file() and path.name != "report_bundle_manifest.json"
+    ]
+
+
 def write_parquet(path: Path, frame: pd.DataFrame) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     table = pa.Table.from_pandas(frame, preserve_index=False)
@@ -978,7 +987,7 @@ def build_release(output: Path, release_dir: Path, report_inputs: Path, commit: 
         "schemaVersion": "e01.s14.report_bundle_manifest.v1",
         "researchStepId": "S14",
         "complete": True,
-        "inputs": [file_record(path) for path in sorted(report_inputs.iterdir()) if path.is_file()],
+        "inputs": report_input_records(report_inputs),
         "releaseDirectory": str(release_dir),
     }
     write_json(report_inputs / "report_bundle_manifest.json", report_bundle_manifest)

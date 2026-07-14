@@ -8,6 +8,7 @@ import unittest
 from analysis.baseline_release import (
     CLASSIFICATIONS,
     build_claim_matrix,
+    report_input_records,
     run_reference_smoke,
     source_hash_manifest,
     validate_claim_matrix,
@@ -62,6 +63,16 @@ class BaselineReleaseTests(unittest.TestCase):
         self.assertFalse(result["historicalSourceIncluded"])
         self.assertGreater(len(result["files"]), 20)
         self.assertFalse(any(item["path"].startswith("modules/") for item in result["files"]))
+
+    def test_report_input_manifest_excludes_itself(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            report_inputs = Path(temporary_directory)
+            (report_inputs / "evidence.json").write_text("{}\n")
+            (report_inputs / "report_bundle_manifest.json").write_text("{}\n")
+
+            records = report_input_records(report_inputs)
+
+        self.assertEqual([record["label"] for record in records], ["evidence.json"])
 
 
 if __name__ == "__main__":
