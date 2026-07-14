@@ -76,6 +76,17 @@ decision work and fault-mechanism work are separate sensitivities. Scheduler
 implementation overhead and host wall time remain separate from all
 algorithmic projections. The normative schema is `design/s09/cost_schema.json`.
 
+S10 adds the frozen fractional/sequential screen in `design/s10/` and a compact
+transition-equivalent executor in `screening.py`. The compact path is limited
+to the 14 distinct S08 screening signatures (serial uniform/permutation
+scheduling, exact sensing, no action failure, and one policy candidate per
+opportunity) and is differentially checked against the authoritative S05/S09
+path before outcomes are analyzed. Five nested 50-block increments retain all
+five scales and all value/order cells. Sparse elastic-net, lasso, and ridge
+screens are secondary to paired unshrunk contrasts; the exact E02 parity gate,
+inactive E05 retry control, non-executable E07 classification, protected-split
+guard, and frozen S11 selection rule remain fail-closed.
+
 Validation:
 
 ```bash
@@ -110,4 +121,10 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
 
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   python scripts/validate_scale_contract_overlay.py
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/freeze_adaptive_screening_design.py
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/validate_screening_executor.py
 ```

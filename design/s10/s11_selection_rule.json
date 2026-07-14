@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "e02.s10.s11_selection_rule.v1",
+  "researchStepId": "S10",
+  "appliesToNextStep": "S11",
+  "frozenAtUtc": "2026-07-14T14:15:27Z",
+  "frozenBeforeOutcomeAccess": true,
+  "gate": "E02-S01-E02 must show exact state, stop-reason, event-digest, ledger, and S09 deterministic-cost parity in every screened block; otherwise freeze no S11 scientific selections and stop for review.",
+  "ineligible": {
+    "E02-S01-E05": "retry exposure inactive under frozen actionFailure=none",
+    "E02-S01-E07": "non-executable under the preserved information boundary"
+  },
+  "candidateEstimands": [
+    "E02-S01-E01",
+    "E02-S01-E03",
+    "E02-S01-E04",
+    "E02-S01-E06",
+    "E02-S01-E08",
+    "E02-S01-E09",
+    "E02-S01-E10",
+    "E02-S01-E11",
+    "E02-S01-E12"
+  ],
+  "utilityScore": "For each candidate, take the maximum of abs(unshrunk residual-error mean)/0.02, abs(unshrunk success mean)/0.02, abs(log completion ratio)/log(1.10), and abs(log full-cost ratio)/log(1.10), then multiply by max(0.5, elastic-net selection agreement across the four endpoints and three penalties).",
+  "selection": {
+    "primaryCount": 4,
+    "maximumCount": 6,
+    "baseRule": "Select the four highest utility scores, ties by estimand ID.",
+    "interactionAugmentation": "Add up to two of E02-S01-E09 through E02-S01-E12 when their utility score is at least 1 and their active interaction coefficient has the same sign in elastic-net, lasso, ridge, and unshrunk analyses.",
+    "coverageRule": "If absent from the base selection, replace the lowest-scoring redundant candidate to include the highest-scoring architecture/coordinator candidate (E01 or E08), scheduler-involving candidate (E03, E09, or E12), and fault/continuation candidate (E04, E06, E10, E11, or E12).",
+    "uncertaintyRule": "Candidates with a 95% residual and success interval spanning both -0.02 and +0.02 are labelled inconclusive; they may be selected only to satisfy coverage and must be flagged for the S11 extension rule.",
+    "tieBreak": "lexicographic estimand ID"
+  },
+  "frozenOutput": "/artifacts/research_steps/S10/s11_frozen_selections.json",
+  "holdoutRule": "S10 writes IDs, priorities, effect directions, and precision flags only. It does not open or summarize any confirmatory_holdout outcome."
+}

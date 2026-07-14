@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "e02.s10.adaptive_screening_prespecification.v1",
+  "researchStepId": "S10",
+  "title": "Run an adaptive screening design",
+  "frozenAtUtc": "2026-07-14T14:15:27Z",
+  "frozenBeforeOutcomeAccess": true,
+  "frozenQuestion": "Can a balanced fractional/sequential screen identify the dominant executable main and two-factor interaction mechanisms, with useful uncertainty, without executing the full S08 screening Cartesian product?",
+  "analysisPopulation": "P_SCREENING_ITS",
+  "inputContracts": {
+    "pairingManifest": "/artifacts/research_steps/S08/pairing_manifest.parquet",
+    "scenarioBank": "/artifacts/research_steps/S07/scenario_extension.parquet",
+    "armCatalog": "/artifacts/research_steps/S08/contrast_arm_catalog.json",
+    "costSchema": "/workspace/cell-research/design/s09/cost_schema.json",
+    "permittedSplit": "screening_pool",
+    "protectedSplit": "confirmatory_holdout",
+    "protectedOutcomeReadsMaximum": 0,
+    "searchDerivedPlacementAssignmentsMaximum": 0
+  },
+  "eligibleEstimands": [
+    "E02-S01-E01",
+    "E02-S01-E02",
+    "E02-S01-E03",
+    "E02-S01-E04",
+    "E02-S01-E05",
+    "E02-S01-E06",
+    "E02-S01-E08",
+    "E02-S01-E09",
+    "E02-S01-E10",
+    "E02-S01-E11",
+    "E02-S01-E12"
+  ],
+  "classificationConstraints": {
+    "E02-S01-E02": "executable exact-parity engineering gate; any mismatch stops S10 for review",
+    "E02-S01-E05": "executable and fully accounted, but retry exposure is frozen inactive because actionFailure=none; it is excluded from sparse scientific ranking",
+    "E02-S01-E07": "unpaired non-executable because the S02 information boundary is preserved; no run is assigned"
+  },
+  "fractionalDesign": {
+    "unit": "one S08 pairing block shared by all executable estimands",
+    "maximumPairingBlocks": 250,
+    "pairingBlocksPerExecutableEstimandAtMaximum": 250,
+    "nestedCumulativeLooks": [50, 100, 150, 200, 250],
+    "incrementPerLook": 50,
+    "perScaleIncrementPerLook": 10,
+    "perScaleMaximum": 50,
+    "scaleLevels": [20, 50, 100, 200, 500],
+    "valueProfiles": ["unique", "balanced_duplicate", "uneven_duplicate"],
+    "orderStructures": ["nearly_sorted", "reverse", "block_scrambled"],
+    "policyProfiles": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "selectionRule": "Within every scale and look, allocate one slot to every value-profile-by-order cell and one additional slot to a deterministically rotated cell. Independently balanced fault-profile and policy-by-direction label lists are deterministically permuted, then the lowest outcome-blind SHA-256-ranked eligible input is selected for each slot.",
+    "armRule": "Execute all 14 distinct settings signatures represented by the 30 executable S08 catalog arms on every selected block. Reuse a run only when settings bytes and pairing block are identical; retain every estimand-arm mapping in a normalized contrast map.",
+    "notFullCartesianReason": "The screen samples 250 of 67,500 available screening pairing blocks while retaining complete treatment support and all planned scales and structures."
+  },
+  "outcomes": {
+    "normalizedResidualError": "final strict adjacent inversion count divided by max(n-1,1), lower is better",
+    "successByBudget": "1 only for complete; lawful quiescence and event_budget are 0",
+    "completionTime": "charged opportunities; event_budget right-censored and quiescence a competing failure",
+    "unitWeightFullCost": "S09 s01UnitWeightFullCost; wall time and scheduler implementation overhead excluded",
+    "costLedgerVector": "all S09 named fields and projections retained"
+  },
+  "estimandOrientation": {
+    "twoArm": "active minus reference for additive task endpoints; log((active+0.5)/(reference+0.5)) for completion-opportunity and cost screening ratios",
+    "factorial": "active_active - active_reference - reference_active + reference_reference for additive endpoints; the analogous signed contrast of log(value+0.5) for ratio endpoints"
+  },
+  "adaptationRules": {
+    "firstOutcomeLook": 50,
+    "earliestPrecisionStop": 150,
+    "maximumPairingBlocks": 250,
+    "noArmDropping": true,
+    "noScaleOrStructureDropping": true,
+    "noSampleSizeReallocationAcrossEstimands": true,
+    "continueRule": "Continue to the next nested look unless the global precision-and-stability stop is met or the exact-parity/escalation gate fails.",
+    "precisionAndStabilityStop": "At a look of at least 150, stop only if the frozen S11 selection is identical at two consecutive looks, Spearman correlation of nondegenerate estimand utility ranks is at least 0.95, every selected or selection-boundary estimand has residual-error and success 95% bootstrap half-width at most 0.02, and its completion-time and full-cost log-ratio half-width is at most log(1.10).",
+    "maximumRule": "Stop after the 250-block look regardless of precision and label remaining uncertainty explicitly.",
+    "runtimeRule": "Runtime alone is not an adaptation criterion. A scientifically material execution reduction requires review rather than silent pruning."
+  },
+  "uncertainty": {
+    "bootstrapReplicatesPerLook": 1000,
+    "bootstrapUnit": "pairingBlockId stratified by n",
+    "bootstrapSeedRule": "SHA-256 counter-addressed by S10 design hash, look, endpoint, estimand, replicate, and scale",
+    "interval": "percentile 95% screening interval",
+    "zeroHandlingForLogEndpoints": 0.5
+  },
+  "validationThresholds": {
+    "maximumDesignRankDeficiency": 0,
+    "maximumScaleCountSpread": 0,
+    "maximumStructuralCellCountSpreadWithinScale": 1,
+    "maximumPolicyDirectionCountSpreadWithinScale": 1,
+    "maximumFaultProfileCountSpreadWithinScale": 1,
+    "pairCompletenessRequired": true,
+    "runAccountingRequired": true,
+    "exactReplaySampleMinimum": 20,
+    "protectedOutcomeReadsMaximum": 0,
+    "searchDerivedAssignmentsMaximum": 0
+  },
+  "escalationTriggers": [
+    "any E02-S01-E02 exact-parity mismatch",
+    "any protected-holdout outcome access",
+    "any S06 search-derived map assignment",
+    "any change to S02-S09 information, legal-action, scheduler, fault, replay, RNG, pairing, marginal-treatment, opportunity, or accounting contracts",
+    "any need to drop a planned scale, value profile, order structure, treatment signature, or nested sample increment for runtime",
+    "any administrative failure that prevents complete intention-to-simulate run accounting"
+  ]
+}

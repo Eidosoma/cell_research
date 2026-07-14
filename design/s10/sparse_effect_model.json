@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "e02.s10.sparse_effect_model.v1",
+  "researchStepId": "S10",
+  "frozenAtUtc": "2026-07-14T14:15:27Z",
+  "frozenBeforeOutcomeAccess": true,
+  "modelFamily": "elastic-net screening model with unshrunk paired-estimand summaries retained as the inferential anchor",
+  "responses": [
+    "paired normalized-residual-error contrast",
+    "paired success-by-budget contrast",
+    "paired log completion-opportunity contrast with 0.5 offset",
+    "paired log s01UnitWeightFullCost contrast with 0.5 offset"
+  ],
+  "candidateTerms": {
+    "estimandMainIndicators": "one indicator for each of the 9 nondegenerate executable scientific estimands; E02-S01-E02 is an exact gate and E02-S01-E05 is an inactive negative control",
+    "effectModifiers": [
+      "centered log2(n)",
+      "balanced_duplicate versus unique",
+      "uneven_duplicate versus unique",
+      "reverse versus nearly_sorted",
+      "block_scrambled versus nearly_sorted",
+      "Insertion versus Bubble",
+      "Selection versus Bubble",
+      "descending versus ascending"
+    ],
+    "interactions": "each estimand main indicator multiplied by every effect modifier",
+    "forbiddenAdjustments": ["post-treatment completion", "mediators", "ledger components as predictors of task outcomes", "outcome-selected fault-map scores"]
+  },
+  "preprocessing": "Modifier columns are centered and scaled on the frozen design only; response values are never used for preprocessing. Estimand indicators are not centered.",
+  "penalty": {
+    "type": "elastic_net",
+    "l1Ratio": 0.8,
+    "alphaGrid": [0.000001, 0.00000316227766, 0.00001, 0.0000316227766, 0.0001, 0.000316227766, 0.001, 0.00316227766, 0.01, 0.0316227766, 0.1, 0.316227766, 1.0],
+    "selection": "minimum mean squared error under the frozen grouped folds; ties select the larger alpha"
+  },
+  "crossValidation": {
+    "folds": 5,
+    "group": "pairingBlockId",
+    "assignment": "outcome-blind SHA-256 rank, balanced within n",
+    "maximumIterations": 100000,
+    "tolerance": 1e-8
+  },
+  "sensitivityModels": [
+    "ridge with l1Ratio=0 using the same grid and folds",
+    "lasso with l1Ratio=1 using the same grid and folds",
+    "unpenalized estimand-only paired means",
+    "leave-one-scale-out unshrunk paired means"
+  ],
+  "convergenceChecks": [
+    "optimizer convergence at selected alpha",
+    "coefficient support and utility-rank stability across sequential looks",
+    "agreement of effect direction across elastic-net, ridge, lasso, and unshrunk anchors",
+    "sensitivity to excluding the E05 inactive negative-control rows"
+  ]
+}
