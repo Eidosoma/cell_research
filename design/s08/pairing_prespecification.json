@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "e02.s08.pairing_prespecification.v1",
+  "researchStepId": "S08",
+  "title": "Pair all comparisons",
+  "frozenAtUtc": "2026-07-14T00:00:00Z",
+  "frozenBeforeImplementation": true,
+  "masterSeedHex": "0xe0208000000000000000000000000001",
+  "frozenQuestion": "Can scenario and valid semantic-stream coupling reduce variance without changing marginal treatment distributions?",
+  "inputBank": {
+    "path": "/artifacts/research_steps/S07/scenario_extension.parquet",
+    "expectedRows": 56430,
+    "expectedSha256": "1ee7075f0367b989acc31f66dca4dadd5321f5962dd6a318b1cde0c1a7bbf339",
+    "permutationRule": "Reuse each immutable S07 initial occupancy and value vector exactly across every arm in its pairing block; generate no replacement permutation in S08."
+  },
+  "pairingBlock": {
+    "unit": "one S07 input scenario crossed with one homogeneous Algotype assignment and one target direction",
+    "algotypeProfiles": ["Bubble", "Insertion", "Selection"],
+    "algotypeRule": "Every cell in a profile receives the named executable policy; all three profiles are fully crossed with every input rather than sampled.",
+    "directions": ["ascending", "descending"],
+    "directionRule": "Both directions are fully crossed with every input and Algotype profile.",
+    "expectedBlocksPerInput": 6,
+    "expectedPairingBlocks": 338580,
+    "armComposition": "Every pairing block supports every executable arm in contrast_arm_catalog.json; the Cartesian block-by-arm run list is intentionally normalized and not materialized in S08.",
+    "workerOrderInfluence": "none"
+  },
+  "faultMapAssignment": {
+    "owner": "S08",
+    "faultCounts": [2, 4, 6],
+    "eligibleClasses": [
+      "uniform_exact",
+      "clustered_exact",
+      "boundary_exact",
+      "median_rank_exact"
+    ],
+    "forbiddenClasses": ["search_derived_exploratory", "adversarial_held_out"],
+    "outcomeAccess": "none",
+    "profileAllocation": "Within each split-by-n-by-valueProfile-by-orderStructure stratum, rank inputScenarioId by a counter-addressed S08 assignment hash and cycle through a stratum-rotated 12-profile class-by-count list. Counts among profiles differ by at most one whenever the stratum has at least 12 rows.",
+    "mapGeneration": "Apply the frozen S06 structural generator to the initial-position identity/value context with one selected class and exact count per S07 input.",
+    "sharing": "The selected map is shared across Algotype, direction, architecture, scheduler, continuation, retry, coordinator, and passive-versus-stuck comparisons for the same input. Normal arms retain the map reference but apply zero faults.",
+    "confirmatoryRule": "Confirmatory maps are generated from input-only state and frozen addresses; no protected outcome, search score, search history, or S06 search-derived map may be read or assigned."
+  },
+  "primaryContrastRules": {
+    "source": "/artifacts/research_steps/S01/estimand_registry.yaml",
+    "executableMatchedEstimands": [
+      "E02-S01-E01",
+      "E02-S01-E02",
+      "E02-S01-E03",
+      "E02-S01-E04",
+      "E02-S01-E05",
+      "E02-S01-E06",
+      "E02-S01-E08",
+      "E02-S01-E09",
+      "E02-S01-E10",
+      "E02-S01-E11",
+      "E02-S01-E12"
+    ],
+    "declaredUnpairedNonExecutableEstimands": ["E02-S01-E07"],
+    "informationBoundaryDecision": "E02-S01-E07 is retained in the catalog as unpaired_non_executable_preserved_information_boundary. S02 rejects full_global_state from the matched action interface and S03 retains central_global_legacy only as a descriptive bundle; S08 does not weaken that boundary.",
+    "faultModeDefaultsForPreviouslyUnspecifiedMainEffects": {
+      "passive": ["E02-S01-E01", "E02-S01-E03", "E02-S01-E08", "E02-S01-E09"],
+      "stuck": ["E02-S01-E04", "E02-S01-E05", "E02-S01-E11"],
+      "normal": ["E02-S01-E02"],
+      "crossedPassiveStuck": ["E02-S01-E06", "E02-S01-E10", "E02-S01-E12"]
+    },
+    "retryCaveat": "E02-S01-E05 remains paired as frozen, but its S01 fixed action_failure=none makes retry_later_bounded exposure inactive under the S05 rule that queues retries only after exogenous action failure. S08 does not alter the factor to manufacture an effect.",
+    "armMarginalRule": "Every executable arm is available once per pairing block. Therefore arm counts and all baseline-stratum marginals are identical within each estimand; interactions have complete four-cell support.",
+    "assignmentTiming": "The arm catalog and all block-level assignments are frozen before any S10/S11 outcome execution."
+  },
+  "splitAndOutcomeAccess": {
+    "screening_pool": "assign and validate; no outcome execution in S08",
+    "confirmatory_holdout": "assign input-only fields while preserving protected=true; do not execute or inspect outcomes",
+    "runtime_validation": "may execute bounded implementation-only coupling fixtures; excluded from effect estimation",
+    "protectedOutcomeReads": 0,
+    "searchOutcomeReads": 0
+  },
+  "identifiers": {
+    "pairingBlockId": "pb1:SHA256(canonical semantic block content)",
+    "algotypeAssignmentId": "aa1:SHA256(n and homogeneous policy mapping)",
+    "faultMapId": "the frozen S06 fp1 content identifier",
+    "scenarioVariantId": "sv1:SHA256(pairingBlockId, mobility profile, faultMapId or none); this is an S08 design identity, not an executable reference-simulator r1 scenario ID"
+  },
+  "validationThresholds": {
+    "inputRows": 56430,
+    "pairingBlocks": 338580,
+    "uniquePairingBlockIds": 338580,
+    "blocksPerInput": 6,
+    "searchDerivedAssignments": 0,
+    "protectedOutcomeReads": 0,
+    "primaryEstimandsAccounted": 12,
+    "executableEstimands": 11,
+    "declaredUnpairedNonExecutableEstimands": 1,
+    "faultProfileCountSpreadScreeningAndConfirmatoryMaximum": 1,
+    "deterministicCoreFileMismatchMaximum": 0
+  },
+  "escalationTriggers": [
+    "any pairing rule changes a treatment-arm marginal distribution",
+    "any protected or search outcome is opened",
+    "any S06 search-derived or outcome-selected map is assigned",
+    "any incompatible scheduler or fault random-consumption pattern is labeled exact coupled",
+    "any need to change S02-S07 legal actions, information permissions, scheduler semantics, fault semantics, replay, RNG, or opportunity accounting"
+  ]
+}

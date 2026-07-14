@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "e02.s08.semantic_random_stream_specification.v1",
+  "researchStepId": "S08",
+  "title": "Semantic random-stream and coupling contract",
+  "frozenAtUtc": "2026-07-14T00:00:00Z",
+  "frozenBeforeImplementation": true,
+  "runtimeDerivation": "SHA-256 counter RNG addressed by (seed, executable reference-simulator scenario_id, stream_name, event_index, draw_index)",
+  "rootConsequence": "A shared numeric seed is not a common-random-number claim when executable scenario IDs differ.",
+  "couplingLabels": {
+    "exact_shared": "Both arms use the same executable scenario ID, stream name, address indices, and consumption semantics.",
+    "shared_prefix": "Addresses are identical only while both arms remain on the common exposure/read path; terminal or path divergence ends the claim.",
+    "scenario_paired_rng_unpaired": "Immutable scenario components are paired, but runtime roots, stream names, or consumption semantics differ; only the declared treatment-specific marginal law is claimed.",
+    "not_consumed": "The stream is absent under the treatment contract.",
+    "not_executable": "The contrast is excluded by a preserved implementation boundary."
+  },
+  "constructionStreams": [
+    {
+      "name": "future_runtime_seed_s07_v1",
+      "owner": "S07",
+      "scope": "one immutable input scenario",
+      "consumption": "one uint64 draw during S07 generation",
+      "S08Rule": "reuse exactly across every pairing block and arm derived from the input"
+    },
+    {
+      "name": "fault_profile_assignment_s08_v1",
+      "owner": "S08",
+      "scope": "input-only rank within split-by-scale-by-structure stratum",
+      "consumption": "one counter-addressed uint64 rank key per input",
+      "S08Rule": "select one of 12 outcome-blind structural class-by-exact-count profiles"
+    },
+    {
+      "name": "placement_uniform_exact_s06_v1|placement_clustered_exact_s06_v1|placement_boundary_exact_s06_v1|placement_median_rank_exact_s06_v1",
+      "owner": "S06 generator invoked by S08",
+      "scope": "selected fault map for one input",
+      "consumption": "class-specific S06 frozen consumption",
+      "S08Rule": "share the resulting immutable map ID and identity set across valid arms; never couple unlike placement generators draw-by-draw"
+    }
+  ],
+  "runtimeStreams": [
+    {
+      "name": "actor_activation",
+      "owner": "uniform_random_activation",
+      "consumption": "unbiased bounded sampling with replacement; rejection blocks are charged",
+      "exactCoupling": "same executable scenario ID and same uniform scheduler in both arms"
+    },
+    {
+      "name": "scheduler_permutation_s04_v1",
+      "owner": "random_permutation_sweep",
+      "consumption": "counter-addressed Fisher-Yates blocks at sweep start including rejection blocks",
+      "exactCoupling": "same executable scenario ID and same permutation scheduler in both arms"
+    },
+    {
+      "name": "bubble_side",
+      "owner": "Bubble policy",
+      "consumption": "one draw at each globally eligible Bubble opportunity",
+      "exactCoupling": "same executable scenario ID and common eligible-opportunity path; otherwise shared_prefix only"
+    },
+    {
+      "name": "conflict_priority",
+      "owner": "synchronous batch conflict resolution",
+      "consumption": "one draw per actual proposal in a batch wider than one",
+      "exactCoupling": "same executable scenario ID, synchronous scheduler, and batch opportunity addresses"
+    },
+    {
+      "name": "action_failure_bernoulli_s05_v1",
+      "owner": "bernoulli_p action failure",
+      "consumption": "one uint64 draw per charged opportunity",
+      "exactCoupling": "same executable scenario ID and same Bernoulli contract; effects may differ after proposal eligibility"
+    },
+    {
+      "name": "action_failure_transient_s05_v1",
+      "owner": "transient_markov action failure",
+      "consumption": "one uint64 draw per charged opportunity with contract-owned availability state",
+      "exactCoupling": "same executable scenario ID and same transient contract"
+    },
+    {
+      "name": "sensing_value_error_s05_v1",
+      "owner": "noisy_value_or_status sensing",
+      "consumption": "one draw per authorized logical observation record",
+      "exactCoupling": "shared_prefix only when the two arms make the same read sequence"
+    },
+    {
+      "name": "sensing_status_error_s05_v1",
+      "owner": "noisy_value_or_status sensing",
+      "consumption": "one draw per authorized other-cell observation record",
+      "exactCoupling": "shared_prefix only when the two arms make the same other-cell read sequence"
+    }
+  ],
+  "schedulerCrossFamilyRule": {
+    "uniformVersusPermutation": "scenario_paired_rng_unpaired because actor_activation and scheduler_permutation_s04_v1 have different stream names and consumption patterns",
+    "deterministicOrAdversarialVersusStochastic": "scenario_paired_rng_unpaired because one arm has no actor-selection stream",
+    "synchronousVersusSerial": "scenario_paired_rng_unpaired because synchronous conflict_priority consumption and batch opportunity semantics are treatment-specific",
+    "sameFamilyAcrossArchitecture": "exact_shared when the executable scenario ID is identical; otherwise scenario_paired_rng_unpaired"
+  },
+  "faultAndTerminationRule": {
+    "normalVersusFaulted": "scenario_paired_rng_unpaired because faulted cell content changes executable scenario ID",
+    "passiveVersusStuck": "same immutable fault map but scenario_paired_rng_unpaired because mobility labels change executable scenario ID",
+    "continuation": "shared_prefix through the first arm-specific stop when scenario ID, scheduler, and fault mode are equal",
+    "retry": "shared_prefix while common opportunities exist; natural reactivation, proposal path, and terminal divergence may end pathwise equality",
+    "actionFailureProfileChanges": "scenario_paired_rng_unpaired across none, Bernoulli, and transient profiles; do not substitute one stream for another",
+    "sensingProfileChanges": "scenario_paired_rng_unpaired across exact and noisy profiles; exact sensing consumes no error stream"
+  },
+  "workerOrderInfluence": "none",
+  "prohibitions": [
+    "do not relabel a shared numeric seed as exact coupling when scenario IDs differ",
+    "do not reuse actor_activation values as scheduler_permutation_s04_v1 draws",
+    "do not add or discard draws to force equal consumption",
+    "do not condition construction streams on outcomes",
+    "do not permit worker, process, or completion order to enter any address"
+  ]
+}
