@@ -38,6 +38,15 @@ supplementary architecture ledger pending the separately planned S09 outcome
 schema. Central candidate pools with k greater than one remain structurally
 unsupported until S04 freezes compatible opportunity semantics.
 
+S04 adds deterministic scans, uniform random activations, random-permutation
+sweeps, synchronous proposals with deterministic conflicts, and a bounded fair
+adversary over the same one-proposal boundary. S05 then composes scenario-owned
+normal/passive/stuck mobility, continuation rules, charged actor-selected
+bounded retries, counter-addressed Bernoulli/transient action failures, and
+policy-visible value/target-status sensing noise. The trusted validator keeps
+ground truth, and the full-global legacy controller remains non-comparable.
+See `faults.py` and `scripts/validate_fault_semantics.py`.
+
 Validation:
 
 ```bash
@@ -53,4 +62,11 @@ UV_CACHE_DIR=/cache/uv uv run --with pytest==9.0.2 \
 
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   python scripts/validate_architectures.py --output /artifacts/research_steps/S03
+
+UV_CACHE_DIR=/cache/uv uv run --with pytest==9.0.2 \
+  python -m pytest -q tests/test_faults.py
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/validate_fault_semantics.py \
+  --output /artifacts/research_steps/S05/fault_package
 ```

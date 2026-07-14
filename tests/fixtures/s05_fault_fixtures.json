@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "E02.S05.portable-fault-fixtures.v1",
+  "core": {
+    "values": [4, 1, 3, 2],
+    "policy": "Bubble",
+    "seed": 7,
+    "generationKey": "S05/portable/core",
+    "maxActivations": 20,
+    "bernoulliFailureEvents": [4],
+    "retryAudit": [
+      {"eventIndex": 4, "actorId": "cell-0000", "disposition": "queued", "retryAttempt": 1, "eligibleEventIndex": 6},
+      {"eventIndex": 8, "actorId": "cell-0000", "disposition": "attempted", "retryAttempt": 1, "eligibleEventIndex": 6}
+    ],
+    "retryDecision": "rejected_stale_actor",
+    "sensingApplied": [
+      {"eventIndex": 0, "readOrdinal": 1, "field": "target_status", "actual": "normal", "visible": "passive"},
+      {"eventIndex": 2, "readOrdinal": 1, "field": "target_status", "actual": "normal", "visible": "passive"}
+    ]
+  },
+  "passiveContinuation": {
+    "values": [2, 1, 3],
+    "faults": {"0": "passive"},
+    "seed": 0,
+    "generationKey": "S05/portable/passive",
+    "skipStopReason": "complete",
+    "skipActivations": 8,
+    "stopStopReason": "blocking_failure",
+    "stopActivations": 1
+  },
+  "synchronousStop": {
+    "values": [5, 4, 3, 2, 1],
+    "seed": 0,
+    "generationKey": "S05/sync-stop",
+    "maxActivations": 10,
+    "chargedFirstBatch": 5,
+    "decisions": ["accepted", "action_failure", "conflict_loss", "accepted", "no_op"]
+  }
+}

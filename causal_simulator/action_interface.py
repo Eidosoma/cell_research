@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Literal
+from typing import Literal, Protocol
 
 from reference_simulator.model import (
     Direction,
@@ -100,6 +100,19 @@ class SelectionObservation:
 
 
 PolicyObservation = BubbleObservation | InsertionObservation | SelectionObservation
+ObservationRecord = ActorView | VisibleCell
+
+
+class ObservationRecordTransformer(Protocol):
+    """Transform one authorized record without access to raw run state."""
+
+    def __call__(
+        self,
+        record: ObservationRecord,
+        *,
+        event_index: int,
+        read_ordinal: int,
+    ) -> ObservationRecord: ...
 
 
 @dataclass(slots=True)
@@ -134,20 +147,38 @@ class PolicyNativeReadGateway:
         "__scenario",
         "__state",
         "__observed_identities",
+        "__record_transformer",
         "actor_id",
         "meter",
         "used_capabilities",
     )
 
-    def __init__(self, scenario: Scenario, state: RunState, actor_id: str, meter: OperationMeter):
+    def __init__(
+        self,
+        scenario: Scenario,
+        state: RunState,
+        actor_id: str,
+        meter: OperationMeter,
+        record_transformer: ObservationRecordTransformer | None = None,
+    ):
         if actor_id not in scenario.cell_map:
             raise KeyError(actor_id)
         self.__scenario = scenario
         self.__state = state
         self.__observed_identities: dict[int, str] = {}
+        self.__record_transformer = record_transformer
         self.actor_id = actor_id
         self.meter = meter
         self.used_capabilities: list[ReadCapability] = []
+
+    def _transform(self, record: ObservationRecord) -> ObservationRecord:
+        if self.__record_transformer is None:
+            return record
+        return self.__record_transformer(
+            record,
+            event_index=self.__state.activation_count,
+            read_ordinal=self.meter.observation_reads - 1,
+        )
 
     @property
     def allowed_capabilities(self) -> frozenset[ReadCapability]:
@@ -178,7 +209,7 @@ class PolicyNativeReadGateway:
         if capability == ReadCapability.ACTOR_SELF:
             self.meter.read()
             cursor = state.selection_cursors.get(self.actor_id)
-            return ActorView(
+            return self._transform(ActorView(
                 self.actor_id,
                 actor_position,
                 actor.value,
@@ -187,7 +218,7 @@ class PolicyNativeReadGateway:
                 actor.fault,
                 len(state.occupancy),
                 cursor,
-            )
+            ))
 
         if capability == ReadCapability.SELECTED_NEIGHBOR:
             if side not in {"left", "right"}:
@@ -198,7 +229,7 @@ class PolicyNativeReadGateway:
             target = cells[state.occupancy[target_position]]
             self.meter.read()
             self.__observed_identities[target_position] = target.cell_id
-            return VisibleCell(target_position, target.value, target.fault)
+            return self._transform(VisibleCell(target_position, target.value, target.fault))
 
         if capability == ReadCapability.STRICT_PREFIX:
             if position is None or not 0 <= position < actor_position:
@@ -206,7 +237,7 @@ class PolicyNativeReadGateway:
             target = cells[state.occupancy[position]]
             self.meter.read()
             self.__observed_identities[position] = target.cell_id
-            return VisibleCell(position, target.value, target.fault)
+            return self._transform(VisibleCell(position, target.value, target.fault))
 
         if capability == ReadCapability.CURSOR_TARGET:
             cursor = state.selection_cursors[self.actor_id]
@@ -217,7 +248,7 @@ class PolicyNativeReadGateway:
             target = cells[state.occupancy[cursor]]
             self.meter.read()
             self.__observed_identities[cursor] = target.cell_id
-            return VisibleCell(cursor, target.value, target.fault)
+            return self._transform(VisibleCell(cursor, target.value, target.fault))
 
         raise AssertionError(f"authorized capability has no reader: {capability.value}")
 
@@ -251,9 +282,12 @@ def build_policy_native_observation(
     actor_id: str,
     *,
     side: Literal["left", "right"] | None = None,
+    record_transformer: ObservationRecordTransformer | None = None,
 ) -> tuple[PolicyObservation, OperationMeter, PolicyNativeReadGateway]:
     meter = OperationMeter()
-    gateway = PolicyNativeReadGateway(scenario, state, actor_id, meter)
+    gateway = PolicyNativeReadGateway(
+        scenario, state, actor_id, meter, record_transformer
+    )
     actor = gateway.read(ReadCapability.ACTOR_SELF)
     assert isinstance(actor, ActorView)
 
@@ -431,10 +465,14 @@ class CentralK1Relay:
 class CommonActionInterface:
     """Common observation/proposal route used by both frozen S02 topologies."""
 
-    __slots__ = ("central_relay",)
+    __slots__ = ("central_relay", "record_transformer")
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        record_transformer: ObservationRecordTransformer | None = None,
+    ) -> None:
         self.central_relay = CentralK1Relay()
+        self.record_transformer = record_transformer
 
     def envelope_for(
         self,
@@ -446,7 +484,11 @@ class CommonActionInterface:
         side: Literal["left", "right"] | None = None,
     ) -> ActionEnvelope:
         observation, meter, gateway = build_policy_native_observation(
-            scenario, state, actor_id, side=side
+            scenario,
+            state,
+            actor_id,
+            side=side,
+            record_transformer=self.record_transformer,
         )
         proposal = propose_from_observation(observation, meter)
         observed_target_id = (

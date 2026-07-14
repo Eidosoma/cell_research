@@ -45,6 +45,19 @@ from .schedulers import (
     run_scheduled_architecture,
     scheduler_controller_fields,
 )
+from .faults import (
+    FAULT_INTERFACE_VERSION,
+    ActionFailureProfile,
+    ContinuationPolicy,
+    FaultExecutionContract,
+    FaultRun,
+    MobilityProfile,
+    RetryPolicy,
+    SensingProfile,
+    comparability_classification,
+    exact_replay_fault,
+    run_faulted_architecture,
+)
 
 __all__ = [
     "ACTION_INTERFACE_VERSION",
@@ -84,4 +97,15 @@ __all__ = [
     "exact_replay_scheduler",
     "run_scheduled_architecture",
     "scheduler_controller_fields",
+    "FAULT_INTERFACE_VERSION",
+    "ActionFailureProfile",
+    "ContinuationPolicy",
+    "FaultExecutionContract",
+    "FaultRun",
+    "MobilityProfile",
+    "RetryPolicy",
+    "SensingProfile",
+    "comparability_classification",
+    "exact_replay_fault",
+    "run_faulted_architecture",
 ]

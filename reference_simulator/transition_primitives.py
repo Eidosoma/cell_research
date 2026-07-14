@@ -64,7 +64,7 @@ def cost_delta(
     delta["proposals"] = 1
     if proposal.kind == ProposalKind.NO_OP:
         delta["noOps"] = 1
-    elif decision.startswith("rejected"):
+    elif decision.startswith("rejected") or decision == "action_failure":
         delta["rejections"] = 1
     elif decision == "conflict_loss":
         delta["conflictLosses"] = 1

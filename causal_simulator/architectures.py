@@ -325,10 +325,15 @@ class ArchitectureProposalRouter:
 
     __slots__ = ("interface", "contract", "coordinator", "audits")
 
-    def __init__(self, contract: ArchitectureExecutionContract) -> None:
+    def __init__(
+        self,
+        contract: ArchitectureExecutionContract,
+        *,
+        action_interface: CommonActionInterface | None = None,
+    ) -> None:
         if not contract.matched_contrast_eligible:
             raise ValueError("legacy global control does not use the matched proposal router")
-        self.interface = CommonActionInterface()
+        self.interface = action_interface or CommonActionInterface()
         self.contract = contract
         self.coordinator = (
             FrozenWeakCoordinator(contract.weak_parameters)
@@ -352,11 +357,33 @@ class ArchitectureProposalRouter:
             else ControlTopology.DISTRIBUTED_LOCAL
         )
         envelope = self.interface.envelope_for(topology, scenario, state, actor_id, side=side)
+        event_index = state.activation_count
+        return self._apply_coordinator(envelope, event_index)
+
+    def route_existing_envelope(
+        self,
+        envelope: ActionEnvelope,
+        event_index: int,
+    ) -> Proposal:
+        """Route one already-charged proposal through the frozen coordinator.
+
+        S05 deferred retries use this path to preserve the global coordinator
+        phase and ownership rule without constructing a second policy proposal.
+        """
+        if not isinstance(envelope, ActionEnvelope):
+            raise TypeError("existing proposal route accepts ActionEnvelope only")
+        if self.contract.architecture == ControlArchitecture.CENTRAL_LOCAL_PROPOSAL_K1:
+            envelope = self.interface.central_relay.forward_one((envelope,))
+        return self._apply_coordinator(envelope, event_index)
+
+    def _apply_coordinator(
+        self,
+        envelope: ActionEnvelope,
+        event_index: int,
+    ) -> Proposal:
         if self.coordinator is None:
             return envelope.proposal
-
         parameters = self.coordinator.parameters
-        event_index = state.activation_count
         if not parameters.eligible(event_index):
             return envelope.proposal
         signal = encode_coordinator_signal(envelope, event_index)

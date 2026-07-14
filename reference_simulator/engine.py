@@ -27,7 +27,12 @@ from .scheduler import (
     scheduled_priority,
     scheduled_side,
 )
-from .transition_primitives import commit_proposal, cost_delta, validate_proposal
+from .transition_primitives import (
+    ValidationDecision,
+    commit_proposal,
+    cost_delta,
+    validate_proposal,
+)
 
 
 TRACE_SCHEMA = "E01.reference-event-pre-S06.v1"
@@ -56,6 +61,32 @@ class ScheduleFactory(Protocol):
         event_index: int,
         remaining_opportunities: int,
     ) -> tuple[ScheduledOpportunity, ...]: ...
+
+
+class BatchExecutionInterceptor(Protocol):
+    """Optional post-construction fault hook; absent on the frozen E01 path."""
+
+    def prepare(
+        self,
+        proposal: Proposal,
+        event_index: int,
+    ) -> tuple[Proposal, tuple[tuple[str, int], ...]]: ...
+
+    def outcome(
+        self,
+        proposal: Proposal,
+        validation: ValidationDecision,
+        event_index: int,
+    ) -> ValidationDecision: ...
+
+    def after_batch(
+        self,
+        scenario: Scenario,
+        state: RunState,
+        proposals: tuple[Proposal, ...],
+        decisions: Mapping[int, str],
+        batch_start_index: int,
+    ) -> None: ...
 
 
 def initial_state(scenario: Scenario) -> RunState:
@@ -190,6 +221,16 @@ def _proposal_for_slot(
         proposal_state = snapshot.clone()
         proposal_state.activation_count = event_index
     proposal = factory(scenario, proposal_state, actor_id, side=side)
+    # Optional policy-gateway randomness (for example S05 sensing noise) is
+    # already part of the returned proposal. Count and retain it without
+    # changing byte output on the default empty-draw path.
+    if proposal.random_draws:
+        draws.extend(proposal.random_draws)
+        counts: dict[str, int] = {}
+        for stream, _, _, _ in proposal.random_draws:
+            counts[stream] = counts.get(stream, 0) + 1
+        for stream, count in counts.items():
+            _update_counter(snapshot, stream, count)
     priority = 0
     effective_batch_width = (
         scenario.batch_width if actual_batch_width is None else actual_batch_width
@@ -222,6 +263,7 @@ def execute_batch(
     emit_event_records: bool = True,
     proposal_factory: CellViewProposalFactory | None = None,
     schedule_factory: ScheduleFactory | None = None,
+    execution_interceptor: BatchExecutionInterceptor | None = None,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
     """Generate from one snapshot, validate, resolve, and commit atomically.
 
@@ -252,20 +294,29 @@ def execute_batch(
     proposals: list[Proposal] = []
     for ordinal in range(width):
         event_index = state.activation_count + ordinal
-        proposals.append(
-            _proposal_for_slot(
+        proposal = _proposal_for_slot(
                 scenario, snapshot, event_index, ordinal,
                 capture_random_draws=emit_event_records,
                 proposal_factory=proposal_factory,
                 scheduled_opportunity=(scheduled[ordinal] if scheduled is not None else None),
                 actual_batch_width=width,
             )
-        )
+        if execution_interceptor is not None:
+            proposal, consumption = execution_interceptor.prepare(proposal, event_index)
+            for stream, count in consumption:
+                _update_counter(snapshot, stream, count)
+        proposals.append(proposal)
 
     decisions: dict[int, str] = {}
     valid_changes: list[Proposal] = []
     for proposal in proposals:
         validation = validate_proposal(scenario, state, proposal)
+        if execution_interceptor is not None:
+            validation = execution_interceptor.outcome(
+                proposal,
+                validation,
+                state.activation_count + proposal.ordinal,
+            )
         decisions[proposal.ordinal] = validation.decision
         if validation.eligible_for_commit:
             valid_changes.append(proposal)
@@ -293,6 +344,14 @@ def execute_batch(
     state.activation_count += width
     state.stream_counters = snapshot.stream_counters
     state.terminal = evaluate_terminal(scenario, state)
+    if execution_interceptor is not None:
+        execution_interceptor.after_batch(
+            scenario,
+            state,
+            tuple(proposals),
+            decisions,
+            snapshot.activation_count,
+        )
     post_hash = state_hash(scenario.scenario_id, state) if emit_event_records else None
 
     if not emit_event_records:
@@ -387,6 +446,7 @@ def run(
     trace_mode: Literal["full", "digest", "none"] = "digest",
     proposal_factory: CellViewProposalFactory | None = None,
     schedule_factory: ScheduleFactory | None = None,
+    execution_interceptor: BatchExecutionInterceptor | None = None,
 ) -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
@@ -403,6 +463,7 @@ def run(
             retain_events=(trace_mode == "full"),
             proposal_factory=proposal_factory,
             schedule_factory=schedule_factory,
+            execution_interceptor=execution_interceptor,
         )
         if not encoded_events and state.terminal is None:
             state.terminal = evaluate_terminal(scenario, state) or "event_budget"
