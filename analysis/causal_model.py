@@ -1084,8 +1084,18 @@ def generate(output_dir: Path) -> dict[str, Any]:
             "workerCount": 1,
             "gpuUsed": False,
         },
-        "networkUsed": False,
-        "newDependenciesInstalled": [],
+        "networkUse": {
+            "artifactGeneration": False,
+            "testEnvironmentBootstrap": True,
+            "reason": "The launched image lacked pytest; uv resolved the pinned test-only pytest environment into /cache.",
+        },
+        "newDependenciesInstalled": [
+            {
+                "requirement": "pytest==9.0.2",
+                "scope": "ephemeral uv test environment with UV_CACHE_DIR=/cache/uv",
+                "projectOrSystemEnvironmentModified": False,
+            }
+        ],
     }
     write_json(output_dir / "provenance_manifest.json", provenance)
     return validation
