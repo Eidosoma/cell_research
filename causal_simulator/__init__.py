@@ -58,6 +58,16 @@ from .faults import (
     exact_replay_fault,
     run_faulted_architecture,
 )
+from .costing import (
+    COST_SCHEMA_SHA256,
+    COST_SCHEMA_VERSION,
+    CompleteCostLedger,
+    CostedFaultRun,
+    build_complete_cost_ledger,
+    exact_replay_costed,
+    run_costed_faulted_architecture,
+    validate_cost_schema,
+)
 from .placements import (
     PLACEMENT_INTERFACE_VERSION,
     AnalysisRole,
@@ -137,6 +147,14 @@ __all__ = [
     "comparability_classification",
     "exact_replay_fault",
     "run_faulted_architecture",
+    "COST_SCHEMA_SHA256",
+    "COST_SCHEMA_VERSION",
+    "CompleteCostLedger",
+    "CostedFaultRun",
+    "build_complete_cost_ledger",
+    "exact_replay_costed",
+    "run_costed_faulted_architecture",
+    "validate_cost_schema",
     "PLACEMENT_INTERFACE_VERSION",
     "AnalysisRole",
     "ConfirmatoryLeakageError",

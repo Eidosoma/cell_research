@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eidosoma.invalid/schemas/e02/complete-cost-ledger-v1.json",
+  "title": "E02 complete cost ledger",
+  "description": "Frozen S09 accounting contract. The vector ledger is canonical; named scalar projections are sensitivities. Wall time and scheduler implementation overhead never enter an algorithmic projection.",
+  "schemaVersion": "E02.complete-cost-ledger.v1",
+  "researchStepId": "S09",
+  "frozenAtUtc": "2026-07-14T00:00:00Z",
+  "contractBoundary": {
+    "legalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "informationPermission": "policy_native_local",
+    "opportunityUnit": "one_actor_one_final_proposal",
+    "proposalCandidatesPerOpportunity": 1,
+    "pairingInterfaceVersion": "E02-paired-comparisons-v1",
+    "changesActionOrInformationContract": false,
+    "changesSchedulerOrFaultOpportunityContract": false,
+    "changesS08ArmsOrPairing": false
+  },
+  "readConvention": {
+    "canonicalOperation": "observationRecordReads",
+    "definition": "One authorized record access materializes the value and fault-status fields together and is charged once.",
+    "valueReads": "Diagnostic field projection equal to observationRecordReads; never added beside observationRecordReads.",
+    "statusReads": "Diagnostic field projection equal to observationRecordReads; never added beside observationRecordReads.",
+    "noisySensingDraws": "Mechanism audits over already-charged reads; they are not additional logical reads. Actor self status remains protected under the S05 contract."
+  },
+  "candidateConvention": {
+    "targetCalculations": "One fresh policy target-selection/candidate-construction calculation, including boundary and policy NoOp outcomes.",
+    "policyCandidateConstructions": "Diagnostic alias of targetCalculations and never separately additive.",
+    "deferredRetryEnvelopeReuses": "Equal to S05 retryAttempts. A retry consumes a natural activation and final proposal but performs no fresh candidate construction.",
+    "identity": "targetCalculations = proposals - deferredRetryEnvelopeReuses"
+  },
+  "failureConvention": {
+    "failedProposals": "Diagnostic aggregate equal to rejections + conflictLosses.",
+    "actionFailures": "Cause-specific subset of rejections, not an additional failed-proposal charge.",
+    "noOps": "Legal deliberate dispositions, not failed proposals."
+  },
+  "coordinatorConvention": {
+    "coordinatorMessages": "Two messages per eligible weak-coordinator decision; additive only in the frozen S01 projection.",
+    "coordinatorMessageBits": "Communication-volume diagnostic in bits; not additive with message counts.",
+    "coordinatorClockChecks": "One deterministic eligibility check per activation only when weak_frozen_budget is active.",
+    "coordinatorCandidateEvaluations": "One evaluation of the already-built one-bit candidate signal per eligible decision; no candidate is constructed or inspected for scheduling.",
+    "centralLocalK1": "The common-validator relay is an ownership label under S03 and receives no newly invented message or candidate charge in S09."
+  },
+  "schedulerConvention": {
+    "schedulerActorSelectionRngBlocks": "Counter-addressed actor-selection RNG blocks consumed by the scheduler.",
+    "schedulerIdentitiesScored": "Implementation-specific identity scores evaluated by the scheduler.",
+    "schedulerCandidateInspections": "Must remain zero under the frozen one-proposal contract.",
+    "separation": "All scheduler implementation counters and wall time are reported separately and have zero weight in every algorithmic projection."
+  },
+  "projectionProfiles": {
+    "s01UnitWeightFullCost": {
+      "purpose": "Frozen primary unit-weight sensitivity from S01.",
+      "weights": {
+        "activations": 1,
+        "observationRecordReads": 1,
+        "valueComparisons": 1,
+        "targetCalculations": 1,
+        "proposals": 1,
+        "noOps": 1,
+        "rejections": 1,
+        "memoryUpdates": 1,
+        "acceptedSwaps": 1,
+        "displacedCells": 1,
+        "conflictLosses": 1,
+        "coordinatorMessages": 1
+      }
+    },
+    "controllerExpandedSensitivity": {
+      "purpose": "Named sensitivity that adds deterministic weak-coordinator eligibility and decision work.",
+      "base": "s01UnitWeightFullCost",
+      "additionalWeights": {
+        "coordinatorClockChecks": 1,
+        "coordinatorCandidateEvaluations": 1
+      }
+    },
+    "mechanismExpandedSensitivity": {
+      "purpose": "Named simulation-mechanism sensitivity; not a privileged physical cost.",
+      "base": "controllerExpandedSensitivity",
+      "additionalWeights": {
+        "sensingErrorHandlingOperations": 1,
+        "faultRngDraws": 1
+      }
+    },
+    "zeroCostControl": {
+      "purpose": "Validation-only all-zero projection.",
+      "weights": {}
+    }
+  },
+  "fieldCatalog": [
+    {"name": "activations", "unit": "opportunity", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "observationRecordReads", "unit": "authorized record read", "type": "integer", "owner": "native", "role": "additive_s01", "source": "observationReads"},
+    {"name": "valueReads", "unit": "value field materialized", "type": "integer", "owner": "read projection", "role": "diagnostic_alias", "source": "observationRecordReads"},
+    {"name": "statusReads", "unit": "fault-status field materialized", "type": "integer", "owner": "read projection", "role": "diagnostic_alias", "source": "observationRecordReads"},
+    {"name": "valueComparisons", "unit": "logical relation evaluation", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "targetCalculations", "unit": "fresh policy candidate construction", "type": "integer", "owner": "policy", "role": "additive_s01", "source": "proposals - retryAttempts"},
+    {"name": "policyCandidateConstructions", "unit": "fresh policy candidate construction", "type": "integer", "owner": "policy", "role": "diagnostic_alias", "source": "targetCalculations"},
+    {"name": "deferredRetryEnvelopeReuses", "unit": "reused proposal envelope", "type": "integer", "owner": "fault retry", "role": "diagnostic_subset", "source": "retryAttempts"},
+    {"name": "proposals", "unit": "final proposal submission", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "failedProposals", "unit": "unsuccessful non-NoOp proposal", "type": "integer", "owner": "derived", "role": "diagnostic_aggregate", "source": "rejections + conflictLosses"},
+    {"name": "noOps", "unit": "legal NoOp disposition", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "rejections", "unit": "validation/action-failure rejection", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "memoryUpdates", "unit": "accepted memory update", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "acceptedSwaps", "unit": "accepted atomic swap", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "displacedCells", "unit": "cell displacement", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "conflictLosses", "unit": "synchronous conflict loss", "type": "integer", "owner": "native", "role": "additive_s01", "source": "native ledger"},
+    {"name": "coordinatorMessages", "unit": "message", "type": "integer", "owner": "architecture", "role": "additive_s01", "source": "architecture ledger"},
+    {"name": "coordinatorMessageBits", "unit": "bit", "type": "integer", "owner": "architecture", "role": "separate_unit", "source": "architecture ledger"},
+    {"name": "coordinatorClockChecks", "unit": "eligibility check", "type": "integer", "owner": "architecture", "role": "additive_named_sensitivity", "source": "activations when weak coordinator active"},
+    {"name": "coordinatorCandidateEvaluations", "unit": "one-bit candidate decision", "type": "integer", "owner": "architecture", "role": "additive_named_sensitivity", "source": "coordinatorEligibleDecisions"},
+    {"name": "coordinatorEligibleDecisions", "unit": "eligible decision", "type": "integer", "owner": "architecture", "role": "diagnostic_alias", "source": "architecture ledger"},
+    {"name": "coordinatorInterventions", "unit": "veto", "type": "integer", "owner": "architecture", "role": "diagnostic_subset", "source": "architecture ledger"},
+    {"name": "sensingValueDraws", "unit": "exogenous draw", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_exposure", "source": "fault ledger"},
+    {"name": "sensingStatusDraws", "unit": "exogenous draw", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_exposure", "source": "fault ledger"},
+    {"name": "sensingValueErrors", "unit": "applied corruption", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_subset", "source": "fault ledger"},
+    {"name": "sensingStatusErrors", "unit": "applied corruption", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_subset", "source": "fault ledger"},
+    {"name": "sensingErrorsApplied", "unit": "applied corruption", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_aggregate", "source": "fault ledger"},
+    {"name": "sensingErrorHandlingOperations", "unit": "error-handling operation", "type": "integer", "owner": "fault mechanism", "role": "additive_named_sensitivity", "source": "fault ledger"},
+    {"name": "actionFailureDraws", "unit": "exogenous draw", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_exposure", "source": "fault ledger"},
+    {"name": "actionFailureExposures", "unit": "failed-state exposure", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_subset", "source": "fault ledger"},
+    {"name": "actionFailures", "unit": "applied action failure", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_subset_of_rejections", "source": "fault ledger"},
+    {"name": "blockingFailures", "unit": "blocking failure", "type": "integer", "owner": "fault mechanism", "role": "diagnostic", "source": "fault ledger"},
+    {"name": "continuationStops", "unit": "failure-induced stop", "type": "integer", "owner": "fault mechanism", "role": "diagnostic_subset", "source": "fault ledger"},
+    {"name": "retryQueued", "unit": "queued retry", "type": "integer", "owner": "fault retry", "role": "diagnostic", "source": "fault ledger"},
+    {"name": "retryAttempts", "unit": "natural-opportunity retry", "type": "integer", "owner": "fault retry", "role": "diagnostic_alias", "source": "fault ledger"},
+    {"name": "retryExhausted", "unit": "exhausted retry", "type": "integer", "owner": "fault retry", "role": "diagnostic", "source": "fault ledger"},
+    {"name": "retryQueueCollisions", "unit": "queue collision", "type": "integer", "owner": "fault retry", "role": "diagnostic", "source": "fault ledger"},
+    {"name": "retryPendingAtStop", "unit": "pending envelope", "type": "integer", "owner": "fault retry", "role": "state_at_stop", "source": "fault ledger"},
+    {"name": "faultRngDraws", "unit": "exogenous draw", "type": "integer", "owner": "fault mechanism", "role": "additive_named_sensitivity", "source": "fault ledger"},
+    {"name": "schedulerActorSelectionRngBlocks", "unit": "RNG block", "type": "integer", "owner": "scheduler implementation", "role": "separate_overhead", "source": "scheduler audit"},
+    {"name": "schedulerIdentitiesScored", "unit": "identity score", "type": "integer", "owner": "scheduler implementation", "role": "separate_overhead", "source": "scheduler audit"},
+    {"name": "schedulerCandidateInspections", "unit": "proposal candidate inspection", "type": "integer", "owner": "scheduler implementation", "role": "separate_overhead_must_be_zero", "source": "scheduler audit"},
+    {"name": "wallTimeSeconds", "unit": "second", "type": "number", "owner": "runtime", "role": "separate_nonalgorithmic", "source": "monotonic host clock"}
+  ],
+  "requiredIdentities": [
+    "activations = proposals",
+    "proposals = noOps + rejections + memoryUpdates + acceptedSwaps + conflictLosses",
+    "displacedCells = 2 * acceptedSwaps",
+    "targetCalculations = proposals - retryAttempts",
+    "policyCandidateConstructions = targetCalculations",
+    "deferredRetryEnvelopeReuses = retryAttempts",
+    "failedProposals = rejections + conflictLosses",
+    "valueReads = statusReads = observationRecordReads",
+    "actionFailures <= rejections",
+    "coordinatorMessages = 2 * coordinatorEligibleDecisions",
+    "coordinatorCandidateEvaluations = coordinatorEligibleDecisions",
+    "schedulerCandidateInspections = 0",
+    "wallTimeSeconds is excluded from algorithmic projections"
+  ],
+  "normalizationConvention": {
+    "perOpportunity": "count / activations; null when activations is zero",
+    "perCell": "count / n",
+    "perN2": "count / n^2",
+    "scientificUse": "Report raw counts with normalized values; normalization never replaces raw paired outcomes."
+  },
+  "type": "object",
+  "required": ["schemaVersion", "scenarioId", "n", "costs", "projections", "normalizations", "validation"],
+  "properties": {
+    "schemaVersion": {"const": "E02.complete-cost-ledger.v1"},
+    "scenarioId": {"type": "string", "minLength": 1},
+    "n": {"type": "integer", "minimum": 1},
+    "costs": {"type": "object"},
+    "projections": {"type": "object"},
+    "normalizations": {"type": "object"},
+    "validation": {"type": "object"}
+  }
+}

@@ -65,6 +65,17 @@ schedulers, faults, or streams: S08 retains that ownership. Only S06's four
 outcome-blind structural rule classes are allowlisted for future assignment;
 the search-derived class remains fail-closed.
 
+S09 adds a read-only complete cost projection in `costing.py`. It integrates
+the native, architecture, scheduler-audit, and fault ledgers without changing
+execution. Fresh policy candidate constructions are target calculations;
+natural retries reuse an envelope and therefore do not receive a second
+candidate charge. Field-level value/status read views, failed proposals, and
+candidate constructions are explicit aliases and are not added twice. The
+frozen S01 unit-weight projection remains named, while coordinator clock and
+decision work and fault-mechanism work are separate sensitivities. Scheduler
+implementation overhead and host wall time remain separate from all
+algorithmic projections. The normative schema is `design/s09/cost_schema.json`.
+
 Validation:
 
 ```bash
