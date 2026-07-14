@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "e01.s13.chimera_preregistration.v1",
+  "researchStepId": "S13",
+  "frozenQuestion": "Do the declared clean-room chimeric scenarios reproduce the paper's Figure 8 completion, cost, transient aggregation, duplicate persistence, and Figures 9-10 conflicting-direction endpoints, while preserving composition, aggregation-denominator, stopping, and historical-observability boundaries?",
+  "frozenBeforeFullPopulationOutcomes": true,
+  "preFreezeEngineeringDisclosure": "Before this file was frozen, replicate ordinal zero from six exact profiles was used only to benchmark execution and observe terminal/runtime feasibility: three same-direction profiles and the three unique opposing pairs. No profile mean, interval, figure curve, claim classification, random-assignment sensitivity, or control outcome was inspected.",
+  "evidenceLayers": {
+    "paper": "Reported prose, equations, captions, and displayed figures; aggregation divides same-label left-neighbor matches by n.",
+    "historicalCommit": "Frozen public commit 1fd2bd5921c1f6b423a71f691d5189106a8a1020; not the identified publication snapshot; mixed-driver execution is outside the S04 validated adapter.",
+    "reference": "S03/S05 deterministic clean-room semantics on immutable S08 scenarios; publication replication comparator, not regenerated historical data."
+  },
+  "analysisPopulation": {
+    "executedReferenceRuns": 2900,
+    "reusedValidatedS09PureReferenceRuns": 300,
+    "totalResultRows": 3200,
+    "split": "paper_scale",
+    "replicatesPerCondition": 100,
+    "executedFamilies": {
+      "same_direction_unique": 800,
+      "same_direction_repeated": 600,
+      "opposite_unique": 600,
+      "opposite_repeated": 600,
+      "identical_policy_label_control": 300
+    },
+    "reusedFamily": {
+      "unique_pure_cell_view": 300
+    },
+    "primaryAssignment": "balanced_exact",
+    "assignmentSensitivity": "independent_random with every realized count retained",
+    "protectedSplitRule": "Do not read exploratory, confirmatory_holdout, or policy_search_holdout scenario outcomes. S13 is the declared 100-repeat paper-scale replication only.",
+    "exclusions": "None; every declared run, censoring outcome, terminal reason, and composition remains in accounting."
+  },
+  "composition": {
+    "pairwiseExact": "50/50",
+    "threeWayExact": "rotating 34/33/33 allocation frozen by S08",
+    "random": "independent per-identity assignment; condition on and report realized counts",
+    "controls": "all executable policies are Bubble; immutable ghost labels identify the nominal pair at exactly 50/50 and are invisible to policies",
+    "aggregationLabel": "analysisLabel for identical-policy controls, otherwise immutable Algotype"
+  },
+  "metrics": {
+    "trajectorySampling": "Include the initial state and every post-accepted-swap state. At each p in 0,0.01,...,1 select point floor(p*(m-1)); do not interpolate. This matches the frozen aggregation analysis' floor-index construction.",
+    "actualProgress": "accepted-swap index divided by final accepted-swap count",
+    "historicalDisorderDisplaySensitivity": "Figures 9-10 additionally retain the frozen source's factor-1.25 display warp, selecting min(1,1.25*p); scientific summaries use actual progress.",
+    "paperSortednessPercent": "100*(1 + count(value[i] > value[i-1] for i=1..n-1))/n; strict equality handling is preserved for repeated values.",
+    "referenceSortednessPercent": "100*(1 + count(value[i] >= value[i-1] for i=1..n-1))/n.",
+    "publicationAggregation": "count(clusteringLabel[i] == clusteringLabel[i-1] for i=1..n-1)/n; the undefined boundary contributes zero through the printed n denominator.",
+    "referenceAggregation": "same numerator divided by n-1.",
+    "compositionNullReference": "sum_k n_k(n_k-1)/(n(n-1)).",
+    "compositionNullPublication": "(n-1)/n times the reference composition null.",
+    "duplicatePersistence": "Among adjacent equal-value edges, the fraction whose Algotypes match; undefined only when there are zero equal-value edges.",
+    "costs": "S10 names: accepted swaps; accepted swaps plus logical value comparisons; and the complete R ledger including activations, reads, comparisons, target calculations, proposals, no-ops, rejections, memory updates, swaps, displacement, and conflicts. Wall time remains separate.",
+    "terminal": "Apply S03 precedence. Same-direction complete is the expected endpoint. Mixed-direction scenarios cannot be complete by contract; quiescent is stable, event_budget is censored and must not be called a stable state merely because a macro curve is flat."
+  },
+  "estimandsAndRules": {
+    "completion": "For every same-direction exact and random condition, report the all-run completion fraction and Wilson 95% interval. The paper completion claim is supportive only at 100/100 with verified non-strict final order and conservation.",
+    "figure8NumericalTargets": "A target reproduces when the clean-room mean/peak rounded to the paper's displayed precision equals the target. It approximately reproduces when absolute error is <= max(0.02 aggregation units, 5% of an aggregation target), <= 5 progress percentage points for peak location, or <= max(50 swaps, 5% of a swap target). Otherwise it does not reproduce.",
+    "costInterpolation": "For each exact pair, pair by pairingBlockId and compare mixed accepted swaps with the midpoint of the two S09 pure cell-view costs. 'Falls between' requires the mixed mean within the closed pure-mean interval. 'Roughly average' additionally requires the 95% paired bootstrap interval for mixed-minus-midpoint to lie within +/-10% of the pure midpoint.",
+    "aggregationPeaks": "Peak and its earliest location are taken from the mean of the 100 normalized curves, not from the mean of run-level peaks.",
+    "startEnd": "Report observed start/end beside the composition-conditioned publication and reference nulls. The paper's universal 0.5 baseline is not imposed, especially for three types.",
+    "opposingEndpoints": "Compare exact unique mean final strict paper Sortedness to 42.5, 73.73, and 38.31 with the numerical-target rule. Figure 10 has no recoverable numeric endpoint and receives qualitative classification only.",
+    "trajectoryShapes": "Bubble-descending/Selection-ascending supports the described back-and-forth only if the exact mean curve falls at least 2 points in the first quarter, then rebounds at least 2 points before 75%, then finishes at least 2 points below that rebound and below 44. Bubble-ascending/Insertion-descending supports an approximately increasing path if Spearman rho(progress,mean)>=0.9 and final>50. Insertion-ascending/Selection-descending supports an approximately decreasing path if rho<=-0.9 and final<50.",
+    "winnerOrder": "Support Bubble > Selection > Insertion only if all three exact unique endpoint signs jointly hold: Bubble-descending/Selection-ascending final<50; Bubble-ascending/Insertion-descending final>50; Insertion-ascending/Selection-descending final<50.",
+    "aggregationRise": "Within each opposing exact pair, estimate paired final-minus-start publication aggregation. Support the rise only if the Bonferroni-adjusted lower bootstrap limit across the three panels exceeds zero.",
+    "repeatedOpposing": "Classify the reported Figure 10 qualitative result using non-100 final strict Sortedness, terminal class, direction-shape rule, and aggregation-rise interval. Numeric historical endpoints remain unavailable.",
+    "uncertainty": "Use 10000 deterministic PCG64DXSM run- or pairing-block bootstrap resamples. Report descriptive 95% intervals; use Bonferroni-adjusted 98.3333% intervals for each three-panel opposing-direction aggregation family. Completion uses Wilson 95% intervals.",
+    "replicationVsMechanism": "No aggregation trajectory alone is evidence that cells read Algotype, foresee an outcome, maximize aggregation, or establish a biological mechanism. Mechanistic hypotheses are deferred."
+  },
+  "traceAndReplay": {
+    "selection": "Before full outcomes, select the lexicographically smallest scenarioId within every executed condition.",
+    "retention": "Retain complete derived accepted-swap state-metric traces for selected scenarios and 101-point metric grids for every run; these are not relabelled as activation traces.",
+    "exactReplay": "Rerun every selected executed scenario and require identical final state hash, terminal, ledger, accepted-swap trajectory hash, and serialized summary metrics.",
+    "ordinaryEngineComparison": "Compare representative summary runs with the ordinary validated transition path; historical C mixed runs are not executed outside the S04 adapter boundary."
+  },
+  "historicalBoundary": {
+    "mixedEndpointAvailability": "Unavailable: no raw Figure 8-10 arrays, no publication random streams, and no S04-validated mixed-driver adapter.",
+    "aggregationCodeEvidence": "Frozen source compares same type with the adjacent right cell, assigns zero to the last cell, and divides by n.",
+    "figure8ScriptLimit": "The frozen plotting path loads only 20 experiments despite paper N=100.",
+    "figures9And10Warp": "The frozen disorder plotting code applies factor 1.25 to normalized progress and reaches the recorded endpoint by 80% display progress.",
+    "claimBoundary": "No R output is substituted for a missing historical file and no public-HEAD endpoint is attributed to the publication snapshot."
+  }
+}
