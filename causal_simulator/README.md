@@ -54,6 +54,17 @@ confirmatory-selection guard. Applying a map creates an ordinary exact S05
 explicit-fault scenario and does not alter runtime information, scheduling,
 fault, replay, RNG, legal-action, or ledger contracts.
 
+S07 adds deterministic input-only scale/structure candidates in
+`scenario_extensions.py`. It completely crosses n=20, 50, 100, 200, and 500
+with unique, balanced-duplicate, and uneven-duplicate values and nearly sorted,
+reverse, and block-scrambled order. Rows commit the values and identity order,
+use strict unequal-value inversions and minimum duplicate-aware footrule
+distance, and preserve semantic screening, locked confirmatory, and isolated
+runtime-validation splits. S07 does not assign policies, architectures,
+schedulers, faults, or streams: S08 retains that ownership. Only S06's four
+outcome-blind structural rule classes are allowlisted for future assignment;
+the search-derived class remains fail-closed.
+
 Validation:
 
 ```bash
@@ -80,4 +91,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   python scripts/build_fault_placement_bank.py \
   --output /artifacts/research_steps/S06 --workers 8
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/build_scale_input_suite.py \
+  --output /artifacts/research_steps/S07 \
+  --scratch /cache/e02_s07_parts --workers 8
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/validate_scale_contract_overlay.py
 ```

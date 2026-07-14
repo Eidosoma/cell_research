@@ -73,6 +73,20 @@ from .placements import (
     search_exploratory_placements,
     select_confirmatory_placements,
 )
+from .scenario_extensions import (
+    SCENARIO_EXTENSION_VERSION,
+    InputScenario,
+    OrderStructure,
+    ScenarioSplit,
+    ValueProfile,
+    assign_trace_selection,
+    distance_descriptors,
+    generate_unique_input_scenario,
+    minimum_duplicate_aware_footrule,
+    scenario_from_record,
+    strict_unequal_inversions,
+    value_counts,
+)
 
 __all__ = [
     "ACTION_INTERFACE_VERSION",
@@ -136,4 +150,16 @@ __all__ = [
     "materialize_fault_scenario",
     "search_exploratory_placements",
     "select_confirmatory_placements",
+    "SCENARIO_EXTENSION_VERSION",
+    "InputScenario",
+    "OrderStructure",
+    "ScenarioSplit",
+    "ValueProfile",
+    "assign_trace_selection",
+    "distance_descriptors",
+    "generate_unique_input_scenario",
+    "minimum_duplicate_aware_footrule",
+    "scenario_from_record",
+    "strict_unequal_inversions",
+    "value_counts",
 ]
