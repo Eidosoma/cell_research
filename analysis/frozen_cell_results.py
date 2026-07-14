@@ -20,7 +20,7 @@ import platform
 import subprocess
 import sys
 import time
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import matplotlib
 
@@ -164,6 +164,8 @@ def _execute_pure_cell_view_activation(
     state: Any,
     positions: dict[str, int],
     insertion_cache: list[Any],
+    *,
+    on_accepted_swap: Callable[[Any, int, int], None] | None = None,
 ) -> bool:
     """Exact batch-width-one transition specialized for pure S11 cell-view runs."""
     if state.activation_count >= scenario.max_activations:
@@ -248,6 +250,8 @@ def _execute_pure_cell_view_activation(
         target_id = state.occupancy[target_position]
         state.occupancy[position], state.occupancy[target_position] = target_id, actor_id
         positions[actor_id], positions[target_id] = target_position, position
+        if on_accepted_swap is not None:
+            on_accepted_swap(state, position, target_position)
         ledger["acceptedSwaps"] += 1
         ledger["displacedCells"] += 2
         changed = True

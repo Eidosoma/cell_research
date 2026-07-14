@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "e01.s12.preregistration.v1",
+  "researchStepId": "S12",
+  "title": "Replicate delayed gratification under the original metric",
+  "frozenUtcDate": "2026-07-13",
+  "frozenQuestion": "Can the paper's delayed-gratification statistic and Figures 6-7 be reconstructed from declared swap-state trajectories without changing the formula after outcomes are observed?",
+  "evidenceReconciliation": {
+    "journalMethodsAndFigure6Caption": "D=(recovery-worsening)/worsening; equivalently (increasing-decreasing)/decreasing on unique-value Sortedness.",
+    "officialArxivV1Figure6Caption": "D=recovery/worsening.",
+    "frozenPublicCommit": "The function avg_wandering_range in analysis/delay_gratification_analysis_for_not_move.py at commit 1fd2bd5921c1f6b423a71f691d5189106a8a1020 implements the journal net formula after plateau removal and signed-run merging, with an early terminal return that can return an accumulated sum rather than an average.",
+    "s03Decision": "Preserve the commit-aligned net formula as historical_dg_net and retain recovery/worsening as a named sensitivity; S12 must freeze segmentation and edge cases.",
+    "priorityDecision": "historical_dg_net_commit_exact_v1 is the primary publication-replication score because it preserves the frozen public function exactly. historical_dg_net_s03_reconciled_v1 and arxiv_recovery_ratio_v1 are sensitivity scores and may not replace the primary after results are inspected."
+  },
+  "trajectoryContract": {
+    "stateSampling": "Record monotonicity error immediately after every accepted swap. Do not record the initial state and do not record activations, no-ops, rejections, or memory-only updates. This matches the frozen cell-view StatusProbe record_sorting_step call site.",
+    "monotonicityError": "Count strict adjacent inversions right<left. For the unique-value S12 populations, paper Sortedness count equals n-monotonicityError, so worsening/recovery magnitudes are identical with reversed signs.",
+    "terminalState": "The terminal state is present only if produced by an accepted swap; no synthetic terminal observation is appended.",
+    "emptyTrajectory": "Return zero for all DG scores and zero usable pairs.",
+    "traceIdentity": "Hash the canonical post-swap monotonicity-error sequence and bind it to scenarioId, transition semantics, sampling profile, and stop reason."
+  },
+  "primaryMetric": {
+    "name": "historical_dg_net_commit_exact_v1",
+    "steps": [
+      "Collapse consecutive equal error values.",
+      "Take adjacent differences and merge consecutive differences having the same strict sign.",
+      "Find the first positive signed run; discard all preceding improving runs.",
+      "Pair each positive worsening run w with its immediately following negative recovery run -r.",
+      "For each complete pair compute q=(r-w)/w; retain negative, zero, and positive q values.",
+      "Accumulate q values exactly as the frozen function does.",
+      "If no first complete pair exists, return zero.",
+      "If the loop encounters an unmatched terminal worsening run or an unexpected positive follower, return the accumulated sum immediately, including zero when no pair was accumulated.",
+      "If all pairs are complete, return the arithmetic mean of q over complete pairs."
+    ],
+    "zeroDenominatorRule": "Impossible for a usable pair because w is selected only from a strictly positive signed run; any nonpositive candidate is not a denominator.",
+    "plateauRule": "Consecutive plateaus are removed before differences and therefore do not form segments.",
+    "terminalDropRule": "Preserve the frozen early-return behavior and flag terminalEarlyReturn=true.",
+    "aggregation": "Every declared run contributes one scalar, including zero. Figure 7 bars are arithmetic means over exactly 100 paper-scale runs with population SD ddof=0 as a historical reconstruction only."
+  },
+  "sensitivityMetrics": {
+    "historical_dg_net_s03_reconciled_v1": "Use the same complete pairs and q values but ignore an unmatched terminal worsening run and always average complete pairs; return zero if none.",
+    "arxiv_recovery_ratio_v1": "Use the same complete pairs, compute r/w, average complete pairs, ignore unmatched terminal worsening, and return zero if none.",
+    "initialStateIncluded": "Recompute the three scores after prepending the initial monotonicity error; label this sampling sensitivity and never use it as the primary Figure 7 reconstruction."
+  },
+  "populations": {
+    "figure7PaperScale": {
+      "split": "paper_scale",
+      "protected": false,
+      "input": "unique permutation 1..100",
+      "architectures": ["cell_view", "traditional"],
+      "policies": ["Bubble", "Insertion", "Selection"],
+      "faultMode": "stuck",
+      "faultCounts": [0, 1, 2, 3],
+      "placementProfiles": ["not_applicable_at_f0", "legacy_with_replacement", "reference_without_replacement"],
+      "replicatesPerProfile": 100,
+      "expectedRuns": 4200,
+      "historicalPrimaryPlacement": "legacy_with_replacement",
+      "correctedPlacementRole": "separately labeled sensitivity"
+    },
+    "figure6AmbiguityEnvelope": {
+      "split": "ambiguity_envelope",
+      "protected": false,
+      "input": "all 720 identity permutations of values 1..6 with value 4 stuck",
+      "policies": ["Bubble", "Insertion", "Selection"],
+      "expectedRuns": 2160,
+      "role": "Exhaustive clean-room ambiguity envelope, not a recovered historical stream or proof of the publication algorithm/input."
+    },
+    "protectedSplits": {
+      "confirmatory_holdout": "unopened in S12",
+      "policy_search_holdout": "unopened in S12",
+      "exploratory": "unused in S12"
+    }
+  },
+  "figure6Rules": {
+    "handFixtureSortednessCounts": [2, 2, 4, 4, 3, 4],
+    "handFixtureErrors": [4, 4, 2, 2, 3, 2],
+    "handFixturePrimaryDgExpected": 0.0,
+    "handFixtureArxivRatioExpected": 1.0,
+    "claimBoundary": "A temporary drop followed by recovery is a trajectory fact; a positive normalized-net DG score additionally requires recovery beyond the drop magnitude. Neither establishes foresight."
+  },
+  "analysis": {
+    "panelMeanReproduced": "Generated primary mean rounded to two decimals equals the registered paper mean rounded to two decimals.",
+    "panelMeanApproximatelyReproduced": "If not reproduced, absolute difference is at most max(0.05, 0.10*abs(paperMean)) and the applicable direction/rank is not reversed.",
+    "panelMeanNotReproduced": "Neither reproduced nor approximately reproduced.",
+    "architectureContrasts": "For each policy, pool f=0..3 under the historical-primary placement and compute paired cell_view-traditional mean differences by pairingBlockId. Use 10000 deterministic paired-bootstrap resamples and report 95% intervals; historical z values remain targets only.",
+    "faultCountTrends": "For each architecture-policy-placement profile, report all four means, monotone nondecreasing status, and paired f3-f0 mean difference with a deterministic 10000-resample interval. Bubble and Insertion are expected to increase; Selection is expected to lack a clear monotone trend.",
+    "multiplicity": "Trend intervals use Bonferroni-adjusted 99.1666667% confidence over six architecture-policy trend claims within each placement profile. Architecture-contrast intervals are descriptive 95% intervals because the registered paper z-test construction is unavailable.",
+    "noPostHocChanges": "Formula, segmentation, state sampling, populations, pairing, margins, and trend criteria are immutable after this file is written. Any implementation defect must be corrected transparently without changing the scientific rule."
+  },
+  "validation": {
+    "handFixtures": "At least eight independently hand-calculated edge cases, including the Figure 6 sequence, plateaus, no drop, no recovery, negative net, multiple pairs, and terminal early return.",
+    "frozenCodeComparison": "AST-extract only the necessary pure functions from the immutable quarantined file and require exact agreement on all fixtures plus at least 1000 seeded randomized integer trajectories; do not import or redistribute the full original module.",
+    "replay": "At least 24 selected scenarios must replay byte-exactly at the DG-result and trajectory-hash level; selected ordinary engine event replay must agree with the optimized trajectory path.",
+    "accounting": "Require 4200/4200 Figure 7 and 2160/2160 Figure 6 runs, no forbidden split, all scenario identities rematerialized exactly, all trajectories bound to stop reasons, and all reported means recomputed from canonical rows.",
+    "sourceIntegrity": "Verify all 91 frozen public-source checksums before and after S12.",
+    "failureCriterion": "Zero unexplained validation failures. Missing historical data remain explicit rather than being replaced by regenerated data."
+  },
+  "claimBoundaries": [
+    "DG is a paper-defined trajectory proxy, not Experiment 3 global distance.",
+    "A positive or context-varying DG score is not evidence of planning, anticipation, or foresight.",
+    "Frozen public HEAD is a nondeterministic comparator and analysis-evidence source, not the identified publication snapshot.",
+    "Regenerated trajectories are clean-room evidence and never historical raw data."
+  ]
+}

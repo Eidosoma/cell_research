@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import hashlib
-from typing import Any, Literal, Mapping
+from typing import Any, Callable, Literal, Mapping
 
 from .model import (
     Architecture,
@@ -309,7 +309,12 @@ def execute_batch(
     return events, event_bytes
 
 
-def execute_serial_summary_activation(scenario: Scenario, state: RunState) -> bool:
+def execute_serial_summary_activation(
+    scenario: Scenario,
+    state: RunState,
+    *,
+    on_accepted_swap: Callable[[RunState, int, int], None] | None = None,
+) -> bool:
     """Execute one serial activation without trace or snapshot allocation.
 
     This is a performance-only projection of ``execute_batch`` for replicate
@@ -352,6 +357,8 @@ def execute_serial_summary_activation(scenario: Scenario, state: RunState) -> bo
                 state.occupancy[proposal.target_pos],
                 state.occupancy[proposal.actor_pos],
             )
+            if on_accepted_swap is not None:
+                on_accepted_swap(state, proposal.actor_pos, proposal.target_pos)
             changed = True
         else:
             delta["rejections"] = 1
