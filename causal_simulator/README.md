@@ -1,7 +1,7 @@
 # E02 common action interface
 
-This package is the S02 interface layer over the deterministic E01 reference
-kernel. It implements only the frozen matched profile:
+This package is the S02 action layer and S03 architecture layer over the
+deterministic E01 reference kernel. The S02 frozen matched profile remains:
 
 - `distributed_local` and `central_local_proposal_k1`;
 - one counter-addressed actor opportunity and one proposal;
@@ -20,9 +20,23 @@ prefix, or Selection's cursor target. Other identities and analysis labels are
 absent from those views. A trusted envelope carries only the observed swap
 target identity needed for stale-target validation.
 
-`central_global_legacy`, additional coordinator rules, alternative schedulers,
-retry/failure mechanisms, and broader information permissions are explicitly
-outside S02 and remain blocked for later separately authorized steps.
+S03 adds four explicitly named architecture contracts:
+
+- `central_global_legacy`, the existing E01 global traditional controller,
+  registered as an unmatched descriptive anchor only;
+- `central_local_proposal_k1`, the S02 one-envelope relay;
+- `distributed_local`, the S02 direct route; and
+- `distributed_weak_coordinator`, with either no coordinator or the frozen
+  `weak_nonlocal_veto_p8_v1` budget.
+
+The weak coordinator receives only a typed event index plus a one-bit
+`is_nonlocal_swap` signal every eighth opportunity and returns one allow/veto
+bit. A veto selects the already-legal `NoOp`; it cannot add candidates, retry,
+reschedule, inspect raw state, or change the policy-native information surface.
+Message, bit, eligible-decision, and intervention costs are retained in a
+supplementary architecture ledger pending the separately planned S09 outcome
+schema. Central candidate pools with k greater than one remain structurally
+unsupported until S04 freezes compatible opportunity semantics.
 
 Validation:
 
@@ -32,4 +46,11 @@ UV_CACHE_DIR=/cache/uv uv run --with pytest==9.0.2 \
 
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   python scripts/validate_action_interface.py --output /artifacts/research_steps/S02
+
+UV_CACHE_DIR=/cache/uv uv run --with pytest==9.0.2 \
+  python -m pytest -q tests/test_architectures.py tests/test_action_interface.py \
+  tests/test_action_interface_parity.py
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/validate_architectures.py --output /artifacts/research_steps/S03
 ```
