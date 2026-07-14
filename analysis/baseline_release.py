@@ -812,7 +812,7 @@ def build_release(output: Path, release_dir: Path, report_inputs: Path, commit: 
     output.mkdir(parents=True, exist_ok=True)
     release_dir.mkdir(parents=True, exist_ok=True)
     report_inputs.mkdir(parents=True, exist_ok=True)
-    commit = commit or git_output("rev-parse", "HEAD")
+    commit = git_output("rev-parse", commit or "HEAD")
     frame = build_claim_matrix()
     validation = validate_claim_matrix(frame)
     if not validation["success"]:
