@@ -1,0 +1,40 @@
+{
+  "context": {
+    "contextId": "portable_n10",
+    "identityIds": [
+      "cell-0000",
+      "cell-0001",
+      "cell-0002",
+      "cell-0003",
+      "cell-0004",
+      "cell-0005",
+      "cell-0006",
+      "cell-0007",
+      "cell-0008",
+      "cell-0009"
+    ],
+    "values": [10, 1, 9, 2, 8, 3, 7, 4, 6, 5]
+  },
+  "faultCount": 3,
+  "replicateOrdinal": 2,
+  "schemaVersion": "e02.s06.portable_placement_fixture.v1",
+  "seed": 918022,
+  "expected": {
+    "boundary_exact": {
+      "placementId": "fp1:3adf78b1aea83284a24352ececdbfa2fb4eb7fa4091923941c758f2ee3971129",
+      "positions": [1, 2, 8]
+    },
+    "clustered_exact": {
+      "placementId": "fp1:ea855cf88438f5f365b18ab877660b221403cf44c36f329226fb4b0e7537cdca",
+      "positions": [7, 8, 9]
+    },
+    "median_rank_exact": {
+      "placementId": "fp1:e7aced8ee2e4983048eada0f1e29a0b7f2456defa8ac527890e1d77cbf09f165",
+      "positions": [6, 7, 9]
+    },
+    "uniform_exact": {
+      "placementId": "fp1:38c7c928a43a64299552f301cbe24a068712374355b720eb56b7b8875be40d61",
+      "positions": [0, 2, 9]
+    }
+  }
+}

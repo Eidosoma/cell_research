@@ -47,6 +47,13 @@ policy-visible value/target-status sensing noise. The trusted validator keeps
 ground truth, and the full-global legacy controller remains non-comparable.
 See `faults.py` and `scripts/validate_fault_semantics.py`.
 
+S06 adds exact-count, pre-scenario fault placement in `placements.py`. The
+uniform, clustered, boundary, and median-rank generators are outcome-blind;
+search-derived maps are explicitly exploratory and rejected by the
+confirmatory-selection guard. Applying a map creates an ordinary exact S05
+explicit-fault scenario and does not alter runtime information, scheduling,
+fault, replay, RNG, legal-action, or ledger contracts.
+
 Validation:
 
 ```bash
@@ -69,4 +76,8 @@ UV_CACHE_DIR=/cache/uv uv run --with pytest==9.0.2 \
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
   python scripts/validate_fault_semantics.py \
   --output /artifacts/research_steps/S05/fault_package
+
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. \
+  python scripts/build_fault_placement_bank.py \
+  --output /artifacts/research_steps/S06 --workers 8
 ```

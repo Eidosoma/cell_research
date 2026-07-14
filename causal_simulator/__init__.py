@@ -58,6 +58,21 @@ from .faults import (
     exact_replay_fault,
     run_faulted_architecture,
 )
+from .placements import (
+    PLACEMENT_INTERFACE_VERSION,
+    AnalysisRole,
+    ConfirmatoryLeakageError,
+    FaultPlacement,
+    OutcomeAccess,
+    PlacementClass,
+    PlacementContext,
+    assert_confirmatory_safe,
+    generate_structural_bank,
+    generate_structural_placement,
+    materialize_fault_scenario,
+    search_exploratory_placements,
+    select_confirmatory_placements,
+)
 
 __all__ = [
     "ACTION_INTERFACE_VERSION",
@@ -108,4 +123,17 @@ __all__ = [
     "comparability_classification",
     "exact_replay_fault",
     "run_faulted_architecture",
+    "PLACEMENT_INTERFACE_VERSION",
+    "AnalysisRole",
+    "ConfirmatoryLeakageError",
+    "FaultPlacement",
+    "OutcomeAccess",
+    "PlacementClass",
+    "PlacementContext",
+    "assert_confirmatory_safe",
+    "generate_structural_bank",
+    "generate_structural_placement",
+    "materialize_fault_scenario",
+    "search_exploratory_placements",
+    "select_confirmatory_placements",
 ]
