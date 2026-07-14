@@ -411,6 +411,9 @@ class Proposal:
     ordinal: int = 0
     priority: int = 0
     random_draws: tuple[tuple[str, int, int, int], ...] = ()
+    # Trusted validation metadata. It is deliberately excluded from the frozen
+    # E01 event payload so the S02 interface preserves prior event bytes.
+    observed_target_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {

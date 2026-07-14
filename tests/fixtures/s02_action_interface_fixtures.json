@@ -1,0 +1,138 @@
+{
+  "schema": "E02.S02.action-interface-fixtures.v1",
+  "fixtures": [
+    {
+      "id": "B01_SWAP",
+      "policy": "Bubble",
+      "direction": "ascending",
+      "cells": [["a", 2, "normal"], ["b", 1, "normal"]],
+      "actor": "a",
+      "side": "right",
+      "expected": {"kind": "Swap", "reason": "strict_adjacent_inversion", "reads": 2, "comparisons": 1, "decision": "accepted", "postOccupancy": ["b", "a"]}
+    },
+    {
+      "id": "B02_BOUNDARY",
+      "policy": "Bubble",
+      "direction": "ascending",
+      "cells": [["a", 2, "normal"], ["b", 1, "normal"]],
+      "actor": "a",
+      "side": "left",
+      "expected": {"kind": "NoOp", "reason": "boundary", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "B03_EQUAL",
+      "policy": "Bubble",
+      "direction": "ascending",
+      "cells": [["a", 1, "normal"], ["b", 1, "normal"]],
+      "actor": "a",
+      "side": "right",
+      "expected": {"kind": "NoOp", "reason": "ordered_or_equal", "reads": 2, "comparisons": 1, "decision": "no_op", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "B04_PASSIVE_ACTOR",
+      "policy": "Bubble",
+      "direction": "ascending",
+      "cells": [["a", 2, "passive"], ["b", 1, "normal"]],
+      "actor": "a",
+      "expected": {"kind": "NoOp", "reason": "actor_fault", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "B05_STUCK_TARGET",
+      "policy": "Bubble",
+      "direction": "ascending",
+      "cells": [["a", 2, "normal"], ["b", 1, "stuck"]],
+      "actor": "a",
+      "side": "right",
+      "expected": {"kind": "Swap", "reason": "strict_adjacent_inversion", "reads": 2, "comparisons": 1, "decision": "rejected_target_stuck", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "I01_ORDERED_PREFIX_SWAP",
+      "policy": "Insertion",
+      "direction": "ascending",
+      "cells": [["a", 1, "normal"], ["b", 3, "normal"], ["c", 2, "normal"]],
+      "actor": "c",
+      "expected": {"kind": "Swap", "reason": "insertion_into_ordered_prefix", "reads": 4, "comparisons": 2, "decision": "accepted", "postOccupancy": ["a", "c", "b"]}
+    },
+    {
+      "id": "I02_INVALID_PREFIX",
+      "policy": "Insertion",
+      "direction": "ascending",
+      "cells": [["a", 3, "normal"], ["b", 1, "normal"], ["c", 2, "normal"]],
+      "actor": "c",
+      "expected": {"kind": "NoOp", "reason": "prefix_not_ordered", "reads": 3, "comparisons": 1, "decision": "no_op", "postOccupancy": ["a", "b", "c"]}
+    },
+    {
+      "id": "I03_BOUNDARY",
+      "policy": "Insertion",
+      "direction": "ascending",
+      "cells": [["a", 2, "normal"], ["b", 1, "normal"]],
+      "actor": "a",
+      "expected": {"kind": "NoOp", "reason": "boundary", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "I04_PASSIVE_ACTOR",
+      "policy": "Insertion",
+      "direction": "ascending",
+      "cells": [["a", 1, "normal"], ["b", 0, "passive"]],
+      "actor": "b",
+      "expected": {"kind": "NoOp", "reason": "actor_fault", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["a", "b"]}
+    },
+    {
+      "id": "I05_STUCK_TARGET",
+      "policy": "Insertion",
+      "direction": "ascending",
+      "cells": [["a", 1, "normal"], ["b", 3, "stuck"], ["c", 2, "normal"]],
+      "actor": "c",
+      "expected": {"kind": "Swap", "reason": "insertion_into_ordered_prefix", "reads": 4, "comparisons": 1, "decision": "rejected_target_stuck", "postOccupancy": ["a", "b", "c"]}
+    },
+    {
+      "id": "S01_MEMORY_ADVANCE",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["t", 4, "normal", "Bubble"], ["a", 5, "normal", "Selection"]],
+      "actor": "a",
+      "expected": {"kind": "MemoryUpdate", "reason": "target_already_extreme", "reads": 2, "comparisons": 1, "decision": "accepted", "newCursor": 1, "postOccupancy": ["t", "a"]}
+    },
+    {
+      "id": "S02_TARGET_SWAP",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["t", 4, "normal", "Bubble"], ["a", 3, "normal", "Selection"]],
+      "actor": "a",
+      "expected": {"kind": "Swap", "reason": "selection_target", "reads": 2, "comparisons": 1, "decision": "accepted", "postOccupancy": ["a", "t"]}
+    },
+    {
+      "id": "S03_STUCK_SKIP",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["t", 4, "stuck", "Bubble"], ["a", 3, "normal", "Selection"]],
+      "actor": "a",
+      "expected": {"kind": "MemoryUpdate", "reason": "skip_stuck_target", "reads": 2, "comparisons": 0, "decision": "accepted", "newCursor": 1, "postOccupancy": ["t", "a"]}
+    },
+    {
+      "id": "S04_AT_CURSOR",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["a", 3, "normal", "Selection"], ["t", 4, "normal", "Bubble"]],
+      "actor": "a",
+      "expected": {"kind": "NoOp", "reason": "at_cursor", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["a", "t"]}
+    },
+    {
+      "id": "S05_CURSOR_EXHAUSTED",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["t", 4, "normal", "Bubble"], ["a", 3, "normal", "Selection"]],
+      "actor": "a",
+      "stateCursors": {"a": 2},
+      "expected": {"kind": "NoOp", "reason": "cursor_exhausted", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["t", "a"]}
+    },
+    {
+      "id": "S06_PASSIVE_ACTOR",
+      "policy": "Selection",
+      "direction": "ascending",
+      "cells": [["t", 4, "normal", "Bubble"], ["a", 3, "passive", "Selection"]],
+      "actor": "a",
+      "expected": {"kind": "NoOp", "reason": "actor_fault", "reads": 1, "comparisons": 0, "decision": "no_op", "postOccupancy": ["t", "a"]}
+    }
+  ]
+}

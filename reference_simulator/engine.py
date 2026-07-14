@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import hashlib
-from typing import Any, Callable, Literal, Mapping
+from typing import Any, Callable, Literal, Mapping, Protocol
 
 from .model import (
     Architecture,
@@ -21,11 +21,25 @@ from .model import (
 )
 from .policies import cell_view_proposal, has_admissible_change, traditional_proposal
 from .scheduler import resolve_conflicts, scheduled_actor, scheduled_priority, scheduled_side
+from .transition_primitives import commit_proposal, cost_delta, validate_proposal
 
 
 TRACE_SCHEMA = "E01.reference-event-pre-S06.v1"
 EMPTY_DIGEST = hashlib.sha256(b"E01/reference/trace/v1").hexdigest()
 _PROGRESS_GUARANTEE_CACHE: dict[str, bool] = {}
+
+
+class CellViewProposalFactory(Protocol):
+    """Controller-neutral callback for one policy-native proposal."""
+
+    def __call__(
+        self,
+        scenario: Scenario,
+        state: RunState,
+        actor_id: str,
+        *,
+        side: Literal["left", "right"] | None = None,
+    ) -> Proposal: ...
 
 
 def initial_state(scenario: Scenario) -> RunState:
@@ -110,23 +124,6 @@ def evaluate_terminal(scenario: Scenario, state: RunState) -> str | None:
     return None
 
 
-def _is_valid_swap(scenario: Scenario, state: RunState, proposal: Proposal) -> tuple[bool, str]:
-    if proposal.target_pos is None or not 0 <= proposal.target_pos < len(state.occupancy):
-        return False, "rejected_invalid_target"
-    if not 0 <= proposal.actor_pos < len(state.occupancy):
-        return False, "rejected_invalid_actor_position"
-    if state.occupancy[proposal.actor_pos] != proposal.actor_id:
-        return False, "rejected_stale_actor"
-    cells = scenario.cell_map
-    actor = cells[proposal.actor_id]
-    target = cells[state.occupancy[proposal.target_pos]]
-    if actor.fault == FaultMode.STUCK:
-        return False, "rejected_actor_stuck"
-    if target.fault == FaultMode.STUCK:
-        return False, "rejected_target_stuck"
-    return True, "valid"
-
-
 def _update_counter(state: RunState, stream: str, count: int = 1) -> None:
     state.stream_counters[stream] = state.stream_counters.get(stream, 0) + count
 
@@ -138,6 +135,7 @@ def _proposal_for_slot(
     ordinal: int,
     *,
     capture_random_draws: bool = True,
+    proposal_factory: CellViewProposalFactory | None = None,
 ) -> Proposal:
     draws: list[tuple[str, int, int, int]] = []
     if scenario.architecture == Architecture.TRADITIONAL:
@@ -155,7 +153,8 @@ def _proposal_for_slot(
         side, side_draw = scheduled_side(scenario, event_index)
         draws.append(side_draw)
         _update_counter(snapshot, "bubble_side")
-    proposal = cell_view_proposal(scenario, snapshot, actor_id, side=side)
+    factory = cell_view_proposal if proposal_factory is None else proposal_factory
+    proposal = factory(scenario, snapshot, actor_id, side=side)
     priority = 0
     if scenario.batch_width > 1:
         priority, priority_draw = scheduled_priority(scenario, event_index)
@@ -183,6 +182,7 @@ def execute_batch(
     *,
     retain_events: bool,
     emit_event_records: bool = True,
+    proposal_factory: CellViewProposalFactory | None = None,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
     """Generate from one snapshot, validate, resolve, and commit atomically.
 
@@ -208,25 +208,17 @@ def execute_batch(
             _proposal_for_slot(
                 scenario, snapshot, event_index, ordinal,
                 capture_random_draws=emit_event_records,
+                proposal_factory=proposal_factory,
             )
         )
 
     decisions: dict[int, str] = {}
     valid_changes: list[Proposal] = []
     for proposal in proposals:
-        if proposal.kind == ProposalKind.NO_OP:
-            decisions[proposal.ordinal] = "no_op"
-        elif proposal.kind == ProposalKind.SWAP:
-            valid, decision = _is_valid_swap(scenario, state, proposal)
-            decisions[proposal.ordinal] = decision
-            if valid:
-                valid_changes.append(proposal)
-        elif proposal.kind == ProposalKind.MEMORY_UPDATE:
-            if proposal.actor_id not in state.selection_cursors or proposal.new_cursor is None:
-                decisions[proposal.ordinal] = "rejected_invalid_memory_update"
-            else:
-                decisions[proposal.ordinal] = "valid"
-                valid_changes.append(proposal)
+        validation = validate_proposal(scenario, state, proposal)
+        decisions[proposal.ordinal] = validation.decision
+        if validation.eligible_for_commit:
+            valid_changes.append(proposal)
 
     if scenario.batch_width > 1:
         accepted, lost = resolve_conflicts(valid_changes)
@@ -241,29 +233,9 @@ def execute_batch(
     pre_hash = state_hash(scenario.scenario_id, state) if emit_event_records else None
     ledger_deltas: list[dict[str, int]] = []
     for proposal in proposals:
-        delta = {key: 0 for key in state.ledger}
-        delta["activations"] = 1
-        delta["observationReads"] = proposal.observation_reads
-        delta["valueComparisons"] = proposal.value_comparisons
-        delta["proposals"] = 1
         decision = decisions[proposal.ordinal]
-        if proposal.kind == ProposalKind.NO_OP:
-            delta["noOps"] = 1
-        elif decision.startswith("rejected"):
-            delta["rejections"] = 1
-        elif decision == "conflict_loss":
-            delta["conflictLosses"] = 1
-        elif proposal.kind == ProposalKind.MEMORY_UPDATE and decision == "accepted":
-            delta["memoryUpdates"] = 1
-            state.selection_cursors[proposal.actor_id] = proposal.new_cursor  # type: ignore[assignment]
-        elif proposal.kind == ProposalKind.SWAP and decision == "accepted":
-            delta["acceptedSwaps"] = 1
-            delta["displacedCells"] = 2
-            assert proposal.target_pos is not None
-            state.occupancy[proposal.actor_pos], state.occupancy[proposal.target_pos] = (
-                snapshot.occupancy[proposal.target_pos],
-                snapshot.occupancy[proposal.actor_pos],
-            )
+        delta = cost_delta(state.ledger, proposal, decision)
+        commit_proposal(state, snapshot, proposal, decision)
         for key, value in delta.items():
             state.ledger[key] += value
         ledger_deltas.append(delta)
@@ -314,6 +286,7 @@ def execute_serial_summary_activation(
     state: RunState,
     *,
     on_accepted_swap: Callable[[RunState, int, int], None] | None = None,
+    proposal_factory: CellViewProposalFactory | None = None,
 ) -> bool:
     """Execute one serial activation without trace or snapshot allocation.
 
@@ -338,37 +311,18 @@ def execute_serial_summary_activation(
         state.activation_count,
         0,
         capture_random_draws=False,
+        proposal_factory=proposal_factory,
     )
-    delta = {key: 0 for key in state.ledger}
-    delta["activations"] = 1
-    delta["observationReads"] = proposal.observation_reads
-    delta["valueComparisons"] = proposal.value_comparisons
-    delta["proposals"] = 1
+    snapshot = state.clone()
+    validation = validate_proposal(scenario, state, proposal)
+    decision = "accepted" if validation.eligible_for_commit else validation.decision
+    delta = cost_delta(state.ledger, proposal, decision)
     changed = False
-    if proposal.kind == ProposalKind.NO_OP:
-        delta["noOps"] = 1
-    elif proposal.kind == ProposalKind.SWAP:
-        valid, _ = _is_valid_swap(scenario, state, proposal)
-        if valid:
-            delta["acceptedSwaps"] = 1
-            delta["displacedCells"] = 2
+    if validation.eligible_for_commit:
+        changed = commit_proposal(state, snapshot, proposal, "accepted")
+        if changed and proposal.kind == ProposalKind.SWAP and on_accepted_swap is not None:
             assert proposal.target_pos is not None
-            state.occupancy[proposal.actor_pos], state.occupancy[proposal.target_pos] = (
-                state.occupancy[proposal.target_pos],
-                state.occupancy[proposal.actor_pos],
-            )
-            if on_accepted_swap is not None:
-                on_accepted_swap(state, proposal.actor_pos, proposal.target_pos)
-            changed = True
-        else:
-            delta["rejections"] = 1
-    elif proposal.kind == ProposalKind.MEMORY_UPDATE:
-        if proposal.actor_id not in state.selection_cursors or proposal.new_cursor is None:
-            delta["rejections"] = 1
-        else:
-            delta["memoryUpdates"] = 1
-            state.selection_cursors[proposal.actor_id] = proposal.new_cursor
-            changed = True
+            on_accepted_swap(state, proposal.actor_pos, proposal.target_pos)
     for key, value in delta.items():
         state.ledger[key] += value
     state.activation_count += 1
@@ -377,7 +331,12 @@ def execute_serial_summary_activation(
     return changed
 
 
-def run(scenario: Scenario, *, trace_mode: Literal["full", "digest", "none"] = "digest") -> RunResult:
+def run(
+    scenario: Scenario,
+    *,
+    trace_mode: Literal["full", "digest", "none"] = "digest",
+    proposal_factory: CellViewProposalFactory | None = None,
+) -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
         raise ValueError("traditional controller currently requires batch_width=1")
@@ -391,6 +350,7 @@ def run(scenario: Scenario, *, trace_mode: Literal["full", "digest", "none"] = "
             scenario,
             state,
             retain_events=(trace_mode == "full"),
+            proposal_factory=proposal_factory,
         )
         if not encoded_events and state.terminal is None:
             state.terminal = evaluate_terminal(scenario, state) or "event_budget"
