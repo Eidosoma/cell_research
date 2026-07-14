@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "e01.s14.release_contract.v1",
+  "researchStepId": "S14",
+  "title": "Reconcile, classify, and release the baseline",
+  "claimRegistry": {
+    "path": "/artifacts/research_steps/S01/claim_registry.parquet",
+    "expectedRows": 118,
+    "expectedUniqueClaimIds": 118,
+    "nonEmpiricalClaimIds": [
+      "F06-A-CONCEPTUAL-CONTEXT"
+    ]
+  },
+  "finalClassificationVocabulary": [
+    "reproduced",
+    "approximately_reproduced",
+    "implementation_sensitive",
+    "not_reproduced",
+    "not_testable"
+  ],
+  "classificationRules": {
+    "reproduced": "The frozen claim-level rule passed at its named evidence layer. This never upgrades clean-room R evidence into historical publication evidence.",
+    "approximately_reproduced": "The frozen numerical or qualitative approximation rule passed but exact/display-level agreement did not.",
+    "implementation_sensitive": "The claim changes across a frozen metric, backend, formula, placement, composition, or stopping interpretation, or a composite claim has mixed sub-decisions.",
+    "not_reproduced": "The frozen claim-level rule failed or the result reversed the paper target under the named evidence layer.",
+    "not_testable": "The claim is non-empirical or required evidence is unavailable and no clean-room test can answer the registered statement without substitution."
+  },
+  "evidencePrecedence": [
+    "Preserve the S01 paper claim and evidence status without rewriting contradictions.",
+    "Report frozen-public-commit C evidence separately and never call public HEAD the publication snapshot.",
+    "Use clean-room R as the primary executable evidence only where the downstream step preregistered that role.",
+    "Keep exact-legacy and corrected-without-replacement placement results separate.",
+    "Keep strict paper Sortedness and non-strict duplicate Sortedness separate.",
+    "Treat event-budget termination as censoring, never quiescence or stability.",
+    "Do not substitute regenerated arrays, streams, endpoints, or figures for missing historical files."
+  ],
+  "sourcePackaging": {
+    "archivePermitted": false,
+    "reason": "Repository-backed source must remain in Git under AGENTS.md, the repository has no license file, and frozen public source has no identified redistribution grant.",
+    "replacement": "Immutable pushed Git commit pointer plus per-file SHA-256 and Git blob manifest.",
+    "historicalBytesIncluded": false
+  },
+  "audits": [
+    "fresh_environment_smoke",
+    "checksum_verification",
+    "figure_regeneration",
+    "artifact_link",
+    "one_command_reproduction",
+    "unresolved_claim",
+    "downstream_readiness"
+  ]
+}
