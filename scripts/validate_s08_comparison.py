@@ -66,13 +66,37 @@ def main() -> None:
         "witness_panels.png",
         "classification_summary.parquet",
         "trajectory_start_summary.parquet",
+        "research_step_full_results.md",
         "validation_results.json",
+        "artifact_manifest.json",
+        "provenance_manifest.json",
+        "environment.json",
         "input_immutability.json",
         "result_summary.json",
     ]
     gates: dict[str, bool] = {}
     gates["required_outputs_present_nonempty"] = all(
         (ROOT / name).is_file() and (ROOT / name).stat().st_size > 0 for name in required
+    )
+    report = (ROOT / "research_step_full_results.md").read_text()
+    gates["markdown_handoff_contract"] = all(
+        phrase in report
+        for phrase in (
+            "S08 — Compare observed behavior with necessity",
+            "Completion status",
+            "Artifacts written",
+            "Validation result",
+            "Outcome classification",
+            "Caveats or blockers",
+            "Recommended next action",
+            "### Lay summary",
+            "## Inputs",
+            "## Methods",
+            "## Results",
+            "## Commands",
+            "## Validation",
+            "## Provenance",
+        )
     )
     coverage = pq.read_table(ROOT / "trajectory_coverage.parquet").to_pandas()
     events = pq.read_table(ROOT / "observed_structural_events.parquet").to_pandas()
