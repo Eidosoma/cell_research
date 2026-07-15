@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "e03.s10.action_suppression_contract.v1",
+  "researchStepId": "S10",
+  "title": "Suppress distance-worsening actions",
+  "frozenQuestion": "Does transparently rejecting an otherwise valid proposal whose exact selected distance increase exceeds a declared threshold reduce completion or increase successful-run cost in S09 barrier contexts?",
+  "intervention": {
+    "onlyDifference": "After authoritative proposal construction and mechanical validation, reject an eligible proposal exactly when its committed successor would increase the selected exact metric numerator by more than the threshold.",
+    "decisionCode": "rejected_metric_worsening",
+    "unchanged": [
+      "scenario content and scenario ID",
+      "initial structural and byte-exact mutable state",
+      "counter-addressed actor and raw Bubble-side opportunity tokens",
+      "policy proposal construction",
+      "mechanical validation",
+      "cost accounting",
+      "terminal precedence",
+      "event serialization"
+    ],
+    "ineligibleProposals": "No-op, mechanically rejected, and conflict-lost proposals are never suppressed. Eligible memory updates have zero occupancy distance delta and pass.",
+    "terminalConvention": "Native E01 complete/quiescent/event-budget evaluation is unchanged and does not relabel a filter-disabled active state as quiescent. Exact filtered-graph reachability supplies the separate impossibility label."
+  },
+  "metrics": [
+    "adjacent_descents",
+    "inversion_count",
+    "spearman_footrule",
+    "maximum_rank_error"
+  ],
+  "thresholds": {
+    "primary": {
+      "maximumAllowedExactIncrease": 0,
+      "rule": "suppress every strictly distance-worsening eligible proposal"
+    },
+    "sensitivity": {
+      "maximumAllowedExactIncrease": 1,
+      "rule": "allow a one-raw-unit increase and suppress only larger increases; metric units remain explicit and are not treated as comparable scales"
+    }
+  },
+  "cohort": {
+    "primary": "Every one of the 25,224 S09 persistent-arm retained trajectories (baseline, remove, move, and add) under all four primary metric filters.",
+    "primaryExpectedControls": 25224,
+    "primaryExpectedPairs": 100896,
+    "primaryExpectedSourceStarts": 407,
+    "primaryExpectedStructuralContexts": 3328,
+    "primaryExpectedArmFamilies": 394,
+    "thresholdSensitivity": "All 3,328 distinct persistent structural contexts on S09 replicate 0 under all four metrics at threshold 1.",
+    "sensitivityExpectedPairs": 13312,
+    "activationPulseBoundary": "The S09 activate arm is excluded because it contains a time-varying barrier intervention and has no persistent S07 family; including it would violate the filter-only S10 intervention and exact-reachability contract."
+  },
+  "pairing": {
+    "control": "Replay the exact S09 unfiltered persistent scenario and require equality with the frozen S09 row and trace digest before pairing.",
+    "cellViewStream": "Use the unchanged S09 conditioned counter-addressed coupling key and seed; actor and raw-side tokens must match at every common event index.",
+    "traditionalStream": "Deterministic traditional controller; random-stream fields are explicitly not applicable.",
+    "preDivergence": "Every proposal, decision, pre/post dynamic state, and ledger delta before the first suppressed proposal must equal the control. At the first divergence, the proposal and pre-state must still be identical and only the filter decision may differ."
+  },
+  "strata": {
+    "s09ExactStart": ["reachable", "unreachable_active", "quiescent"],
+    "s09Observed": ["completed", "quiescent", "recurrent_active_32768"],
+    "filteredExact": ["reachable", "unreachable_active", "quiescent"],
+    "requiredSeparation": "Intervention-created exact impossibility, pre-existing exact impossibility, reachable fixed-horizon censoring, quiescent failure, and completion remain separate."
+  },
+  "eventBudgets": {
+    "primary": 2048,
+    "sensitivity": 32768,
+    "extensionPopulation": "Every replicate-0, threshold-0 filtered run that is active at 2,048 and remains exactly goal-reachable in the filtered S05 graph.",
+    "exactImpossibleConvention": "A budget-stopped filtered run proven unreachable is classified as exact impossibility, not completion censoring, and is not extended merely to reconfirm impossibility.",
+    "prefixChecks": "Dynamic state, ledger, metric levels, filter audit counters, and common opportunity counters must match at 2,048."
+  },
+  "costAndEfficiency": {
+    "recorded": "Full E01 ledger and a named unit-sum descriptive projection for every run.",
+    "efficiencyEligibility": "Cost efficiency is defined only when both control and filtered runs complete. Other cost differences are labelled spent-cost contrasts.",
+    "failureRule": "A shorter failed, quiescent, impossible, recurrent, or censored run is never described as efficient."
+  },
+  "recording": {
+    "nativePrefix": "Retain native E01 event records through and including the first suppressed proposal so intervention-only pre-divergence identity is byte-auditable.",
+    "postDivergence": "After declared divergence, continue through the same execute_batch engine in summary mode, preserving proposal, validation, filter, commit, ledger, stream-counter, terminal, and metric semantics while omitting redundant event JSON/state hashing.",
+    "noExposure": "If no proposal is suppressed, retain the complete native event trace and require equality with the control.",
+    "determinism": "Replay every filtered run and match the complete final state, ledger, distances, filter audit, opportunity-token digests, retained native prefix, and canonical run-summary digest."
+  },
+  "uncertainty": "10,000 deterministic cluster-bootstrap resamples over source structural starts after averaging target placements and scheduler replicates within each declared stratum; finite-corpus heterogeneity intervals, not superpopulation inference.",
+  "hardStops": [
+    "any primary persistent S09 trajectory or declared structural context is lost",
+    "any unfiltered replay differs from the frozen S09 result",
+    "any scenario, initial state, actor token, or raw-side token differs within a pair",
+    "any proposal/state/ledger difference occurs before the first filtered decision",
+    "any eligible worsening proposal passes or any nonworsening/ineligible proposal is suppressed",
+    "any exact filtered-reachability solver disagreement",
+    "any replay, ledger, distance, trace, or input-immutability failure",
+    "any reachable replicate-0 primary censored arm lacks its 32,768-opportunity sensitivity"
+  ],
+  "outputs": [
+    "action_suppression_results.parquet",
+    "filter_audit.parquet",
+    "paired_effects.parquet",
+    "filtered_structural_reachability.parquet",
+    "effect_summary.parquet",
+    "event_budget_sensitivity.parquet",
+    "representative_traces.parquet",
+    "suppression_effects.png",
+    "replay_validation.parquet",
+    "validation_results.json",
+    "artifact_manifest.json",
+    "provenance_manifest.json",
+    "research_step_full_results.md"
+  ]
+}

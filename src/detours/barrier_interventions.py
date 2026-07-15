@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 from reference_simulator.engine import (
     EMPTY_DIGEST,
+    ProposalValidationFilter,
     execute_batch,
     evaluate_terminal,
 )
@@ -323,6 +324,8 @@ def execute_intervention_arm(
     seed_search_attempts: int,
     max_activations: int,
     retain_trace: bool = True,
+    proposal_validation_filter: ProposalValidationFilter | None = None,
+    trace_proposal_details: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Run one S09 arm from an exact structural state."""
 
@@ -393,6 +396,7 @@ def execute_intervention_arm(
             schedule_factory=schedule,
             proposal_factory=proposal_factory,
             execution_interceptor=interceptor,
+            proposal_validation_filter=proposal_validation_filter,
         )
         if len(events) != 1 or len(encoded) != 1:
             raise AssertionError("S09 requires exactly one emitted serial opportunity")
@@ -407,8 +411,7 @@ def execute_intervention_arm(
         delivered_now = pulse and event_index == 0 and event["actorId"] == pulse_focal
         pulse_delivered = pulse_delivered or delivered_now
         if retain_trace:
-            trace.append(
-                {
+            trace_row: dict[str, Any] = {
                     "event_index": event_index,
                     "actor_id": event["actorId"],
                     "raw_side": token.raw_side if token else None,
@@ -432,7 +435,19 @@ def execute_intervention_arm(
                     "pulse_delivered": delivered_now,
                     "terminal": state.terminal,
                 }
-            )
+            if trace_proposal_details:
+                trace_row.update(
+                    {
+                        "proposal_actor_pos": event["proposal"]["actorPos"],
+                        "proposal_target_pos": event["proposal"]["targetPos"],
+                        "proposal_new_cursor": event["proposal"]["newCursor"],
+                        "proposal_observation_reads": event["observation"]["reads"],
+                        "proposal_value_comparisons": event["observation"][
+                            "valueComparisons"
+                        ],
+                    }
+                )
+            trace.append(trace_row)
 
     final_structural = StructuralState.from_run_state(family, state)
     compact_trace_digest = canonical_digest(trace)
@@ -647,4 +662,3 @@ def intervention_families(
             )
         )
     return arms
-

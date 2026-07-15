@@ -89,6 +89,26 @@ class BatchExecutionInterceptor(Protocol):
     ) -> None: ...
 
 
+class ProposalValidationFilter(Protocol):
+    """Optional transparent post-validation action filter.
+
+    The callback receives the unchanged policy proposal and its authoritative
+    mechanical validation against the pre-batch state.  It may only change the
+    validation outcome; scheduler selection, proposal construction, costs,
+    commit, terminal precedence, and event serialization remain in the engine.
+    The frozen E01 path leaves this callback absent.
+    """
+
+    def __call__(
+        self,
+        scenario: Scenario,
+        state: RunState,
+        proposal: Proposal,
+        validation: ValidationDecision,
+        event_index: int,
+    ) -> ValidationDecision: ...
+
+
 def initial_state(scenario: Scenario) -> RunState:
     return RunState(
         occupancy=list(scenario.initial_occupancy),
@@ -268,6 +288,7 @@ def execute_batch(
     proposal_factory: CellViewProposalFactory | None = None,
     schedule_factory: ScheduleFactory | None = None,
     execution_interceptor: BatchExecutionInterceptor | None = None,
+    proposal_validation_filter: ProposalValidationFilter | None = None,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
     """Generate from one snapshot, validate, resolve, and commit atomically.
 
@@ -317,6 +338,14 @@ def execute_batch(
         validation = validate_proposal(scenario, state, proposal)
         if execution_interceptor is not None:
             validation = execution_interceptor.outcome(
+                proposal,
+                validation,
+                state.activation_count + proposal.ordinal,
+            )
+        if proposal_validation_filter is not None:
+            validation = proposal_validation_filter(
+                scenario,
+                state,
                 proposal,
                 validation,
                 state.activation_count + proposal.ordinal,
@@ -451,6 +480,7 @@ def run(
     proposal_factory: CellViewProposalFactory | None = None,
     schedule_factory: ScheduleFactory | None = None,
     execution_interceptor: BatchExecutionInterceptor | None = None,
+    proposal_validation_filter: ProposalValidationFilter | None = None,
 ) -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
@@ -468,6 +498,7 @@ def run(
             proposal_factory=proposal_factory,
             schedule_factory=schedule_factory,
             execution_interceptor=execution_interceptor,
+            proposal_validation_filter=proposal_validation_filter,
         )
         if not encoded_events and state.terminal is None:
             state.terminal = evaluate_terminal(scenario, state) or "event_budget"
