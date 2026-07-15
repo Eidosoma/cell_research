@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "e03.s07.path_solution_contract.v1",
+  "researchStepId": "S07",
+  "title": "Solve optimal and minimax paths",
+  "frozenQuestion": "In every retained S05 family and for every retained structural start, what are the exact successful-path shortest and lexicographic minimum-cost labels, and under each independent S06 metric what is the exact minimum peak excursion or separate unsuccessful class?",
+  "sourceGraph": {
+    "families": 7984,
+    "nodes": 22301808,
+    "edges": 103599386,
+    "stateSchema": "e03.s04.structural_state.v1",
+    "edgeSchema": "e03.s05.legal_opportunity_edge.v1",
+    "schedulerProjection": "fair_serial_legal_opportunity_set_v1"
+  },
+  "goalAndSchedulerSemantics": {
+    "goalSet": "all and only S05 terminal_code=1 complete nodes",
+    "completeStart": "zero-length success",
+    "quiescent": "terminal_code=2 unsuccessful absorbing class",
+    "unreachableActive": "active start with no finite path to the complete goal set",
+    "quantification": "existential over finite labelled S05 structural-opportunity paths",
+    "excludedClaims": [
+      "universal or fair-scheduler completion",
+      "probability or expectation under marginal edge weights",
+      "byte-exact E01 counter-addressed replay"
+    ]
+  },
+  "allStateSolutions": {
+    "shortest": "minimum activations to any complete node on the full directed multigraph",
+    "minimumCostProfiles": {
+      "activations": ["activations"],
+      "observation_reads": ["observation_reads", "activations"],
+      "value_comparisons": ["value_comparisons", "activations"],
+      "accepted_swaps": ["cost_accepted_swaps", "activations"],
+      "displaced_cells": ["cost_displaced_cells", "activations"],
+      "full_ledger": [
+        "activations",
+        "observation_reads",
+        "value_comparisons",
+        "cost_no_ops",
+        "cost_rejections",
+        "cost_memory_updates",
+        "cost_accepted_swaps",
+        "cost_displaced_cells"
+      ]
+    },
+    "minimumMaximumExcursionMetrics": [
+      "adjacent_descents",
+      "inversion_count",
+      "spearman_footrule",
+      "maximum_rank_error"
+    ],
+    "failureSentinel": -1,
+    "witnessRepresentation": "one deterministic physical S05 local edge index per reachable non-goal start for each all-state solution; terminal and unsuccessful starts use -1"
+  },
+  "secondaryMinimaxWitnesses": {
+    "definition": "after fixing a selected start's exact primary bottleneck, solve each frozen S06 cost profile in the induced subgraph of vertices whose metric level is at most that start-specific bottleneck",
+    "representation": "explicit ordered node and physical local-edge lists for a deterministic stratified audit panel",
+    "reasonNotAnAllStateForest": "a continuation optimal under start threshold B(s) need not be optimal under the continuation node's smaller B(u); one successor per node therefore cannot encode every start-conditioned secondary optimum",
+    "selection": "deterministic coverage of metrics, outcome classes with successful paths, n, architecture, direction, policy profile, fault mode/count, deepest excursions, and largest graph boundaries",
+    "profiles": "all six S06 profiles"
+  },
+  "physicalOutputs": {
+    "pathSolutions": "/artifacts/research_steps/S07/path_solutions.parquet",
+    "costSolutions": "/artifacts/research_steps/S07/minimum_cost_solutions.parquet",
+    "witnessPaths": "/artifacts/research_steps/S07/witness_paths.parquet",
+    "prevalenceByFamily": "/artifacts/research_steps/S07/necessity_prevalence_by_family.parquet",
+    "prevalenceByStratum": "/artifacts/research_steps/S07/necessity_prevalence_by_stratum.parquet"
+  },
+  "determinism": {
+    "edgeTieBreak": "lowest physical local edge index among equal lexicographic cost labels; primary minimax inherits the frozen S06 reverse-bucket first-discovery order",
+    "nodeTieBreak": "lowest state ordinal in equal-priority heaps",
+    "integerArithmetic": "exact signed integer labels; -1 only in serialized undefined fields"
+  },
+  "budgets": {
+    "maximumPerFamilyWorkingBytes": 4294967296,
+    "maximumFinalArtifactBytes": 12884901888,
+    "maximumScratchBytes": 51539607552,
+    "maximumWorkers": 8,
+    "rule": "stop and report any trigger; do not omit a family, state, metric, cost profile, or terminal class and do not change goal/scheduler semantics"
+  },
+  "validationGates": [
+    "exact 7,984-family, 22,301,808-state, and 89,207,232 state-metric accounting",
+    "all-state shortest and lexicographic Bellman equations",
+    "all-state minimax Bellman equation and exact class accounting",
+    "successor-edge source, endpoint, label, and strict progress checks",
+    "explicit primary and secondary witness replay",
+    "independent threshold-reachability oracle on every n=4 family and all metrics",
+    "independent tiny brute-force lexicographic solver checks",
+    "S06 fixture and repository regression",
+    "pre/post input immutability",
+    "physical output schema, key uniqueness, logical digest, and deterministic rerun samples"
+  ]
+}
