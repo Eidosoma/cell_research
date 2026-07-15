@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Literal
 
 from .model import Proposal, ProposalKind, Scenario
 from .rng import bounded, u64
@@ -18,12 +18,15 @@ class ScheduledOpportunity:
 
     This is deliberately a data-only bridge.  A scheduler supplies an actor
     identity plus any counter-addressed selection draws it consumed; it cannot
-    receive the transition state through this type.
+    receive the transition state through this type.  An external common-random
+    schedule may also freeze Bubble's left/right draw.  Leaving ``bubble_side``
+    unset preserves the original scenario-keyed Bubble draw exactly.
     """
 
     actor_id: str
     random_draws: tuple[RandomDraw, ...] = ()
     stream_consumption: tuple[tuple[str, int], ...] = ()
+    bubble_side: Literal["left", "right"] | None = None
 
     def __post_init__(self) -> None:
         if not self.actor_id:
@@ -45,6 +48,11 @@ class ScheduledOpportunity:
             observed[stream] = observed.get(stream, 0) + 1
         if observed != consumption:
             raise ValueError("scheduler draws and stream consumption disagree")
+        bubble_draws = observed.get("bubble_side", 0)
+        if self.bubble_side is None and bubble_draws:
+            raise ValueError("external bubble-side draws require bubble_side")
+        if self.bubble_side is not None and bubble_draws != 1:
+            raise ValueError("external bubble_side requires exactly one matching draw")
 
 
 def scheduled_actor(

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "e03.s09.barrier_intervention_contract.v1",
+  "researchStepId": "S09",
+  "title": "Perform barrier interventions",
+  "frozenQuestion": "Are distance excursions and completion from exact necessary-detour starts causally contingent on stuck barriers rather than generic common-stream backtracking?",
+  "sourceStarts": {
+    "selectionRule": "Every S07 necessary_detour start in an n=4 or n=5 S04 family with exactly one stuck barrier",
+    "expectedUniqueStarts": 407,
+    "expectedN4Starts": 371,
+    "expectedN5Starts": 36,
+    "expectedSourceFamilies": 59,
+    "metricComposition": {
+      "n4": "371 inversion starts, of which 350 are also footrule and maximum-rank necessary",
+      "n5": "36 adjacent-descents starts"
+    },
+    "reachabilityMeaning": "goal-reachable under the frozen S06 existential finite S05 opportunity-path semantics",
+    "notRequired": "reachability from the arbitrary S04 anchor"
+  },
+  "interventions": {
+    "baseline": "retain the unique stuck identity",
+    "remove": "change only the focal identity fault from stuck to normal",
+    "move": "transfer the stuck fault from the focal identity to each normal identity in turn",
+    "add": "retain the focal stuck identity and change each normal identity to stuck in turn",
+    "activate": "for cell-view only, temporarily treat the focal stuck identity as normal for the guaranteed matched event-0 opportunity, then restore stuck status before terminal evaluation",
+    "targetEnumeration": "all eligible normal identities; no target sampling",
+    "traditionalActivationBoundary": "not defined because a traditional controller has no scheduled cell actor; all 20 traditional necessary starts remain in remove/move/add arms and are explicitly counted"
+  },
+  "pairing": {
+    "preState": "identical occupancy, identity-owned Selection cursors, zero ledger, zero activation count, and zero stream counters",
+    "cellViewReplicatesPerStart": 8,
+    "traditionalReplicatesPerStart": 1,
+    "stream": "frozen E01 SHA-256 counter-addressed actor and Bubble-side tokens under one pair-block coupling key",
+    "event0Conditioning": "deterministically search the 128-bit seed until the focal identity is the event-0 actor; charge that same opportunity in every arm",
+    "streamRemainder": "all event-1+ raw actor and side tokens remain untouched and identical by event index; arm-specific side consumption and legal actions may diverge after intervention",
+    "traditionalStream": "not applicable; controller execution is deterministic"
+  },
+  "execution": {
+    "authoritativeComponents": [
+      "reference_simulator.engine.execute_batch",
+      "reference_simulator.policies",
+      "reference_simulator.transition_primitives",
+      "reference_simulator.engine.evaluate_terminal",
+      "reference_simulator.model state and event hashing"
+    ],
+    "structuralStateDistinctFromReplayState": true,
+    "maximumActivationsPerArm": 2048,
+    "eventBudgetConvention": "The 2,048-opportunity horizon is a common fixed-horizon completion/cost outcome, not an exclusion. A pre-output pilot found at least one active recurrent arm at this horizon; every such arm must receive a separately labelled 32,768-opportunity sensitivity replay without replacing its primary result.",
+    "metrics": [
+      "adjacent_descents",
+      "inversion_count",
+      "spearman_footrule",
+      "maximum_rank_error"
+    ],
+    "costs": "complete E01 reference ledger plus named unit-sum descriptive projection"
+  },
+  "analysis": {
+    "primaryPair": "each non-baseline arm minus the same-start same-stream baseline",
+    "outcomes": [
+      "completion",
+      "stop reason",
+      "distance peak and excursion",
+      "final distance",
+      "activations",
+      "accepted swaps",
+      "full ledger unit cost"
+    ],
+    "exactOptimumSensitivity": "join persistent-arm starts to the frozen S07 label under the corresponding retained intervention family; activation has no fixed-family S07 label",
+    "uncertainty": "10,000 deterministic cluster-bootstrap resamples over exact structural starts; descriptive finite-corpus intervals, not superpopulation inference",
+    "outcomeRule": "supportive only if isolated barrier changes alter exact necessity and/or matched observed excursion, completion, or cost in the directionally interpretable paired results; null if no material paired changes; constraining if effects are placement-specific, opposed, or coverage-limited"
+  },
+  "hardStops": [
+    "any of the 407 source starts is lost",
+    "any persistent intervention family is absent from S04/S07",
+    "any cross-arm pre-dynamic-state mismatch",
+    "any scenario difference outside the declared fault intervention",
+    "any cell-view common-prefix actor or raw-side token mismatch",
+    "any event-chain, final-distance, ledger, replay, or trace-completeness failure",
+    "any input mutation",
+    "any primary event-budget arm missing its declared 32,768-opportunity sensitivity replay"
+  ],
+  "protocolAmendment": {
+    "timing": "after the first all-arm execution attempt stopped at the preregistered event-budget gate and before any result table was written",
+    "reason": "active recurrence or very long waiting is a legitimate intervention outcome under E01 semantics; excluding the arm or silently increasing only its primary horizon would bias completion and cost",
+    "change": "retain 2,048 as the common primary horizon, classify event-budget as fixed-horizon non-completion, and add a 32,768-opportunity sensitivity for every budget arm",
+    "unchanged": "all 407 starts, every persistent target, all cell-view pulses, common streams, metrics, costs, pairing, and isolation gates"
+  },
+  "outputs": [
+    "barrier_interventions.parquet",
+    "paired_effects.parquet",
+    "paired_metric_effects.parquet",
+    "effect_summary.parquet",
+    "necessary_start_coverage.parquet",
+    "structural_optimum_changes.parquet",
+    "intervention_isolation_audit.parquet",
+    "random_stream_audit.parquet",
+    "paired_traces.parquet",
+    "barrier_effects.png",
+    "validation_results.json",
+    "artifact_manifest.json",
+    "provenance_manifest.json",
+    "research_step_full_results.md"
+  ]
+}

@@ -207,7 +207,11 @@ def _proposal_for_slot(
             _update_counter(snapshot, stream, count)
     actor = scenario.cell_map[actor_id]
     side = None
-    if actor.policy == Policy.BUBBLE and actor.fault == FaultMode.NORMAL:
+    if scheduled_opportunity is not None and scheduled_opportunity.bubble_side is not None:
+        if actor.policy != Policy.BUBBLE:
+            raise ValueError("external Bubble side supplied for a non-Bubble actor")
+        side = scheduled_opportunity.bubble_side
+    elif actor.policy == Policy.BUBBLE and actor.fault == FaultMode.NORMAL:
         side, side_draw = scheduled_side(scenario, event_index)
         draws.append(side_draw)
         _update_counter(snapshot, "bubble_side")

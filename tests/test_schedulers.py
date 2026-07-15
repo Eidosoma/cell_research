@@ -161,6 +161,24 @@ def test_scheduled_opportunity_rejects_unaccounted_rng_draws() -> None:
             (),
             (("actor_activation", 1),),
         )
+    with pytest.raises(ValueError, match="require bubble_side"):
+        ScheduledOpportunity(
+            "c00",
+            (("bubble_side", 0, 0, 7),),
+            (("bubble_side", 1),),
+        )
+    with pytest.raises(ValueError, match="exactly one"):
+        ScheduledOpportunity("c00", bubble_side="left")
+
+
+def test_scheduled_opportunity_accepts_typed_external_bubble_side() -> None:
+    opportunity = ScheduledOpportunity(
+        "c00",
+        (("actor_activation", 0, 0, 7), ("bubble_side", 0, 0, 9)),
+        (("actor_activation", 1), ("bubble_side", 1)),
+        bubble_side="left",
+    )
+    assert opportunity.bubble_side == "left"
 
 
 def test_scan_permutation_synchronous_and_adversarial_fairness_contracts() -> None:
