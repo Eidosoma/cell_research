@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "e02.s11.confirmatory_prespecification.v1",
+  "researchStepId": "S11",
+  "title": "Run held-out confirmatory conditions",
+  "frozenAtUtc": "2026-07-14T20:54:07Z",
+  "frozenBeforeProtectedOutcomeAccess": true,
+  "frozenQuestion": "Do the four S10-frozen contrasts reproduce on protected S08 confirmatory scenarios with prespecified multiplicity control and tighter primary-endpoint precision?",
+  "inputContracts": {
+    "s10Selections": "/artifacts/research_steps/S10/s11_frozen_selections.json",
+    "requiredSelectionSha256": "17a39ce13a66fa03d61187ec9d92ec65604150f8c9608dbe25eb1a61e65d3f23",
+    "pairingManifest": "/artifacts/research_steps/S08/pairing_manifest.parquet",
+    "armCatalog": "/artifacts/research_steps/S08/contrast_arm_catalog.json",
+    "scenarioBank": "/artifacts/research_steps/S07/scenario_extension.parquet",
+    "costSchema": "/workspace/cell-research/design/s09/cost_schema.json",
+    "permittedSplit": "confirmatory_holdout",
+    "requiredProtected": true,
+    "requiredPriorProtectedOutcomeOpened": false,
+    "requiredFaultMapConfirmatoryEligible": true,
+    "searchDerivedPlacementAssignmentsMaximum": 0
+  },
+  "selectedEstimandsInFrozenPriorityOrder": [
+    "E02-S01-E04",
+    "E02-S01-E06",
+    "E02-S01-E03",
+    "E02-S01-E08"
+  ],
+  "primaryEndpoints": [
+    {
+      "estimandId": "E02-S01-E04",
+      "endpoint": "successByBudget",
+      "effect": "active_minus_reference",
+      "frozenDirection": "positive",
+      "equivalenceMargin": 0.02,
+      "precisionHalfWidthTarget": 0.015,
+      "screeningContextOnly": "Continuing after a blocking failure had a positive success contrast in S10."
+    },
+    {
+      "estimandId": "E02-S01-E06",
+      "endpoint": "normalizedResidualError",
+      "effect": "active_minus_reference",
+      "frozenDirection": "positive",
+      "equivalenceMargin": 0.02,
+      "precisionHalfWidthTarget": 0.015,
+      "screeningContextOnly": "Stuck minus passive had a positive residual-error contrast in S10."
+    },
+    {
+      "estimandId": "E02-S01-E03",
+      "endpoint": "normalizedResidualError",
+      "effect": "active_minus_reference",
+      "frozenDirection": "negative",
+      "equivalenceMargin": 0.02,
+      "precisionHalfWidthTarget": 0.015,
+      "screeningContextOnly": "Permutation minus uniform had a small negative residual-error contrast in S10."
+    },
+    {
+      "estimandId": "E02-S01-E08",
+      "endpoint": "normalizedResidualError",
+      "effect": "active_minus_reference",
+      "frozenDirection": "positive",
+      "equivalenceMargin": 0.02,
+      "precisionHalfWidthTarget": 0.015,
+      "screeningContextOnly": "The coverage-selected weak-coordinator contrast was near-null but positive in S10; it must not be replaced or dropped."
+    }
+  ],
+  "secondaryEndpoints": {
+    "perEstimand": [
+      "normalizedResidualError",
+      "successByBudget",
+      "logCompletionOpportunity",
+      "logS01UnitWeightFullCost"
+    ],
+    "orientation": "active minus reference; log endpoints use log(value + 0.5) before differencing",
+    "interval": "stratified paired percentile bootstrap 95% interval",
+    "multiplicity": "Benjamini-Hochberg q-values over the 16 terminal secondary endpoint tests; descriptive effect sizes and intervals remain primary",
+    "drivesSampling": false
+  },
+  "pairingRules": {
+    "unit": "one protected S08 pairingBlockId shared by all four contrasts",
+    "maximumPairingBlocks": 5000,
+    "nestedCumulativeLooks": [1000, 2000, 3000, 4000, 5000],
+    "incrementPerLook": 1000,
+    "perScaleIncrementPerLook": 200,
+    "scaleLevels": [20, 50, 100, 200, 500],
+    "selection": "Outcome-blind deterministic SHA-256 allocation balances value-profile by order-structure cells, fault profiles, and policy-by-direction within each scale and nested look; every selected inputScenarioId is unique.",
+    "armRule": "Execute the six distinct settings signatures represented by the eight frozen estimand arms on every selected block; reuse a run only when settings bytes and pairingBlockId are identical.",
+    "couplingClassifications": {
+      "E02-S01-E03": "scenario_paired_rng_unpaired_different_stream_consumption",
+      "E02-S01-E04": "shared_prefix_until_continuation_stop",
+      "E02-S01-E06": "scenario_paired_rng_unpaired_different_scenario_roots",
+      "E02-S01-E08": "shared_prefix_same_scheduler_root"
+    },
+    "protectedScenarioRule": "The exact maximum nested block list and all arm mappings are hashed before execution. No replacement, reassignment, or marginal change is permitted after outcome access."
+  },
+  "multiplicityAndIntervals": {
+    "primaryFamily": "the four frozen primary endpoints",
+    "overallTwoSidedFamilywiseAlpha": 0.05,
+    "sequentialLooks": 5,
+    "perLookFamilywiseAlpha": 0.01,
+    "method": "At each look, a scale-stratified paired max-|t| bootstrap produces simultaneous two-sided intervals for all four primary effects at 99% family confidence. Bonferroni allocation of 0.01 to each of five possible looks bounds overall familywise error by 0.05.",
+    "bootstrapReplicatesPerLook": 10000,
+    "bootstrapUnit": "pairingBlockId within n",
+    "bootstrapSeedRule": "SHA-256 counter-addressed by confirmatory design-freeze hash, look, replicate, scale, and draw; worker order has no effect.",
+    "zeroHandlingForLogEndpoints": 0.5,
+    "primaryPValues": "two-sided max-|t| adjusted bootstrap tail probabilities at the terminal look; direction is interpreted only after applying the frozen sign",
+    "secondaryPValues": "paired scale-stratified bootstrap sign-tail p-values with terminal Benjamini-Hochberg adjustment"
+  },
+  "sequentialRule": {
+    "minimumPairingBlocksPerContrast": 1000,
+    "maximumPairingBlocksPerContrast": 5000,
+    "looks": [1000, 2000, 3000, 4000, 5000],
+    "noContrastDropping": true,
+    "noArmDropping": true,
+    "noScaleStructureOrFaultReallocation": true,
+    "continueRule": "After each look, continue all four contrasts to the next nested look if any primary simultaneous-interval half-width exceeds 0.015. Effect estimate, direction, significance, equivalence, success count, runtime, and secondary endpoints never trigger continuation or stopping.",
+    "stopRule": "Stop at or after 1000 blocks only when all four primary simultaneous-interval half-widths are at most 0.015.",
+    "maximumRule": "Stop after 5000 blocks regardless of precision. A primary contrast whose half-width still exceeds 0.015 is classified inconclusive_due_to_precision.",
+    "runtimeRule": "Runtime is not an adaptation criterion; any scientifically material reduction requires review."
+  },
+  "terminalClassification": {
+    "directionally_reproduced_material": "The simultaneous interval excludes zero in the frozen direction and abs(estimate) is at least 0.02.",
+    "directionally_reproduced_small": "The simultaneous interval excludes zero in the frozen direction but abs(estimate) is below 0.02.",
+    "practically_equivalent_to_zero": "The simultaneous interval lies wholly inside [-0.02, 0.02] and does not exclude zero in the frozen direction.",
+    "contradictory": "The simultaneous interval excludes zero in the direction opposite the frozen direction.",
+    "inconclusive": "No directional or equivalence classification is supported by the simultaneous interval.",
+    "inconclusive_due_to_precision": "At the maximum look, the simultaneous half-width exceeds 0.015; this overrides other classifications.",
+    "overlapRule": "When a correctly directed interval excludes zero but remains wholly inside the equivalence margin, label directionally_reproduced_small and record practicalEquivalent=true."
+  },
+  "validationThresholds": {
+    "minimumPairsPerSelectedContrast": 1000,
+    "maximumPairsPerSelectedContrast": 5000,
+    "selectedEstimandCount": 4,
+    "distinctTreatmentSignatureCount": 6,
+    "scaleCountSpreadMaximum": 0,
+    "structuralCellCountSpreadWithinScaleAndLookMaximum": 1,
+    "policyDirectionCountSpreadWithinScaleAndLookMaximum": 1,
+    "faultProfileCountSpreadWithinScaleAndLookMaximum": 1,
+    "pairAndRunCompletenessRequired": true,
+    "contractValidationRequired": true,
+    "ledgerIdentityRequired": true,
+    "deterministicReplaySampleMinimum": 20,
+    "searchDerivedAssignmentsMaximum": 0,
+    "adaptationOutsideFrozenRuleMaximum": 0
+  },
+  "escalationTriggers": [
+    "any protected outcome access before this file and the exact nested design are frozen and hashed",
+    "any replacement, deletion, or direction change for E04, E06, E03, or E08",
+    "any protected scenario-ID, S08 coupling classification, arm marginal, or pairing change",
+    "any S06 search-derived map assignment",
+    "any change to S02-S09 legal-action, information, scheduler, fault, replay, RNG, opportunity, or ledger contracts",
+    "any sampling adaptation based on observed effect size, direction, significance, success count, runtime, or a secondary endpoint",
+    "any incomplete intention-to-simulate accounting"
+  ]
+}
