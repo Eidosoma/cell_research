@@ -1,0 +1,258 @@
+{
+  "schemaVersion": "e02.s12.modeling_prespecification.v1",
+  "researchStepId": "S12",
+  "title": "Estimate causal and heterogeneous effects",
+  "frozenAtUtc": "2026-07-15T09:14:40Z",
+  "frozenBeforeOutcomeModeling": true,
+  "outcomeModelFitsBeforeFreeze": 0,
+  "frozenQuestion": "Within the exact S11 confirmatory support, what are the standardized total effects of E04, E06, E03, and E08 on task, resource, and completion outcomes, and which prespecified baseline strata are associated with effect heterogeneity?",
+  "inputContracts": {
+    "estimandRegistry": {
+      "path": "/artifacts/research_steps/S01/estimand_registry.yaml",
+      "sha256": "cae2d56236d9564061ae4fb12e989a180528720f7e5bf277b8b9519dec888c76"
+    },
+    "pairingPrespecification": {
+      "path": "/artifacts/research_steps/S08/pairing_prespecification.json",
+      "sha256": "be8afbeb1f44a01c724cb4b9873f1cf8967f2ce1a967138a5d15fcf4c5d98345"
+    },
+    "semanticRandomStreams": {
+      "path": "/artifacts/research_steps/S08/semantic_random_stream_specification.json",
+      "sha256": "21af6d99aae7468fc0a849b7fcdff3d118c035853d1721a43e5644dd85f67f34"
+    },
+    "contrastArmCatalog": {
+      "path": "/artifacts/research_steps/S08/contrast_arm_catalog.json",
+      "sha256": "b7a0f4d8f5a6240c3789805a5818606ab52be5c9c9ddcd367a6220e28ca5f188"
+    },
+    "costSchema": {
+      "path": "/artifacts/research_steps/S09/cost_schema.json",
+      "sha256": "cd065da9294ee4ca0838ab584f89fe43572336dcde9aa034d3efb704e7bc2104"
+    },
+    "screeningSelections": {
+      "path": "/artifacts/research_steps/S10/s11_frozen_selections.json",
+      "sha256": "e3ee541fe065a54a6279a9a035142f04228b7e1010a00a7e62690c96b7f4e9d0"
+    },
+    "confirmatoryPrespecification": {
+      "path": "/artifacts/research_steps/S11/confirmatory_prespecification.json",
+      "sha256": "c35d836444ee75513526615615d09e09c3202a4b58acfcb0d6a24384eadd6d88"
+    },
+    "confirmatoryResults": {
+      "path": "/artifacts/research_steps/S11/confirmatory_results.parquet",
+      "sha256": "7c325601bbb5816702635f6a4d71f84bf741660d660cdefc911dd0828370f9e9",
+      "requiredRows": 12000
+    },
+    "pairedEffects": {
+      "path": "/artifacts/research_steps/S11/paired_effects.parquet",
+      "sha256": "36d9e2d59cda8be522f343a04c1287159a091061a5d6d42a7cb69140b97ee07f",
+      "requiredRows": 8000
+    },
+    "costLedger": {
+      "path": "/artifacts/research_steps/S11/cost_ledger.parquet",
+      "sha256": "597322a7e315beb9cc4d24336c65becaf995d15dc8fe4bc5f832f5db0558e8cb",
+      "requiredRows": 12000
+    }
+  },
+  "contractPreservation": {
+    "selectedEstimandsInOrder": [
+      "E02-S01-E04",
+      "E02-S01-E06",
+      "E02-S01-E03",
+      "E02-S01-E08"
+    ],
+    "terminalS11PairingBlocks": 2000,
+    "pairsPerEstimand": 2000,
+    "permittedConfirmatoryLooks": [1, 2],
+    "protectedSupportOnly": true,
+    "unusedS11MaximumDesignRowsForbidden": true,
+    "searchDerivedAssignmentsMaximum": 0,
+    "costSchemaVersion": "E02.complete-cost-ledger.v1",
+    "legalActionInformationSchedulerFaultAndOpportunityContractsMayChange": false,
+    "couplingClassifications": {
+      "E02-S01-E03": "scenario_paired_rng_unpaired_different_stream_consumption",
+      "E02-S01-E04": "shared_prefix_until_continuation_stop",
+      "E02-S01-E06": "scenario_paired_rng_unpaired_different_scenario_roots",
+      "E02-S01-E08": "shared_prefix_same_scheduler_root"
+    },
+    "rngUnpairedInferenceRule": "E03 and E06 retain paired point estimates because immutable scenarios are paired, but pathwise common-random-number variance reduction is not claimed; report both block-paired and conservative arm-independent bootstrap intervals."
+  },
+  "analysisPopulations": {
+    "causal": {
+      "id": "P_CONFIRMATORY_ITS",
+      "unit": "S08 pairingBlockId by frozen estimand arm",
+      "inclusion": "All 2,000 S11 terminal-prefix protected blocks and every assigned active/reference arm for each selected estimand.",
+      "exclusion": "No outcome-dependent exclusion; infrastructure/invariant failures remain explicit missing records rather than task failures.",
+      "requiredCompletePairsPerEstimand": 2000
+    },
+    "heterogeneity": {
+      "id": "P_SUPPORTED_HETEROGENEITY",
+      "modifiers": [
+        "n",
+        "valueProfile",
+        "orderStructure",
+        "policyProfile",
+        "direction",
+        "placementClass",
+        "faultCount"
+      ],
+      "oneWayCellMinimumPairs": 100,
+      "twoWayCellMinimumPairs": 50,
+      "unsupportedRule": "Do not estimate, pool, smooth, interpolate, or extrapolate an unsupported cell; list it explicitly.",
+      "claimBoundary": "Overall randomized active-minus-reference contrasts are causal total effects. Baseline-stratum contrasts are conditional causal contrasts within observed support; differences across baseline modifier levels and model coefficient rankings are associational effect-modification descriptions, not effects of the modifier."
+    }
+  },
+  "estimandsAndEndpoints": {
+    "orientation": "active minus reference",
+    "authoritativeS11PrimaryRule": "S11 simultaneous primary intervals and classifications remain authoritative and are not replaced by S12 models.",
+    "s12TotalEffectEndpointsPerEstimand": [
+      "normalizedResidualError",
+      "successByBudget",
+      "completionCumulativeIncidenceAtBudget",
+      "restrictedMeanCompletionFreeBudgetFraction",
+      "logS01UnitWeightFullCost"
+    ],
+    "resourceTransform": "log(projection_s01UnitWeightFullCost + 0.5)",
+    "opportunityTransform": "log(completionOpportunity + 0.5)",
+    "residualScale": "strict adjacent residual count divided by max(n-1,1)",
+    "successScale": "risk difference by frozen opportunity budget",
+    "survivalTime": "completionOpportunity",
+    "normalizedSurvivalTime": "completionOpportunity divided by eventBudgetOpportunities",
+    "survivalEvent": "completionObserved=1",
+    "competingFailure": "stopReason in {quiescent, blocking_failure}",
+    "rightCensoring": "stopReason=event_budget",
+    "administrativeFailure": "invariant or infrastructure failure; no such row may be silently converted",
+    "resourceTradeoff": {
+      "estimandId": "E02-S01-E04",
+      "requiredSummaries": [
+        "success risk difference",
+        "normalized residual difference",
+        "log opportunity difference",
+        "log S01 full-cost difference",
+        "raw S01 full-cost difference per n squared",
+        "joint pairwise success-benefit and cost-increase quadrant proportions",
+        "population incremental S01 cost per percentage-point success gain when the risk-difference denominator is positive"
+      ],
+      "interpretation": "A descriptive joint tradeoff of two randomized total effects; never a mediator-adjusted direct effect or physical price."
+    }
+  },
+  "modelFormulas": {
+    "modifierMainEffects": "C(n)+C(valueProfile)+C(orderStructure)+C(policyProfile)+C(direction)+C(placementClass)+C(faultCount)",
+    "strongHeredity": "Every treatment-by-modifier term is accompanied by treatment and the corresponding modifier main effect; no term is added or removed from outcome evidence.",
+    "continuousHierarchical": {
+      "outcomes": [
+        "normalizedResidualError",
+        "logS01UnitWeightFullCost"
+      ],
+      "formula": "outcome ~ treatment + C(n)+C(valueProfile)+C(orderStructure)+C(policyProfile)+C(direction)+C(placementClass)+C(faultCount) + treatment:(C(n)+C(valueProfile)+C(orderStructure)+C(policyProfile)+C(direction)+C(placementClass)+C(faultCount))",
+      "model": "Gaussian linear mixed model with random intercept for pairingBlockId, ML fit, fixed treatment reference coding, and no data-driven term selection.",
+      "primaryUncertainty": "deterministic scale-stratified paired bootstrap for standardized and subgroup contrasts",
+      "diagnosticAlternative": "If the mixed model does not converge, has a nonfinite coefficient/covariance, or random-intercept variance is below 1e-8, use Gaussian GEE with exchangeable within-pair correlation and robust sandwich covariance; label the trigger and do not compare AIC or effects."
+    },
+    "success": {
+      "formula": "successByBudget ~ treatment + C(n)+C(valueProfile)+C(orderStructure)+C(policyProfile)+C(direction)+C(placementClass)+C(faultCount) + treatment:(C(n)+C(valueProfile)+C(orderStructure)+C(policyProfile)+C(direction)+C(placementClass)+C(faultCount))",
+      "model": "Binomial-logit GEE with exchangeable within-pair correlation and robust sandwich covariance.",
+      "reportingScale": "Observed-support standardized risk difference and risk ratio; odds ratios are model diagnostics only.",
+      "diagnosticAlternative": "If exchangeable GEE fails to converge or produces nonfinite coefficients, refit the identical formula with independence working correlation and robust covariance; do not change terms."
+    },
+    "causeSpecificCompletion": {
+      "formula": "completion hazard ~ treatment + baseline modifier main effects + treatment-by-modifier terms",
+      "model": "Cause-specific Cox PH model for completion, stratified by n, with pairingBlockId cluster-robust covariance; competing failures are censored at their observed terminal time only for this cause-specific model.",
+      "primaryNonparametric": "Scale-standardized Aalen-Johansen completion cumulative incidence and restricted mean completion-free normalized-budget fraction through 1.0.",
+      "singleHazardRatioRule": "A single treatment hazard ratio is interpretable only when the frozen treatment proportional-hazards diagnostic passes."
+    }
+  },
+  "interactionHierarchy": {
+    "oneWayTreatmentModifiers": [
+      "n",
+      "valueProfile",
+      "orderStructure",
+      "policyProfile",
+      "direction",
+      "placementClass",
+      "faultCount"
+    ],
+    "prespecifiedTwoWayModifierSummaries": [
+      "n:policyProfile",
+      "n:placementClass",
+      "policyProfile:direction"
+    ],
+    "modelIncludesModifierByModifierTerms": false,
+    "threeWayOrHigherTerms": false,
+    "rankingRule": "Rank supported one-way standardized effect ranges by absolute max-minus-min effect after estimation; ranking is associational and does not choose models or multiplicity families."
+  },
+  "multiplicity": {
+    "s11Primary": "Retain S11's sequential max-|t| family conclusions unchanged.",
+    "s12MarginalFamily": "Holm FWER 0.05 over 20 standardized total-effect tests: four estimands by five S12 endpoints.",
+    "heterogeneityFamilies": "Benjamini-Hochberg FDR 0.05 separately within each endpoint over 28 one-way modifier omnibus tests (four estimands by seven modifiers).",
+    "e04CostComponentFamily": "Benjamini-Hochberg FDR 0.05 over the 12 additive S01 cost components only; diagnostic aliases and wall time are excluded.",
+    "proportionalHazardsDiagnostics": "Holm adjustment over the four treatment-specific PH tests; diagnostic threshold 0.01.",
+    "emphasis": "Effect sizes and uncertainty remain primary; multiplicity labels do not alter formulas or populations."
+  },
+  "diagnostics": {
+    "design": [
+      "exact 2,000 complete pairs per estimand",
+      "full-rank fixed-effect design",
+      "condition number below 10000",
+      "all model and prediction levels observed in S11 support"
+    ],
+    "convergence": [
+      "optimizer or GEE converged flag true",
+      "all coefficients and covariance entries finite",
+      "no outcome-driven retry with a different formula"
+    ],
+    "continuousResiduals": [
+      "residual-versus-fitted Spearman absolute correlation",
+      "scale-stratified residual means",
+      "Breusch-Pagan heteroskedasticity diagnostic",
+      "quantile and tail summary; normality failure changes interpretation of model SE, not the frozen bootstrap"
+    ],
+    "calibration": {
+      "folds": 5,
+      "foldRule": "SHA256(S12 freeze hash, pairingBlockId) modulo 5; arms from a block never split",
+      "continuous": "out-of-fold RMSE, MAE, calibration intercept and slope",
+      "binary": "out-of-fold Brier score, log loss, calibration intercept/slope, and 10-bin expected calibration error",
+      "claimRule": "Diagnostics are reported, not used to delete terms or populations."
+    },
+    "survival": {
+      "test": "Spearman correlation of scaled Schoenfeld treatment residual with log(event time), plus a global coefficient test where available",
+      "trigger": "Holm-adjusted treatment PH p < 0.01",
+      "alternative": "Do not interpret a single hazard ratio. Report the always-computed Aalen-Johansen/RMCF causal summaries and descriptive interval-specific completion rate ratios over normalized budget intervals [0,0.25], (0.25,0.75], (0.75,1.0].",
+      "alternativeIntervalsFrozenBeforeModeling": true
+    }
+  },
+  "bootstrap": {
+    "replicates": 2000,
+    "unit": "pairingBlockId resampled within n",
+    "sharedDrawsAcrossEstimandsAndEndpoints": true,
+    "addressRule": "SHA256(S12 model-freeze hash, replicate, n, draw)",
+    "interval": "percentile 95% for S12 standardized and supported subgroup contrasts",
+    "stabilityAudit": "Compare estimates and interval half-widths from the first 1000 and all 2000 replicates; flag point shifts exceeding 0.10 full-bootstrap standard errors or half-width ratios outside [0.85,1.15].",
+    "rngUnpairedSensitivity": "For E03/E06 additionally resample active and reference arms independently within n and report the conservative interval without changing the paired point estimate."
+  },
+  "sensitivityAnalyses": [
+    "Gaussian GEE robust alternative for each continuous mixed model regardless of whether the trigger fires",
+    "fractional-logit GEE for normalized residual error",
+    "log1p cost transform versus frozen log(cost+0.5)",
+    "controller-expanded and mechanism-expanded S09 projections, especially E08",
+    "leave-one-scale-out standardized total effects without refitting a reduced formula",
+    "paired versus arm-independent bootstrap uncertainty for RNG-unpaired E03/E06",
+    "Aalen-Johansen competing-risk summaries versus cause-specific Cox",
+    "piecewise completion rates if and only if the PH trigger fires",
+    "E04 additive cost-component and per-n-squared tradeoff summaries without alias double counting"
+  ],
+  "forbiddenActions": [
+    "post-outcome addition, deletion, or recoding of a formula term",
+    "AIC, p-value, effect-direction, or calibration-based model selection",
+    "conditioning task effects on completion or any other post-treatment mediator",
+    "adjusting total effects for opportunity, proposal, failure, retry, action, trajectory, terminal, or cost mediators",
+    "opening S11 unused maximum-design outcomes or any policy-search/adversarial holdout",
+    "changing S08 coupling labels, S09 ledger definitions, S11 arms, or protected support",
+    "extrapolating to an unobserved scale or factorial cell",
+    "describing E03/E06 as exact common-random-number pairs"
+  ],
+  "escalationTriggers": [
+    "an assigned S11 arm or required terminal/cost field is missing",
+    "a fixed formula is rank deficient after reference coding and cannot be fit without changing terms",
+    "an alternative not frozen here is needed",
+    "a prior action, information, scheduler, fault, pairing, RNG, opportunity, or ledger contract would need to change",
+    "any temptation to select or remove a model after inspecting its effect estimate"
+  ]
+}
