@@ -466,6 +466,23 @@ def main() -> None:
     canonical_json(args.release / "release_manifest.json", source_manifest)
     canonical_json(args.release / "source_manifest.json", source_manifest)
     canonical_json(
+        args.release / "release_pointer.json",
+        {
+            "schemaVersion": SYNTHESIS_SCHEMA_VERSION,
+            "researchStepId": "S14",
+            "releaseName": "E02-causal-simulator-extension-v1",
+            "status": "S14 synthesis and reusable simulator extension complete",
+            "repository": origin,
+            "branch": "eidosoma/groups/28",
+            "commit": head,
+            "sourcePackage": "causal_simulator",
+            "sourceManifest": str(args.release / "source_manifest.json"),
+            "validationSummary": str(output / "validation_summary.json"),
+            "recommendedNextAction": "Return control to the Chief Scientist for report-bundle review and downstream E05/E07 handoff.",
+            "caveat": "Immutable Git source pointer; no repository source tree is duplicated under ARTIFACTS_DIR.",
+        },
+    )
+    canonical_json(
         args.release / "smoke_command.json",
         {
             "command": "python scripts/build_s14_synthesis.py --output /tmp/e02-s14-smoke-artifacts --report-inputs /tmp/e02-s14-smoke-report-inputs --release /tmp/e02-s14-smoke-release",

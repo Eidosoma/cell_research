@@ -55,6 +55,7 @@ def main() -> None:
         args.output / "input_provenance.json",
         args.output / "environment_provenance.json",
         args.release / "release_manifest.json",
+        args.release / "release_pointer.json",
         Path("/artifacts/release/causal-simulator-extension.tar.zst.NOT_CREATED.json"),
         args.report_inputs / "evidence_index.csv",
         args.report_inputs / "methods_summary.md",
@@ -77,6 +78,7 @@ def main() -> None:
     sensitivity = pd.read_parquet(args.output / "s13_sensitivity.parquet")
     claims = pd.read_csv(args.output / "claim_to_evidence_matrix.csv")
     release = json.loads((args.release / "release_manifest.json").read_text())
+    release_pointer = json.loads((args.release / "release_pointer.json").read_text())
     smoke = json.loads((args.output / "fresh_smoke_validation.json").read_text())
     provenance = json.loads((args.output / "input_provenance.json").read_text())
     validation = json.loads((args.output / "validation_summary.json").read_text())
@@ -125,6 +127,10 @@ def main() -> None:
         "inputHashesMatch": input_hashes,
         "releaseSourceHashesMatch": source_hashes,
         "releaseCommitMatchesCurrentHead": release["commit"] == current_head,
+        "releasePointerIsCurrentS14": (
+            release_pointer["researchStepId"] == "S14"
+            and release_pointer["commit"] == current_head
+        ),
         "freshSmokePass": bool(smoke["success"]),
         "freshSmokeReplayPass": bool(smoke["deterministicReplay"]),
         "analysisReplayPass": bool(validation["checks"]["deterministicAnalysisReplay"]),
