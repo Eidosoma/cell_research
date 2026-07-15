@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "e03.s05.graph_contract.v1",
+  "researchStepId": "S05",
+  "frozenQuestion": "Can complete directed legal-opportunity graphs be constructed for every declared S04 structural family with exact E01 actions, costs, terminal semantics, reachability accounting, and S01 metric changes?",
+  "sourceStateContract": "e03.s04.structural_state.v1",
+  "sourceSemantics": "E01-reference-v1",
+  "graphSemantics": {
+    "nodeDomain": "every S04 structural state in every one of the 7,984 declared families",
+    "edgeDomain": "one charged projected scheduler opportunity from every active node",
+    "terminalOutdegree": 0,
+    "terminalPrecedence": [
+      "complete",
+      "quiescent"
+    ],
+    "eventBudgetDisposition": "excluded because activation history is not structural state",
+    "noOpAndRejectionDisposition": "retained as charged self-loop edges",
+    "parallelEdgeDisposition": "retained when distinct projected opportunities share endpoints",
+    "authoritativeEdgeKey": [
+      "familyOrdinal",
+      "sourceStateOrdinal",
+      "opportunityOrdinal"
+    ],
+    "stateOrdinal": "selectionCursorCode * factorial(n) + occupancyRank"
+  },
+  "schedulerProjection": {
+    "id": "fair_serial_legal_opportunity_set_v1",
+    "cellView": "each identity has one actor opportunity; a normal Bubble actor has separate left and right branches",
+    "faultyBubble": "one actor-fault opportunity and no side draw, matching E01 scheduler order",
+    "traditional": "one deterministic controller opportunity",
+    "weights": "cell-view actor probability 1/n; normal Bubble side conditional probability 1/2; traditional probability 1",
+    "interpretation": "finite nondeterministic/marginally weighted projection, not a byte-exact counter-addressed scheduler history"
+  },
+  "actionAndCost": {
+    "proposalKinds": [
+      "NoOp",
+      "Swap",
+      "MemoryUpdate"
+    ],
+    "decisions": [
+      "no_op",
+      "accepted",
+      "rejected_target_stuck",
+      "rejected_actor_stuck"
+    ],
+    "ledgerDeltas": [
+      "activations",
+      "observationReads",
+      "valueComparisons",
+      "proposals",
+      "noOps",
+      "rejections",
+      "memoryUpdates",
+      "acceptedSwaps",
+      "displacedCells",
+      "conflictLosses"
+    ],
+    "constants": {
+      "activations": 1,
+      "proposals": 1,
+      "conflictLosses": 0
+    }
+  },
+  "metricDeltas": {
+    "storedExactNumerators": [
+      "adjacentDescents",
+      "paperSortednessDistance",
+      "inversionCount",
+      "spearmanFootrule",
+      "maximumRankError",
+      "duplicateAwareEarthMoversDistance"
+    ],
+    "uniqueValueDenominatorsByN": {
+      "normalizedAdjacentDescents": "n-1",
+      "paperSortednessDistance": "n",
+      "normalizedKendallDistance": "n*(n-1)/2",
+      "normalizedSpearmanFootrule": "floor(n*n/2)",
+      "normalizedMaximumRankError": "n-1",
+      "duplicateAwareEarthMoversDistance": "n",
+      "normalizedDuplicateAwareEarthMoversDistance": "floor(n*n/2)"
+    },
+    "dependencies": [
+      "paperSortednessDistance numerator equals adjacentDescents for unique values",
+      "duplicateAwareEarthMoversDistance numerator equals spearmanFootrule",
+      "raw and normalized forms share signs"
+    ]
+  },
+  "reachability": {
+    "start": "S04 family scenario anchor: identity-order occupancy and direction-boundary Selection cursors, state ordinal 0",
+    "unit": "directed opportunity graph including charged self-loops",
+    "claim": "exact only for the declared anchor; no claim that all syntactically valid states are reachable"
+  },
+  "materialization": {
+    "edgeShards": 8,
+    "nodeAnnotationShards": 8,
+    "familyAssignment": "familyOrdinal modulo 8",
+    "rowOrder": "familyOrdinal, sourceStateOrdinal, opportunityOrdinal",
+    "compression": "Parquet Zstandard",
+    "intermediates": "/cache/e03_s05_graphs"
+  },
+  "preflight": {
+    "declaredFamilies": 7984,
+    "declaredNodes": 22301808,
+    "allStateOpportunityUpperBound": 112590624,
+    "largestFamilyOpportunityUpperBound": 6531840,
+    "availableDiskBytesAtFreeze": 1319903166464
+  },
+  "escalationBoundaries": {
+    "maximumEdgeRows": 150000000,
+    "maximumSingleFamilyEdges": 10000000,
+    "maximumFinalGraphBytes": 16106127360,
+    "maximumScratchBytes": 42949672960,
+    "rule": "stop and report the trigger; do not omit families, terminal classes, opportunities, costs, or metrics"
+  },
+  "validationGates": [
+    "all 7,984 S04 families and 22,301,808 states represented exactly once",
+    "active-state opportunity ordinals complete and terminal outdegree zero",
+    "independent E01 outgoing-edge enumeration matches declared fixtures and every family sample",
+    "all endpoints remain within their source family",
+    "no duplicate authoritative edge keys",
+    "parallel endpoint edges explicitly counted rather than collapsed",
+    "E01 complete/quiescent terminal classifications agree",
+    "directed reachability accounting partitions every family",
+    "action partition and E01 ledger identities hold",
+    "S01 metric deltas and exact denominator identities agree",
+    "physical shard rows reconstruct per-family logical digests",
+    "a second deterministic graph pass reproduces every family count and digest",
+    "all accessed inputs remain byte-identical"
+  ],
+  "expectedOutputs": [
+    "graphs/edge_shard_00.parquet through edge_shard_07.parquet",
+    "graphs/node_shard_00.parquet through node_shard_07.parquet",
+    "graph_corpus_manifest.json",
+    "graph_family_manifest.parquet",
+    "transition_counts_by_family.parquet",
+    "transition_counts_by_stratum.parquet",
+    "reachability_summary.parquet",
+    "simulator_edge_validation.parquet",
+    "terminal_agreement.parquet",
+    "deterministic_reconstruction.json",
+    "graph_schema.md",
+    "validation_results.json",
+    "research_step_full_results.md"
+  ]
+}
