@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "e03.s04.enumeration_contract.v1",
+  "researchStepId": "S04",
+  "frozenQuestion": "Can every structurally valid small-system state be enumerated exactly far enough to support later legal-transition graphs, with explicit stopping boundaries for policy memory, faults, identity, and scheduler history?",
+  "sourceSemantics": "E01-reference-v1",
+  "stateDomain": {
+    "values": "unique integer values 0..n-1, one immutable value per identity",
+    "cellIds": "c0..c(n-1), with identity index equal to value only in this unique-value inventory",
+    "directions": ["ascending", "descending"],
+    "directionScope": "homogeneous goal directions only",
+    "mixedDirectionDisposition": "excluded because there is no single array-level goal; S03 paired candidate projections remain the applicable evidence",
+    "cellViewPolicies": ["Bubble", "Insertion", "Selection"],
+    "traditionalPolicies": ["Bubble", "Insertion", "Selection"],
+    "faultModes": ["normal", "passive", "stuck"],
+    "faultRule": "one non-normal mode per graph family, exact identity placements for counts 1..min(3,n), plus the no-fault map",
+    "faultCounts": [0, 1, 2, 3]
+  },
+  "canonicalGraphState": {
+    "included": [
+      "immutable graph-family digest",
+      "occupancy permutation rank",
+      "one positional Selection cursor per Selection identity"
+    ],
+    "selectionCursorDomain": {
+      "ascending": "0..n inclusive; n is the exhausted sentinel",
+      "descending": "-1..n-1 inclusive; -1 is the exhausted sentinel"
+    },
+    "excludedAsPathCostOrDerived": [
+      "ledger counters",
+      "terminal label",
+      "analysis labels"
+    ],
+    "excludedBySchedulerProjection": [
+      "activation count",
+      "audit-only stream counters",
+      "counter-addressed random draws"
+    ],
+    "schedulerProjection": "fair_serial_legal_opportunity_set_v1",
+    "schedulerRationale": "E01 actor and Bubble-side draws depend on unbounded activation history and scenario seed. S04 inventories finite structural nodes; S05 may attach all legal serial opportunities as edges. Byte-exact replay state remains a distinct E01 RunState identity.",
+    "reachabilityClaim": "none; all syntactically valid structural cursor/occupancy states are inventoried, including states that may be unreachable from the canonical initial cursor vector"
+  },
+  "encoder": {
+    "familyId": "SHA-256 of domain-separated canonical family JSON",
+    "stateBytes": "domain tag plus 32-byte family digest plus unsigned big-endian occupancy rank and cursor code",
+    "stateId": "SHA-256 of canonical state bytes",
+    "authoritativeCollisionKey": ["familyId", "occupancyRank", "selectionCursorCode"],
+    "collisionHandling": "retain the full authoritative tuple, detect equal digests with unequal tuples, write a collision record, and fail hash-only validation"
+  },
+  "materializationTiers": [
+    {
+      "id": "cell_all_policies_fault_complete_n4",
+      "architecture": "cell_view",
+      "nValues": [4],
+      "policyAssignments": "all 3^n identity-owned assignments",
+      "faultMaps": "all declared maps"
+    },
+    {
+      "id": "cell_all_policies_no_fault_n5",
+      "architecture": "cell_view",
+      "nValues": [5],
+      "policyAssignments": "all 3^n identity-owned assignments",
+      "faultMaps": "no fault"
+    },
+    {
+      "id": "cell_memoryless_fault_complete_n5_n7",
+      "architecture": "cell_view",
+      "nValues": [5, 6, 7],
+      "policyAssignments": "pure Bubble and pure Insertion",
+      "faultMaps": "all declared maps; n=5 no-fault families are already present in the all-policy tier"
+    },
+    {
+      "id": "cell_memoryless_no_fault_n8_n9",
+      "architecture": "cell_view",
+      "nValues": [8, 9],
+      "policyAssignments": "pure Bubble and pure Insertion",
+      "faultMaps": "no fault"
+    },
+    {
+      "id": "traditional_fault_complete_n4_n7",
+      "architecture": "traditional",
+      "nValues": [4, 5, 6, 7],
+      "policyAssignments": "one pure global controller policy",
+      "faultMaps": "all declared maps"
+    },
+    {
+      "id": "traditional_no_fault_n8_n9",
+      "architecture": "traditional",
+      "nValues": [8, 9],
+      "policyAssignments": "one pure global controller policy",
+      "faultMaps": "no fault"
+    }
+  ],
+  "stoppingGates": {
+    "maximumMaterializedRowsThisStep": 25000000,
+    "maximumNodesInOneGraphFamily": 5000000,
+    "maximumProjectedFinalParquetBytes": 1610612736,
+    "downstreamEdgeWarning": 50000000,
+    "rule": "increase each family tier only while all applicable gates pass; record the first rejected n and every triggered gate"
+  },
+  "validationGates": [
+    "factorial occupancy counts within every materialized family",
+    "complete family and state metadata",
+    "permutation rank/unrank round trips",
+    "Selection cursor code round trips and boundary sentinels",
+    "family-ID and state-ID hash uniqueness with collision audit",
+    "ascending/descending complement symmetry and involution",
+    "successor closure for sampled E01 policy proposals and fault validation",
+    "traditional-controller successor closure",
+    "structural projection invariance to ledger and stream-counter changes",
+    "source input immutability"
+  ],
+  "outputs": [
+    "state_inventory.parquet",
+    "state_family_inventory.parquet",
+    "tractability_projection.parquet",
+    "state_samples.parquet",
+    "symmetry_validation.parquet",
+    "simulator_consistency.parquet",
+    "canonical_state_encoder.md",
+    "tractability_report.md",
+    "validation_results.json",
+    "research_step_full_results.md"
+  ]
+}
