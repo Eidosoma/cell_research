@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "e03.s06.necessary_detour_contract.v1",
+  "researchStepId": "S06",
+  "title": "Define the necessary-detour quantity",
+  "frozenQuestion": "What exact metric-relative minimax excursion is required to reach the complete goal set along finite legal paths in the frozen S05 structural opportunity graph, and can a validated solver compute it without conflating structural opportunity, byte-exact replay, or probabilistic scheduler claims?",
+  "sourceGraph": {
+    "stateSchema": "e03.s04.structural_state.v1",
+    "edgeSchema": "e03.s05.legal_opportunity_edge.v1",
+    "nodeAnnotationSchema": "e03.s05.graph_node_annotation.v1",
+    "schedulerProjection": "fair_serial_legal_opportunity_set_v1",
+    "families": 7984,
+    "nodes": 22301808,
+    "edges": 103599386
+  },
+  "successSemantics": {
+    "goalSet": "all and only S05 terminal_code=1 complete structural nodes",
+    "zeroLengthSuccess": "a complete start succeeds by the empty path",
+    "quiescent": "terminal_code=2 is an unsuccessful absorbing class, never a goal",
+    "unreachable": "no finite path to the goal set is classified unreachable, not necessary-detour",
+    "ties": "all identity-distinct structural nodes whose values satisfy the non-strict direction-specific goal belong to the goal set; equal-value identities are exchangeable for distance, but graph identities are not collapsed",
+    "eventBudget": "excluded from structural success because it is replay-history censoring"
+  },
+  "primaryQuantity": {
+    "name": "minimum_peak_excursion",
+    "absoluteBottleneck": "B_D(s)=min over finite paths p from s to C of max over vertices v in p of D(v)",
+    "excursion": "E_D(s)=B_D(s)-D(s) for goal-reachable s",
+    "necessaryDetour": "goal-reachable and E_D(s)>0",
+    "reachableNoDetour": "goal-reachable and E_D(s)=0",
+    "undefinedCases": [
+      "unreachable active start",
+      "quiescent start"
+    ],
+    "exactArithmetic": "nonnegative integer metric numerators within a fixed family; positive family normalization constants rescale but do not change paths or necessity signs"
+  },
+  "metrics": {
+    "primaryIndependentGeometries": [
+      "adjacent_descents",
+      "inversion_count",
+      "spearman_footrule",
+      "maximum_rank_error"
+    ],
+    "dependentReportingForms": {
+      "paper_sortedness_distance_numerator": "equals adjacent_descents in the unique-value S05 corpus; not goal-identifying under ties",
+      "emd_numerator": "equals spearman_footrule under the S01 unit-mass line geometry",
+      "normalized_forms": "positive within-family rescalings of exact numerators"
+    },
+    "goalCompatibility": "a proper goal distance must be zero on every complete tied-value goal; incompatible proxies may be reported only with an explicit non-distance label"
+  },
+  "schedulerQuantification": {
+    "primary": "existential over finite labelled S05 legal-opportunity paths (angelic/favorable opportunity sequence)",
+    "notClaimed": [
+      "universal or adversarial scheduler guarantee",
+      "eventual completion under every fair schedule",
+      "IID or Markov-chain hitting probability",
+      "expected excursion or expected cost",
+      "likelihood under S05 marginal edge weights",
+      "byte-exact E01 counter-addressed replay"
+    ],
+    "reason": "self-loops permit indefinite avoidance and S05 projects away counter-addressed history; universal, probabilistic, and byte-exact quantities require separate estimands"
+  },
+  "edgeSemantics": {
+    "selfLoops": "retained in source; removable from an existential optimum because every secondary profile has strictly positive activation cost and loops cannot lower the vertex maximum",
+    "parallelEdges": "retained and separately eligible; primary endpoint-only excursion may tie, while action labels and secondary costs may differ",
+    "terminalOutdegree": 0,
+    "witnessIdentity": "ordered S05 authoritative edge keys; deterministic witness selection does not imply uniqueness"
+  },
+  "secondaryCosts": {
+    "ordering": "lexicographic after the primary excursion is fixed at its exact optimum",
+    "method": "first solve the bottleneck; then restrict to vertices at or below the optimal absolute bottleneck and solve a nonnegative additive lexicographic shortest path",
+    "profiles": {
+      "activations": ["activations"],
+      "observation_reads": ["observation_reads", "activations"],
+      "value_comparisons": ["value_comparisons", "activations"],
+      "accepted_swaps": ["cost_accepted_swaps", "activations"],
+      "displaced_cells": ["cost_displaced_cells", "activations"],
+      "full_ledger": [
+        "activations",
+        "observation_reads",
+        "value_comparisons",
+        "cost_no_ops",
+        "cost_rejections",
+        "cost_memory_updates",
+        "cost_accepted_swaps",
+        "cost_displaced_cells"
+      ]
+    },
+    "properness": "every profile includes activations, so every edge has a lexicographically positive cost and an optimal finite cycle-free witness exists"
+  },
+  "solver": {
+    "primaryAlgorithm": "reverse directed integer-bucket minimax search from all complete goals, one family at a time",
+    "primaryComplexity": "O(V+E+L) time and O(V+E+L) working memory for L distinct integer levels",
+    "secondaryAlgorithm": "forward lexicographic Dijkstra inside the optimal bottleneck sublevel set for a requested start/profile",
+    "secondaryComplexity": "O((V+E) log V) worst case per requested witness",
+    "proofObligation": "a combined single-label (peak,cost) Dijkstra is forbidden because a temporarily higher peak with lower cost can become preferable when both paths later cross a common higher level"
+  },
+  "observedComparisonConventions": [
+    "same S04 family identity and complete structural start including Selection cursors",
+    "project every observed action to an exact S05 authoritative edge key",
+    "same goal, direction, metric numerator, terminal precedence, and cost profile",
+    "charge no-ops and rejections exactly as S05 edges",
+    "record event-budget stopping as censoring rather than quiescence or graph unreachability",
+    "label the optimum existential structural-opportunity, not byte-exact or likely-scheduler",
+    "preserve many-to-one replay-history to structural-state projection provenance",
+    "report ties among optimal paths; a deterministic witness is not a uniqueness claim"
+  ],
+  "scopeBoundary": {
+    "s06": "definition, reusable solver, proof sketches, fixtures, all-family compatibility audit, and feasibility benchmarks only",
+    "deferredToS07": "scientific prevalence tables and all-state optimal/minimax path solutions over the complete corpus"
+  },
+  "escalationBoundaries": {
+    "maximumPerFamilyWorkingBytes": 4294967296,
+    "maximumFamilyNodes": 2147483647,
+    "maximumFamilyEdges": 4294967295,
+    "maximumExactMetricLevel": 2147483647,
+    "rule": "stop and report any incompatible family, missing goal, schema mismatch, proof/solver disagreement, or working-set overflow; do not omit a family or change semantics"
+  },
+  "validationGates": [
+    "hand-solvable complete, monotone, necessary, avoidable, unreachable, and quiescent fixtures",
+    "multiple tied goals and goal-distance compatibility",
+    "self-loop and parallel-edge invariance with secondary-cost discrimination",
+    "two-stage lexicographic counterexample",
+    "independent exhaustive simple-path brute force on deterministic tiny multigraphs",
+    "primary witness replay and bottleneck equality",
+    "secondary witness replay and exact additive cost equality",
+    "all 7,984 S05 families retain compatible node/edge/goal metadata",
+    "all family goal counts equal complete-node counts",
+    "all exact S05 metric numerators fit the declared solver domain",
+    "largest-node and largest-edge family ingestion and runtime benchmarks",
+    "no S05 input mutation",
+    "relevant repository regressions"
+  ],
+  "expectedOutputs": [
+    "necessary_detour_spec.md",
+    "proof_sketches.md",
+    "solver_validation_fixtures.json",
+    "solver_validation_results.parquet",
+    "tiny_bruteforce_results.parquet",
+    "corpus_compatibility.parquet",
+    "corpus_feasibility.json",
+    "validation_results.json",
+    "research_step_full_results.md"
+  ]
+}

@@ -23,13 +23,26 @@ from .distances import (
     paper_sortedness_strict,
     spearman_footrule,
 )
+from .necessary_detour import (
+    COST_PROFILES,
+    LexicographicWitness,
+    PrimarySolution,
+    family_metric_levels,
+    solve_lexicographic_witness,
+    solve_primary_all_starts,
+    tied_value_goal_mask,
+)
 
 __all__ = [
     "DistanceProfile",
+    "COST_PROFILES",
+    "LexicographicWitness",
+    "PrimarySolution",
     "adjacent_descents",
     "distance_profile",
     "duplicate_aware_earth_movers_distance",
     "earth_movers_distance",
+    "family_metric_levels",
     "inversion_count",
     "maximum_duplicate_aware_earth_movers_distance",
     "maximum_earth_movers_distance",
@@ -46,4 +59,7 @@ __all__ = [
     "paper_sortedness_distance",
     "paper_sortedness_strict",
     "spearman_footrule",
+    "solve_lexicographic_witness",
+    "solve_primary_all_starts",
+    "tied_value_goal_mask",
 ]
