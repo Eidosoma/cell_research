@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "e03.s11.behavioral_null_contract.v1",
+  "researchStepId": "S11",
+  "title": "Construct behavioral nulls",
+  "freezeBoundary": {
+    "frozenBeforeNullOutcomesComputed": true,
+    "frozenAtUtc": "2026-07-15T00:00:00Z",
+    "knownInputs": [
+      "S03 found that every retained primary paper backtrack was nonworsening under all four global rank metrics, with six frozen-C coverage gaps.",
+      "S07 provides exact structural reachability, necessary excursion, and cost labels for every retained S05 state and metric.",
+      "S09 supplies 25,224 persistent baseline/remove/move/add runs from 3,328 exact structural contexts; activation pulses are excluded because they do not define a persistent S05 family.",
+      "S10 supplies strict-filter exposure and exact filtered-reachability strata for each persistent run and metric."
+    ],
+    "forbidden": "No S11 null outcome may be opened before this contract is committed to the workspace."
+  },
+  "frozenQuestion": "Can non-adaptive structural policies generate apparent detours, and do they differ from observed S09 behavior in barrier contingency, completion, residual error, or successful-run efficiency after the declared S09/S10 stratification?",
+  "evidenceBoundary": "All nulls are finite paths in the frozen S05 fair-serial structural opportunity graph. They are neither byte-exact E01 scheduler replays nor estimates under an undeclared scheduler distribution.",
+  "cohort": {
+    "source": "/artifacts/research_steps/S09/barrier_interventions.parquet",
+    "includedInterventions": ["baseline", "remove", "move", "add"],
+    "excludedIntervention": "activate",
+    "exclusionReason": "The one-event activation pulse has no persistent S05 family and cannot be represented by a stationary structural null without changing semantics.",
+    "expectedObservedRuns": 25224,
+    "expectedStructuralContexts": 3328,
+    "expectedSourceStarts": 407,
+    "expectedArmFamilies": 394,
+    "eventBudget": 2048
+  },
+  "nullFamilies": [
+    {
+      "id": "random_legal",
+      "definition": "At each active state, choose uniformly from all authoritative outgoing S05 opportunity edges, including accepted changes, native no-ops, and native rejections."
+    },
+    {
+      "id": "rate_matched_random",
+      "definition": "Use independently randomized systematic quotas targeting the anchor run's accepted-swap, memory-update, and unchanged-opportunity rates; choose uniformly within the requested feasible outgoing edge category and audit a uniform-all-edge fallback only when that category is absent."
+    },
+    {
+      "id": "open_loop_opportunity",
+      "definition": "Predeclare a state-independent sequence of family opportunity ordinals from the S05 opportunity probabilities, then execute the uniquely corresponding authoritative edge at each visited state. The opportunity labels are open-loop; native proposals remain state-dependent."
+    },
+    {
+      "id": "greedy_adjacent_descents",
+      "definition": "Choose an outgoing S05 edge with the smallest immediate adjacent-descents successor level; break all ties with an independent declared stream."
+    },
+    {
+      "id": "greedy_inversion_count",
+      "definition": "Choose an outgoing S05 edge with the smallest immediate inversion-count successor level; break all ties with an independent declared stream."
+    },
+    {
+      "id": "greedy_spearman_footrule",
+      "definition": "Choose an outgoing S05 edge with the smallest immediate Spearman-footrule successor level; break all ties with an independent declared stream."
+    },
+    {
+      "id": "greedy_maximum_rank_error",
+      "definition": "Choose an outgoing S05 edge with the smallest immediate maximum-rank-error successor level; break all ties with an independent declared stream."
+    }
+  ],
+  "edgeAndCostSemantics": {
+    "allSelectedEdgesAuthoritative": true,
+    "selfLoopsAndMultiedgesRetained": true,
+    "terminalPrecedence": ["complete", "quiescent", "event_budget"],
+    "costs": "Sum the selected S05 edge ledger. Report S06 full-ledger cost separately from E01's redundant proposal-inclusive full ledger.",
+    "randomLegalWeighting": "uniform over labelled outgoing edges",
+    "openLoopWeighting": "the exact state-independent S05 opportunity numerator/denominator measure"
+  },
+  "streams": {
+    "generator": "counter-addressed SplitMix64 with SHA-256-derived 64-bit stream roots",
+    "independence": "Distinct roots for null family, greedy metric, quota phase, selection tie, and replicate; no E01 or S09 scheduler stream is reused.",
+    "barrierPairing": "Within a source-start, focal barrier, replicate, and null family block, all intervention arms share raw counter values. State/family differences may map the same raw values to different opportunities and are reported as common-random-number coupling rather than identical action streams.",
+    "moduloBias": "Use multiply-high mapping from an unsigned 64-bit draw to a bounded integer."
+  },
+  "strata": [
+    "S10 strict filter exposure for the evaluation metric",
+    "S09 exact reachability status for the evaluation metric",
+    "S10 strict filtered exact reachability and intervention-created impossibility for the evaluation metric",
+    "S09 observed completion/quiescence/recurrent-active-at-32768 status",
+    "S09 intervention type",
+    "S09 recurrent-active indicator",
+    "anchor accepted-swap opportunity-rate bin",
+    "architecture, n, direction, and policy profile"
+  ],
+  "opportunityRateBins": [
+    {"id": "terminal_zero_events", "rule": "event_count == 0"},
+    {"id": "zero_movement", "rule": "event_count > 0 and accepted_swaps/event_count == 0"},
+    {"id": "low_le_0.05", "rule": "0 < accepted_swaps/event_count <= 0.05"},
+    {"id": "mid_le_0.15", "rule": "0.05 < accepted_swaps/event_count <= 0.15"},
+    {"id": "high_le_0.30", "rule": "0.15 < accepted_swaps/event_count <= 0.30"},
+    {"id": "very_high_gt_0.30", "rule": "accepted_swaps/event_count > 0.30"}
+  ],
+  "outcomeSeparation": {
+    "exactImpossibility": "S07 unreachable-active start; never censoring.",
+    "quiescence": "S05 terminal quiescent; unsuccessful and never censoring.",
+    "censoring": "S07-reachable run still active at the declared event budget.",
+    "completion": "S05 complete terminal reached.",
+    "residualError": "Final exact metric numerator, reported for all runs.",
+    "successfulRunEfficiency": "Cost contrasts and exact optimality gaps only when the relevant run or pair completed; a shorter failed run is never efficient."
+  },
+  "eventBudgetSensitivity": {
+    "primaryBudget": 2048,
+    "extendedBudget": 32768,
+    "scope": "replicate-zero null runs that are exactly reachable and active at 2048",
+    "requiredPrefixCheck": true,
+    "unreachableActiveNotExtended": true
+  },
+  "inference": {
+    "bootstrapDraws": 10000,
+    "cluster": "source structural start (source_family_ordinal, source_state_ordinal)",
+    "interval": "percentile 95% finite-corpus cluster bootstrap",
+    "comparisons": [
+      "null-versus-observed completion, residual error, excursion, and costs",
+      "barrier arm versus matched baseline within each null family",
+      "null successful-run costs versus S07 exact optima"
+    ],
+    "claimBoundary": "Null contrasts are descriptive computational controls. Barrier common-random-number contrasts are paired within the structural null but do not identify biological adaptation."
+  },
+  "validation": [
+    "all 25,224 observed anchors and all seven null families are present",
+    "every selected edge is an authoritative outgoing S05 edge and all terminal labels agree",
+    "rate requests match declared anchor rates and achieved-category deficits are fully accounted",
+    "open-loop ordinal sequences are state-independent and map to feasible authoritative edges",
+    "counter streams are independently rooted and matched barrier arms share declared raw prefixes",
+    "deterministic replay reproduces every null summary and trajectory digest",
+    "every run-metric row joins exactly to S07 and S10 strata",
+    "exact impossibility, quiescence, censoring, completion, residual error, and successful efficiency remain disjoint",
+    "all required long-horizon prefixes match their 2,048-event runs",
+    "all accessed inputs are byte-unchanged and no S12 artifact exists"
+  ]
+}
