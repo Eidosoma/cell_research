@@ -1,0 +1,212 @@
+{
+  "schemaVersion": "E03.S01.distance-fixtures.v1",
+  "fixtures": [
+    {
+      "fixtureId": "singleton",
+      "values": [7],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 0,
+        "normalized_adjacent_descents": 0.0,
+        "paper_sortedness_strict": 1.0,
+        "paper_sortedness_distance": 0.0,
+        "inversion_count": 0,
+        "maximum_inversion_count": 0,
+        "normalized_kendall_distance": 0.0,
+        "spearman_footrule": 0,
+        "maximum_spearman_footrule": 0,
+        "normalized_spearman_footrule": 0.0,
+        "maximum_rank_error": 0,
+        "maximum_possible_rank_error": 0,
+        "normalized_maximum_rank_error": 0.0,
+        "duplicate_aware_earth_movers_distance": 0.0,
+        "maximum_duplicate_aware_earth_movers_distance": 0.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.0
+      }
+    },
+    {
+      "fixtureId": "sorted_unique",
+      "values": [1, 2, 3, 4],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 0,
+        "normalized_adjacent_descents": 0.0,
+        "paper_sortedness_strict": 1.0,
+        "paper_sortedness_distance": 0.0,
+        "inversion_count": 0,
+        "maximum_inversion_count": 6,
+        "normalized_kendall_distance": 0.0,
+        "spearman_footrule": 0,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.0,
+        "maximum_rank_error": 0,
+        "maximum_possible_rank_error": 3,
+        "normalized_maximum_rank_error": 0.0,
+        "duplicate_aware_earth_movers_distance": 0.0,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.0
+      }
+    },
+    {
+      "fixtureId": "reverse_unique",
+      "values": [4, 3, 2, 1],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 3,
+        "normalized_adjacent_descents": 1.0,
+        "paper_sortedness_strict": 0.25,
+        "paper_sortedness_distance": 0.75,
+        "inversion_count": 6,
+        "maximum_inversion_count": 6,
+        "normalized_kendall_distance": 1.0,
+        "spearman_footrule": 8,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 1.0,
+        "maximum_rank_error": 3,
+        "maximum_possible_rank_error": 3,
+        "normalized_maximum_rank_error": 1.0,
+        "duplicate_aware_earth_movers_distance": 2.0,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 1.0
+      }
+    },
+    {
+      "fixtureId": "mixed_unique",
+      "values": [3, 1, 4, 2],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 2,
+        "normalized_adjacent_descents": 0.6666666666666666,
+        "paper_sortedness_strict": 0.5,
+        "paper_sortedness_distance": 0.5,
+        "inversion_count": 3,
+        "maximum_inversion_count": 6,
+        "normalized_kendall_distance": 0.5,
+        "spearman_footrule": 6,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.75,
+        "maximum_rank_error": 2,
+        "maximum_possible_rank_error": 3,
+        "normalized_maximum_rank_error": 0.6666666666666666,
+        "duplicate_aware_earth_movers_distance": 1.5,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.75
+      }
+    },
+    {
+      "fixtureId": "sorted_duplicates",
+      "values": [1, 1, 2, 2],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 0,
+        "normalized_adjacent_descents": 0.0,
+        "paper_sortedness_strict": 0.5,
+        "paper_sortedness_distance": 0.5,
+        "inversion_count": 0,
+        "maximum_inversion_count": 4,
+        "normalized_kendall_distance": 0.0,
+        "spearman_footrule": 0,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.0,
+        "maximum_rank_error": 0,
+        "maximum_possible_rank_error": 2,
+        "normalized_maximum_rank_error": 0.0,
+        "duplicate_aware_earth_movers_distance": 0.0,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.0
+      }
+    },
+    {
+      "fixtureId": "mixed_duplicates",
+      "values": [2, 1, 2, 1],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 2,
+        "normalized_adjacent_descents": 0.6666666666666666,
+        "paper_sortedness_strict": 0.5,
+        "paper_sortedness_distance": 0.5,
+        "inversion_count": 3,
+        "maximum_inversion_count": 4,
+        "normalized_kendall_distance": 0.75,
+        "spearman_footrule": 6,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.75,
+        "maximum_rank_error": 2,
+        "maximum_possible_rank_error": 2,
+        "normalized_maximum_rank_error": 1.0,
+        "duplicate_aware_earth_movers_distance": 1.5,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.75
+      }
+    },
+    {
+      "fixtureId": "all_equal",
+      "values": [5, 5, 5],
+      "direction": "ascending",
+      "expected": {
+        "adjacent_descents": 0,
+        "normalized_adjacent_descents": 0.0,
+        "paper_sortedness_strict": 0.3333333333333333,
+        "paper_sortedness_distance": 0.6666666666666667,
+        "inversion_count": 0,
+        "maximum_inversion_count": 0,
+        "normalized_kendall_distance": 0.0,
+        "spearman_footrule": 0,
+        "maximum_spearman_footrule": 0,
+        "normalized_spearman_footrule": 0.0,
+        "maximum_rank_error": 0,
+        "maximum_possible_rank_error": 0,
+        "normalized_maximum_rank_error": 0.0,
+        "duplicate_aware_earth_movers_distance": 0.0,
+        "maximum_duplicate_aware_earth_movers_distance": 0.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.0
+      }
+    },
+    {
+      "fixtureId": "sorted_descending",
+      "values": [4, 3, 2, 1],
+      "direction": "descending",
+      "expected": {
+        "adjacent_descents": 0,
+        "normalized_adjacent_descents": 0.0,
+        "paper_sortedness_strict": 1.0,
+        "paper_sortedness_distance": 0.0,
+        "inversion_count": 0,
+        "maximum_inversion_count": 6,
+        "normalized_kendall_distance": 0.0,
+        "spearman_footrule": 0,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.0,
+        "maximum_rank_error": 0,
+        "maximum_possible_rank_error": 3,
+        "normalized_maximum_rank_error": 0.0,
+        "duplicate_aware_earth_movers_distance": 0.0,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.0
+      }
+    },
+    {
+      "fixtureId": "mixed_descending",
+      "values": [1, 3, 2, 4],
+      "direction": "descending",
+      "expected": {
+        "adjacent_descents": 2,
+        "normalized_adjacent_descents": 0.6666666666666666,
+        "paper_sortedness_strict": 0.5,
+        "paper_sortedness_distance": 0.5,
+        "inversion_count": 5,
+        "maximum_inversion_count": 6,
+        "normalized_kendall_distance": 0.8333333333333334,
+        "spearman_footrule": 6,
+        "maximum_spearman_footrule": 8,
+        "normalized_spearman_footrule": 0.75,
+        "maximum_rank_error": 3,
+        "maximum_possible_rank_error": 3,
+        "normalized_maximum_rank_error": 1.0,
+        "duplicate_aware_earth_movers_distance": 1.5,
+        "maximum_duplicate_aware_earth_movers_distance": 2.0,
+        "normalized_duplicate_aware_earth_movers_distance": 0.75
+      }
+    }
+  ]
+}
