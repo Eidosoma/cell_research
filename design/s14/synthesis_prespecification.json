@@ -1,0 +1,249 @@
+{
+  "schemaVersion": "E02-S14-synthesis-v1",
+  "researchStepId": "S14",
+  "title": "Construct mechanism and Pareto maps",
+  "freezeTimestampUtc": "2026-07-15T10:50:54Z",
+  "freezeBoundary": {
+    "outcomesOpenedAfterFreeze": true,
+    "sourceArtifactsKnownBeforeFreeze": [
+      "S10 screening design and results",
+      "S11 confirmatory design and results",
+      "S12 frozen causal estimands, effects, diagnostics, and sensitivity results",
+      "S13 frozen counterexample-search design, bounded-null classification, and brittle E06 instances"
+    ],
+    "prohibitedChanges": [
+      "No mechanism variable, endpoint orientation, objective, weight, uncertainty rule, or claim rule may be changed after S14 synthesis outcomes are inspected.",
+      "No exploratory S06 or S13 candidate may be promoted into the protected confirmatory population.",
+      "No S13 bounded null may be described as global absence.",
+      "No associational modifier or sampled-design variance component may be described as a causal effect."
+    ]
+  },
+  "mechanismMap": {
+    "frozenContrasts": [
+      {
+        "estimandId": "E01",
+        "mechanism": "matched topology under the no-fault parity contract",
+        "evidence": "S10 parity negative control and S02 interface validation",
+        "role": "negative_control"
+      },
+      {
+        "estimandId": "E03",
+        "mechanism": "uniform activation versus random-permutation sweeps",
+        "evidence": "S11/S12",
+        "role": "causal_contrast_with_rng_unpaired_cost_sensitivity"
+      },
+      {
+        "estimandId": "E04",
+        "mechanism": "stop versus skip continuation after stuck faults",
+        "evidence": "S11/S12",
+        "role": "causal_resource_tradeoff"
+      },
+      {
+        "estimandId": "E06",
+        "mechanism": "passive versus stuck mobility faults under stop continuation",
+        "evidence": "S11/S12 plus S13 sensitivity",
+        "role": "causal_contrast_with_rng_unpaired_status"
+      },
+      {
+        "estimandId": "E08",
+        "mechanism": "weak-owner coordination versus distributed control",
+        "evidence": "S11/S12",
+        "role": "causal_contrast_with_supplementary_controller_cost"
+      }
+    ],
+    "notEstimableOrInactive": [
+      {
+        "estimandId": "E05",
+        "status": "retry_inactive"
+      },
+      {
+        "estimandId": "E07",
+        "status": "non_executable_under_frozen_contract"
+      },
+      {
+        "variable": "sensing_error",
+        "status": "fixed_at_none_in_executable_confirmatory_support"
+      },
+      {
+        "variable": "action_failure",
+        "status": "fixed_at_none_in_executable_confirmatory_support"
+      }
+    ],
+    "modifierVariables": [
+      "n",
+      "valueProfile",
+      "orderStructure",
+      "policyProfile",
+      "direction",
+      "placementClass",
+      "faultCount"
+    ],
+    "modifierInterpretation": "Associational heterogeneity inside the exact simulated S11 support; no extrapolation and no causal modifier attribution.",
+    "endpoints": [
+      {
+        "name": "normalizedResidual",
+        "effectColumn": "meanDifference",
+        "benefitOrientation": -1,
+        "practicalMargin": 0.02,
+        "better": "lower"
+      },
+      {
+        "name": "completionSuccess",
+        "effectColumn": "riskDifference",
+        "benefitOrientation": 1,
+        "practicalMargin": 0.02,
+        "better": "higher"
+      },
+      {
+        "name": "restrictedMeanCompletionFraction",
+        "effectColumn": "meanDifference",
+        "benefitOrientation": -1,
+        "practicalMargin": 0.02,
+        "better": "lower"
+      },
+      {
+        "name": "logS01Cost",
+        "effectColumn": "meanDifference",
+        "benefitOrientation": -1,
+        "practicalMargin": 0.09531017980432493,
+        "better": "lower"
+      }
+    ],
+    "displayRule": "Display raw effect, benefit-oriented effect, bootstrap interval, and effect divided by the frozen practical margin. Include every supported S12 modifier cell without outcome-based selection."
+  },
+  "pareto": {
+    "analysisPopulation": "All 2,000 protected S11 pairing blocks and all six executable treatment settings; no run exclusion.",
+    "primaryObjectives": [
+      {
+        "name": "meanNormalizedResidual",
+        "direction": "minimize"
+      },
+      {
+        "name": "failureRate",
+        "definition": "1 - mean(completionSuccess)",
+        "direction": "minimize"
+      },
+      {
+        "name": "meanLogS01Cost",
+        "definition": "mean(log(s01Cost + 0.5))",
+        "direction": "minimize"
+      }
+    ],
+    "frontierRule": "The primary Pareto frontier is unweighted and uses the three raw population means. A setting dominates another only when it is no worse on every objective and strictly better on at least one.",
+    "weightedScalarizations": [
+      {
+        "name": "task_priority",
+        "weights": {
+          "meanNormalizedResidual": 0.45,
+          "failureRate": 0.45,
+          "meanLogS01Cost": 0.1
+        }
+      },
+      {
+        "name": "balanced",
+        "weights": {
+          "meanNormalizedResidual": 0.35,
+          "failureRate": 0.35,
+          "meanLogS01Cost": 0.3
+        }
+      },
+      {
+        "name": "resource_priority",
+        "weights": {
+          "meanNormalizedResidual": 0.2,
+          "failureRate": 0.2,
+          "meanLogS01Cost": 0.6
+        }
+      }
+    ],
+    "weightNormalization": "Within each bootstrap draw, min-max normalize every objective across the six settings; a zero-range objective contributes zero. Smaller weighted score is better.",
+    "costSensitivities": [
+      "s01Cost",
+      "controllerExpandedCost",
+      "mechanismExpandedCost"
+    ],
+    "costSensitivityRule": "Recompute unweighted frontier and bootstrap inclusion probabilities for each cost definition. Weighted scalarizations are primary-S01 only.",
+    "uncertainty": {
+      "method": "paired scale-stratified nonparametric bootstrap over pairing blocks with common resamples across all six settings",
+      "replicates": 5000,
+      "seed": 14005001,
+      "interval": "percentile 95%",
+      "robustFrontierThreshold": 0.9,
+      "robustDominanceThreshold": 0.95
+    }
+  },
+  "varianceDecomposition": {
+    "estimand": "Descriptive share of total run-level outcome variance in the empirical S10 sampled design, partitioned into between-pairing-block context, exact hierarchical Shapley treatment-group contributions within block, and unexplained within-block residual.",
+    "sampledDesignBoundary": "Exactly 250 complete S10 screening pairing blocks crossed with the 14 frozen treatment signatures (3,500 runs). Fractions describe this sampled screening design only and are neither population-general nor causal.",
+    "outcomes": [
+      "normalizedResidual",
+      "completionSuccess",
+      "logS01Cost"
+    ],
+    "treatmentGroups": [
+      "topology_coordination",
+      "scheduler",
+      "mobility",
+      "continuation",
+      "retry",
+      "declared_interactions"
+    ],
+    "declaredInteractions": [
+      "topology_coordination_by_scheduler",
+      "topology_coordination_by_mobility",
+      "topology_coordination_by_continuation",
+      "scheduler_by_mobility"
+    ],
+    "hierarchyRule": "An interaction design block is admitted only when the interaction group and every corresponding parent main-effect group are present in the coalition. The topology/coordination group jointly represents architecture and the frozen weak-coordinator intervention state.",
+    "fixedFactorsExcluded": [
+      "sensing_error",
+      "action_failure"
+    ],
+    "uncertainty": {
+      "method": "scale-stratified cluster bootstrap over the 250 pairing blocks",
+      "replicates": 1000,
+      "seed": 14001001,
+      "interval": "percentile 95%"
+    }
+  },
+  "s13Sensitivity": {
+    "inclusionRule": "Include all eight independently confirmed S13 candidates and the frozen detection-limit summary.",
+    "claimRule": "Report zero fully confirmed counterexamples in the finite searched-and-confirmed region; label the two E06 exact-instance reversals as brittle because neighborhood confirmation and directional-concordance thresholds failed. Never infer global absence."
+  },
+  "claimRules": {
+    "allowedClasses": [
+      "supported_causal_within_simulated_support",
+      "supported_equivalence_or_bounded_null",
+      "constraining_brittle",
+      "descriptive_only",
+      "not_estimable"
+    ],
+    "causalRule": "Only randomized S11/S12 active-versus-reference contrasts may carry causal language, and only on the exact simulated support and frozen estimands.",
+    "heterogeneityRule": "Modifier maps, variance shares, and empirical Pareto rankings are descriptive or associational; they do not identify causal modifier effects.",
+    "rngRule": "E03 and E06 remain RNG-unpaired. Their task contrasts retain the S12 interpretation, while cost contrasts must display the independent-arm sensitivity caveat.",
+    "resourceRule": "E04 must be represented as a task-versus-resource tradeoff and not as an unqualified winner.",
+    "nullRule": "Near-null, equivalence, and bounded-search results may not be converted into proof of exact equality or global absence.",
+    "supportRule": "No extrapolation outside the S11/S12 simulated scales, structures, policies, directions, placements, and fault counts."
+  },
+  "releaseAndBundle": {
+    "releaseMode": "repository_commit_pointer",
+    "sourceArchivePolicy": "Repository source remains in Git. Create an explicit NOT_CREATED metadata file instead of copying repository source into artifacts.",
+    "requiredReleaseChecks": [
+      "repository test suite relevant to S14",
+      "fresh deterministic simulator smoke run",
+      "source and artifact hashes",
+      "replay/provenance audit"
+    ],
+    "requiredReportInputs": [
+      "evidence_index",
+      "methods_summary",
+      "figure_index",
+      "table_index",
+      "claim_to_evidence_matrix",
+      "caveat_register",
+      "provenance_record",
+      "lay_summary",
+      "report_bundle_manifest"
+    ]
+  }
+}
