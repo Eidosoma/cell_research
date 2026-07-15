@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "e03.s08.comparison_contract.v1",
+  "researchStepId": "S08",
+  "comparisonUnit": "each observed structural checkpoint and its remaining suffix",
+  "observedSuccess": "suffix reaches E01 complete under frozen terminal precedence",
+  "schedulerMapping": "recorded counter-addressed actor and side label maps to one S05 fair_serial_legal_opportunity_set_v1 edge; scheduler history is not structural state",
+  "identityProjection": "unique native values are relabelled by ascending value rank while policy, fault, occupancy, and Selection cursor ownership are transported",
+  "metrics": [
+    "adjacent_descents",
+    "inversion_count",
+    "spearman_footrule",
+    "maximum_rank_error"
+  ],
+  "failureConvention": "unreachable and quiescent starts are failure classes with undefined necessary excursion; event-budget is censoring",
+  "costConvention": "unconstrained global costs join S07 exactly; primary-preserving secondary costs are comparable only when an observed successful suffix stays within its S07 minimum-peak sublevel set",
+  "hardStopConditions": [
+    "completed observed suffix joins to solver-unreachable or quiescent start",
+    "recorded opportunity does not match exactly one authoritative S05 edge",
+    "S02 replay checkpoint disagrees on state hash, values, metric, terminal, or accepted-action position",
+    "S07 join is missing or internally inconsistent"
+  ],
+  "coverageBoundaries": [
+    "n outside the tiered S04/S05 corpus",
+    "missing ordered state snapshots",
+    "mixed goal direction",
+    "Selection policy memory beyond retained size",
+    "structural scheduler projection is existential rather than byte-exact or probabilistic"
+  ]
+}
