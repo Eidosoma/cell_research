@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "e03.s03.atlas_contract.v1",
+  "researchStepId": "S03",
+  "frozenQuestion": "Are many paper-defined backtracks neutral or improving under global goal distances?",
+  "primaryInput": "/artifacts/research_steps/S02/replayed_distances.parquet",
+  "primaryEventUnit": "one accepted swap in one logical trace and one goal-direction projection",
+  "eventRules": {
+    "initialTransition": "include the transition from the initial state to the first accepted swap",
+    "distanceOrientation": "positive delta is worsening, zero is neutral, negative is improvement",
+    "floatTolerance": 1e-12,
+    "schedulerCheckpoints": "unchanged scheduler opportunities are counted by run-length weights and are a denominator sensitivity, not duplicated action rows"
+  },
+  "distanceVariants": [
+    "adjacent_descents",
+    "normalized_adjacent_descents",
+    "paper_sortedness_distance",
+    "inversion_count",
+    "normalized_kendall_distance",
+    "spearman_footrule",
+    "normalized_spearman_footrule",
+    "maximum_rank_error",
+    "normalized_maximum_rank_error",
+    "duplicate_aware_earth_movers_distance",
+    "normalized_duplicate_aware_earth_movers_distance"
+  ],
+  "independentSignFamilies": {
+    "paper_local": "paper_sortedness_distance",
+    "adjacent_local": "adjacent_descents",
+    "kendall_global": "inversion_count",
+    "footrule_transport_global": "spearman_footrule (duplicate-aware EMD is the same geometry and is not independent)",
+    "bottleneck_global": "maximum_rank_error"
+  },
+  "eventConsensusClasses": [
+    "paper_backtrack_all_global_nonworsening",
+    "paper_backtrack_with_global_regression",
+    "global_regression_without_paper_backtrack",
+    "no_paper_or_global_regression"
+  ],
+  "primaryEpisodeRule": {
+    "id": "plateau_bridge_initial_included",
+    "definition": "collapse zero paper-distance deltas, merge consecutive same-sign deltas, and pair each positive worsening run with its immediately following negative recovery run",
+    "unmatchedTerminalWorsening": "retain as an explicit unpaired episode",
+    "globalAssessment": "measure maximum excursion and terminal delta from the state immediately before the paper worsening run over the fixed paper-defined episode boundary"
+  },
+  "episodeBoundarySensitivities": [
+    "plateau_break_initial_included",
+    "plateau_bridge_post_swap_only",
+    "plateau_break_post_swap_only"
+  ],
+  "plannedStrata": [
+    "source_step_id",
+    "architecture",
+    "policy_composition",
+    "condition_family",
+    "fault_mode",
+    "realized_fault_count",
+    "scheduler",
+    "input_profile",
+    "stop_reason",
+    "initial_kendall_disorder_bin",
+    "action_progress_tertile",
+    "episode_position_tertile",
+    "goal_direction_scope",
+    "direction"
+  ],
+  "mixedDirectionRule": "retain ascending and descending projections as paired sensitivity views; do not pool them as independent observations in primary bootstrap estimates",
+  "coverageGapRule": "retain all six frozen-C S09 traces in coverage accounting, calculate their observable paper backtracks, and bound global classifications without imputing states",
+  "metricDependenceRule": "report every frozen S01 variant in the atlas but use only the five named independent sign families for consensus labels and narrative counts",
+  "denominatorSensitivities": [
+    "accepted actions weighted equally",
+    "logical traces weighted equally",
+    "all scheduler opportunities with unchanged events neutral",
+    "primary release traces versus supplemental S06 historical evidence",
+    "complete-case estimates and worst-case bounds for the six historical gaps"
+  ],
+  "bootstrap": {
+    "unit": "logical trace cluster",
+    "draws": 10000,
+    "seed": 3761897473,
+    "interval": "two-sided percentile 95%",
+    "primaryPopulation": "aligned primary release traces with homogeneous native goals",
+    "smallStrata": "report trace counts and allow degenerate intervals without pretending independent events"
+  },
+  "representativeSelection": {
+    "paper_local_only": "largest paper-distance worsening among actions with all independent global distances nonworsening",
+    "paper_and_global": "largest normalized-Kendall worsening among paper backtracks with any global regression",
+    "global_without_paper": "largest normalized-Kendall worsening without a paper backtrack",
+    "tied_local_disagreement": "largest paper-versus-adjacent sign divergence in a duplicate-valued trace",
+    "mixed_projection": "largest absolute ascending-versus-descending normalized-Kendall delta difference for the same mixed-direction action",
+    "episode": "largest paper excursion in each primary episode consensus class"
+  },
+  "validationGates": [
+    "hand sign fixtures",
+    "raw-normalized sign identity within each metric family",
+    "footrule-EMD sign identity",
+    "event action indices and predecessor continuity",
+    "episode reconstruction and boundary sensitivity fixtures",
+    "cluster-bootstrap determinism and interval bounds",
+    "coverage-gap bounds",
+    "mixed-direction pairing",
+    "source input immutability"
+  ]
+}
