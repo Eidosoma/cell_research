@@ -1,0 +1,123 @@
+{
+  "schemaVersion": "e03.s12.context_sensitivity_contract.v1",
+  "researchStepId": "S12",
+  "title": "Estimate context sensitivity",
+  "freezeBoundary": {
+    "frozenBeforeLargerNOutcomesComputed": true,
+    "frozenAtUtc": "2026-07-15T00:00:00Z",
+    "knownEvidence": [
+      "S03 found no independent-global-distance worsening among the 10,355 primary paper backtracks and only six primary S12 backtracks.",
+      "S07 exact necessity is confined to retained cell-view n=4-5 families; exact conclusions do not extend beyond n=9.",
+      "S10 strict global-distance filters often destroy small-n reachability, while adjacent-descents filtering is heterogeneous.",
+      "S11 open-loop and randomized structural nulls reproduce much of small-n completion and barrier contingency; 5,737 rate-matched runs have an infeasible requested category."
+    ],
+    "forbidden": "No larger-n S12 outcome may be computed before this contract is written. Formula terms, populations, episode definitions, and escalation rules may not be selected from S12 outcomes."
+  },
+  "frozenQuestion": "How do independent-metric detour occurrence, depth, duration, recovery, completion, residual error, and cost vary with size, fault count and placement, policy composition, scheduler width, direction, and initial disorder under repeated matched scenarios?",
+  "claimBoundary": "Larger-n results are empirical under a declared state-blind counter-addressed external opportunity scheduler and frozen E01 transition semantics. They are not exact reachability, necessity, universal scheduler, byte-exact historical replay, or evidence of anticipation.",
+  "largerNPopulation": {
+    "architecture": "cell_view",
+    "sizes": [12, 18, 24],
+    "policyProfiles": [
+      "pure_Bubble",
+      "pure_Insertion",
+      "pure_Selection",
+      "alternating_Bubble_Insertion",
+      "alternating_Bubble_Selection",
+      "alternating_Insertion_Selection",
+      "cyclic_Bubble_Insertion_Selection"
+    ],
+    "schedulerProfiles": [
+      {"id": "serial_external", "batchWidth": 1},
+      {"id": "batch2_external", "batchWidth": 2},
+      {"id": "batch4_external", "batchWidth": 4}
+    ],
+    "directions": ["ascending", "descending"],
+    "initialDisorderProfiles": ["low", "medium", "high"],
+    "baselineFaultCounts": [1, 2],
+    "placementProfilesPerFaultCount": 4,
+    "replicatesPerFactorialCell": 8,
+    "interventionTypes": ["baseline", "remove", "move", "add"],
+    "expectedScenarioBlocks": 24192,
+    "expectedRuns": 96768,
+    "pairing": "All four intervention arms in a block share n, policies, direction, scheduler grouping, initial occupancy, replicate, and a counter-addressed raw opportunity root. Actor, Bubble-side, and conflict-priority tokens are state-blind and shared by address; proposals may diverge after states diverge.",
+    "faultMode": "stuck",
+    "primaryOpportunityBudget": "8*n^2 charged opportunities",
+    "longHorizon": "Every replicate-zero run active at the primary budget is rerun from the identical initial state to 4 times the primary budget, with a required exact primary-prefix checkpoint."
+  },
+  "schedulerAndTransitionSemantics": {
+    "transitionAuthority": "reference_simulator policy, validation, synchronous conflict, commit, cost, and terminal precedence semantics",
+    "schedulerInterface": "state-blind external ScheduledOpportunity-equivalent stream",
+    "stream": "SHA-256-rooted counter-addressed SplitMix64; actor/side/priority substreams are distinct and fixed before outcomes",
+    "schedulerBoundary": "This is a deterministic empirical scheduler intervention, not the scenario-ID-keyed SHA-256 E01 historical scheduler. Selected fixtures must agree opportunity-by-opportunity with the authoritative E01 engine supplied with the same external schedule and common priority interceptor."
+  },
+  "metrics": [
+    "adjacent_descents",
+    "inversion_count",
+    "spearman_footrule",
+    "maximum_rank_error"
+  ],
+  "episodeDefinitions": {
+    "primary": "A running-minimum excursion episode starts at an accepted occupancy-changing atomic batch checkpoint whose successor distance is above the best distance attained so far, and ends on the first such checkpoint returning to or below that anchor. A serial checkpoint contains one accepted swap; a synchronous checkpoint may contain multiple disjoint accepted swaps. Selection-memory-only batches do not create distance checkpoints. Depth is maximum distance minus anchor. Duration is charged opportunities from episode start through recovery; an open episode at stop is right-censored.",
+    "positiveRunSensitivity": "A positive run is a maximal consecutive sequence of accepted occupancy-changing checkpoints with strictly positive net metric delta.",
+    "initialLevelSensitivity": "Record whether and how far a trajectory ever exceeds its initial distance.",
+    "thresholdSensitivityRawUnits": [0, 1, 2, 4],
+    "necessity": "No larger-n episode receives an exact necessary/unnecessary label. Exact S07/S11 small-n labels are summarized in a separate bridge table."
+  },
+  "declaredStrata": {
+    "structuralReachability": "Retain exact S07/S11 reachable, unreachable-active, and quiescent strata only in the small-n bridge. Every larger-n row is explicitly labelled out_of_exact_domain_large_n.",
+    "s10FilterExposure": "For every larger-n run-metric, retain whether at least one accepted swap had positive selected-metric delta. This is a post-trajectory exposure stratum and is not a baseline predictor of detour occurrence.",
+    "s11RateFeasibility": "Rerun the identical native path using S11 systematic category requests targeted to that run's accepted-swap and Selection-memory rates. Retain unavailable swap, memory, and unchanged requests as a shadow native-path feasibility stratum; do not call it an executed rate-matched null.",
+    "interventionType": "Retain baseline/remove/move/add without outcome-dependent exclusions.",
+    "recurrentActive": "Keep primary active, long-horizon complete, long-horizon quiescent, and recurrent-active-at-4x distinct; non-replicate-zero active runs remain not_assessed_long_horizon.",
+    "opportunityRate": "Retain the S11 opportunity-rate bins using accepted swaps per charged opportunity."
+  },
+  "models": {
+    "unit": "run-metric, with four intervention arms clustered within matched scenario block and metrics fit independently",
+    "occurrence": "Binomial GEE with exchangeable within-block correlation and fixed terms C(n)+C(policy)+C(scheduler)+C(direction)+C(disorder_profile)+scaled_initial_disorder+C(observed fault-count-by-location context)+C(intervention), plus policy:scheduler and policy:scaled_initial_disorder interactions. The fault context is one supported-cell categorical term; unsupported count-by-location combinations are not materialized as all-zero columns.",
+    "depth": "Gaussian mixed model on log1p(max episode depth) among detour-positive runs, random intercept for scenario block, using the same fixed main effects and no outcome-selected terms; exchangeable Gaussian GEE is the declared singular-fit fallback.",
+    "duration": "Discrete-time complementary-log-log recovery model over accepted episode-time intervals with scenario-block clustered covariance and right censoring; if row expansion is impractical, fit a Cox model with block-clustered robust covariance. No open episode is recoded as recovered.",
+    "completion": "Binomial GEE with exchangeable within-block correlation on all runs. S10 exposure and S11 shadow-deficit strata are reported as post-trajectory descriptive modifiers and are not adjusted into the primary completion model.",
+    "uncertainty": "Cluster-robust model uncertainty plus 2,000 deterministic scenario-block bootstrap draws for selected marginal contrasts.",
+    "heldOutPrediction": "Five folds assigned by SHA-256 of scenario block; all four arms from a block remain in one fold. Report occurrence/completion Brier, log loss, calibration intercept/slope, ECE, and depth RMSE/MAE.",
+    "rareEventRule": "Use ridge-penalized logistic prediction and bias-reduced descriptive estimates when GEE has separation, nonfinite coefficients, or a predicted probability below 1e-8/above 1-1e-8. Do not delete strata or outcomes.",
+    "identifiabilityGate": "Stop and report if the declared supported-cell fixed design is rank deficient after reference coding, a primary metric has fewer than 25 events and 25 nonevents, a required model remains nonfinite after its declared fallback, or held-out predictions cannot be produced without changing terms. The pre-outcome design matrix must have full rank and condition number below 100 before simulation restarts."
+  },
+  "smallNBridge": {
+    "source": "/artifacts/research_steps/S11/null_metric_results.parquet joined to action_rate_matching.parquet",
+    "requiredStrata": [
+      "s09_exact_start_status",
+      "s10_strict_filter_exposed",
+      "rate_feasibility_deficit",
+      "intervention_type",
+      "s09_recurrent_active",
+      "opportunity_rate_bin",
+      "null_family",
+      "metric"
+    ],
+    "comparisonRule": "Compare direction and support of larger-n empirical strata with S11 small-n summaries, but never pool their rows, coefficients, or denominators. A material sign reversal in completion or detour occurrence within a supported matching stratum triggers a constraining report rather than term deletion."
+  },
+  "retention": {
+    "summary": "Every run and run-metric row",
+    "traceSample": "At least 1% of runs selected deterministically before outcomes, retaining accepted-swap metric levels and episode state",
+    "unusual": "All validation mismatches and all invariant failures; the latter are escalation triggers",
+    "temporary": "/cache/e03_s12",
+    "final": "/artifacts/research_steps/S12"
+  },
+  "validation": [
+    "exact 24,192 block, 96,768 run, factor, intervention, metric, and pairing accounting",
+    "authoritative E01 engine parity for hand fixtures and stratified selected scenarios under identical external opportunities",
+    "deterministic full-corpus replay with matching stop, state fingerprint, ledger, distances, episodes, and shadow feasibility",
+    "primary-to-long-horizon prefix equality for every required replicate-zero active run",
+    "ledger identities, terminal agreement, metric recomputation, and episode fixture checks",
+    "calibration, residual, held-out prediction, episode segmentation, threshold, event-budget, rare-event, and separation diagnostics",
+    "small-n S11 stratum accounting and explicit exact/empirical evidence separation",
+    "all accessed inputs byte-unchanged and no S13 artifact created"
+  ],
+  "escalationTriggers": [
+    "model identifiability failure under the declared fallback",
+    "material conflict with an S11 supported stratum that cannot be explained by the declared exact-versus-empirical boundary",
+    "any simulator parity, deterministic replay, prefix, metric, episode, pairing, or immutability failure",
+    "any need to drop a declared factor, metric, intervention, censored episode, or repeated scenario"
+  ]
+}
