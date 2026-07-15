@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "e03.s02.replay_contract.v1",
+  "researchStepId": "S02",
+  "frozenQuestion": "Are metric disagreements measurable on the retained E01 trajectories without altering the original action sequence?",
+  "primaryTraceDenominator": "/previous-artifacts/E01/release/baseline/selectedTraces.json",
+  "distanceImplementation": "src/detours/distances.py",
+  "logicalTraceRules": {
+    "S06": "one release-selected reference activation trace; the historical example is supplemental",
+    "S09": "each record in selected_traces.jsonl.zst is one logical trace",
+    "S11": "each exact-replay sample is one summary-only logical trace requiring deterministic replay",
+    "S12": "each row in figure6_selected_trajectories.parquet is one logical trace",
+    "S13": "each scenario in selected_swap_traces.parquet is one logical trace"
+  },
+  "checkpointEncoding": {
+    "stateRows": "initial state, every accepted swap, and a terminal row when unchanged scheduler checkpoints follow the last swap",
+    "unchangedSchedulerCheckpoints": "run-length encoded by scheduler_checkpoint_start, scheduler_checkpoint_end, and scheduler_checkpoint_count",
+    "justification": "S01 metrics depend only on ordered values; no-op, rejection, and memory-only checkpoints cannot change any S01 value distance"
+  },
+  "directionRule": "use the homogeneous native direction; emit both ascending and descending candidate-goal projections when cell directions conflict",
+  "historicalReplayRule": "never rerun the nondeterministic frozen-C scheduler; align only retained ordered snapshots and report sortedness-only curves as coverage gaps",
+  "broaderArtifactAuditRule": "classify all E01 trajectory-like products as primary, supplemental, duplicate encoding, aggregate/resampled derivative, or unavailable-state gap; do not count derived plotting grids as independent state traces",
+  "validationGates": [
+    "scenario rematerialization identity and JSON hash",
+    "source and replay initial/final hashes where retained",
+    "retained per-swap local metric series",
+    "accepted-swap and scheduler-checkpoint completeness",
+    "direct final-distance recomputation",
+    "pre/post SHA-256 identity for every accessed E01 source artifact"
+  ]
+}
