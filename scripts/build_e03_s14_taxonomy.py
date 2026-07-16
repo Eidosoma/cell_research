@@ -1350,7 +1350,7 @@ def main() -> None:
         {
             "schemaVersion": SCHEMA,
             "researchStepId": "S14",
-            "status": "complete_pre_report_validation",
+            "status": "complete",
             "inputs": manifest_entries,
         },
     )
