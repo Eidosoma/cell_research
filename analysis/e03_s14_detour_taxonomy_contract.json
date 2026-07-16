@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "e03.s14.detour_taxonomy_contract.v1",
+  "researchStepId": "S14",
+  "title": "Publish the detour taxonomy",
+  "frozenQuestion": "Does the completed E03 evidence support a graded operational taxonomy rather than one binary delayed-gratification label?",
+  "freezeDateUtc": "2026-07-16",
+  "evidencePrecedence": [
+    "Preserve metric-specific outcomes; adjacent descents, inversion count, Spearman footrule, and maximum rank error are not interchangeable.",
+    "Treat Spearman footrule and duplicate-aware earth mover distance as one correlated rank-transport geometry, not independent corroboration.",
+    "Keep exact n=4-9 structural-opportunity claims separate from empirical n=12-24 trajectory claims.",
+    "Do not pool effects whose supports or directions differ, including the exact-small and empirical-large barrier-removal reversal.",
+    "Keep exact impossibility, quiescence, recurrent activity, event-budget censoring, completion, residual error, and successful-run efficiency separate.",
+    "Interpret S09-S10 effects only relative to the declared intervention and common opportunity stream.",
+    "Assign each major claim exactly one strongest supported category or not_supported_in_E03.",
+    "Do not infer intention, anticipation, subjective valuation, or biological cognition from any category."
+  ],
+  "categories": [
+    {
+      "category": "local_observable_backtracking",
+      "rank": 1,
+      "minimumEvidence": "A replayable accepted-action or episode record worsens a named local observable, or the paper-local proxy worsens and later recovers; independent global distance may be nonworsening or unavailable.",
+      "doesNotEstablish": "Global retreat, necessity, causal usefulness, policy adaptation, or a latent mental state."
+    },
+    {
+      "category": "global_regression",
+      "rank": 2,
+      "minimumEvidence": "A replayable accepted-action or episode record increases at least one named independent global goal distance under an explicit goal projection.",
+      "doesNotEstablish": "Recovery, necessity, causal usefulness, or policy adaptation."
+    },
+    {
+      "category": "barrier_correlated_detour",
+      "rank": 3,
+      "minimumEvidence": "A matched remove, move, activate, or add intervention from an equal pre-intervention state changes a named path, excursion, reachability, completion, residual, or cost outcome with valid intervention isolation and declared stream-coupling scope.",
+      "doesNotEstablish": "A uniform barrier direction, mathematical necessity, planning, or adaptation; reachability destruction and censoring remain separate outcomes."
+    },
+    {
+      "category": "necessary_detour",
+      "rank": 4,
+      "minimumEvidence": "For a goal-reachable start and named metric in the frozen S05 graph, the S06 primary minimum maximum excursion over every successful legal structural-opportunity path is strictly positive.",
+      "doesNotEstablish": "Observed frequency, fair-scheduler probability, byte-exact replay inevitability, biological necessity, or policy adaptation."
+    },
+    {
+      "category": "adaptive_detour",
+      "rank": 5,
+      "minimumEvidence": "On one common support and named independent global metric: a replayable observed policy trajectory has a successful recovered global excursion; an isolated paired intervention shows that retaining the implicated worsening action or detour improves completion, residual error, or successful-run efficiency without treating intervention-created impossibility, failure truncation, or censoring as benefit; and the effect exceeds every declared feasible matched non-adaptive null under the frozen uncertainty rule.",
+      "doesNotEstablish": "Subjective anticipation, intention, valuation, cognition, or transfer beyond the tested simulator support."
+    }
+  ],
+  "unsupportedCategory": {
+    "category": "not_supported_in_E03",
+    "rank": 0,
+    "meaning": "The asserted claim fails one or more required evidence gates or lies outside the measured support; this is not evidence of the opposite universal claim."
+  },
+  "adaptivePassRule": {
+    "allRequired": [
+      "named_independent_global_metric",
+      "same_support_and_goal",
+      "observed_successful_recovered_excursion",
+      "isolated_intervention_relative_utility",
+      "no_created_impossibility_as_benefit",
+      "no_censoring_or_short_failed_run_as_efficiency",
+      "matched_null_exceedance",
+      "replay_and_provenance_pass"
+    ],
+    "nullExceedanceRule": "The observed intervention contrast must be directionally favorable and its clustered 95% interval must exclude every declared feasible matched non-adaptive null contrast on the same estimand and support.",
+    "fallback": "If any gate fails, assign the strongest lower category actually supported; do not weaken the adaptive rule."
+  },
+  "majorClaimRegistry": [
+    {"claimId": "C01", "claim": "Primary retained E01 paper-backtrack actions are local-observable backtracking events, not independent-global regressions."},
+    {"claimId": "C02", "claim": "The six frozen-C coverage gaps can be classified as global nonworsening."},
+    {"claimId": "C03", "claim": "Mixed-direction retained traces identify one consensus global goal."},
+    {"claimId": "C04", "claim": "A local-observable worsening can coexist with improvement under all independent global distances."},
+    {"claimId": "C05", "claim": "Independent-global regression is possible under an engineered wider-sensing policy on empirical larger-n support."},
+    {"claimId": "C06", "claim": "Exact global-metric necessary detours exist in retained small-state structural families."},
+    {"claimId": "C07", "claim": "The retained E01 observed trajectories execute exact necessary detours."},
+    {"claimId": "C08", "claim": "Barrier manipulation changes path and completion outcomes from matched exact-small starts."},
+    {"claimId": "C09", "claim": "Removing a barrier uniformly eliminates necessary detours or improves completion."},
+    {"claimId": "C10", "claim": "Suppressing every strict independent-global worsening action preserves reachability and completion."},
+    {"claimId": "C11", "claim": "Some strict independent-global worsening actions are structurally required and intervention-relative useful on retained exact-small supports."},
+    {"claimId": "C12", "claim": "Observed barrier-conditioned detours uniquely identify policy adaptation."},
+    {"claimId": "C13", "claim": "Open-loop and randomized feasible-action policies cannot reproduce barrier-conditioned excursions or completion."},
+    {"claimId": "C14", "claim": "Native empirical n=12-24 trajectories frequently regress under independent global metrics."},
+    {"claimId": "C15", "claim": "Native empirical n=12-24 trajectories frequently show adjacent-descent excursions while recording zero inversion, footrule, and maximum-rank excursion events."},
+    {"claimId": "C16", "claim": "The native larger-n zero-global-event result generalizes across wider-sensing engineered policies."},
+    {"claimId": "C17", "claim": "The radius-two policy creates independent-global regression on empirical larger-n support while largely removing such events on exact-labelled small starts."},
+    {"claimId": "C18", "claim": "Barrier-removal completion effects have one direction across exact-small and empirical-large supports."},
+    {"claimId": "C19", "claim": "Recent-direction memory is uniformly beneficial across exact-small and empirical-large supports."},
+    {"claimId": "C20", "claim": "E03 satisfies the operational adaptive-detour criteria."},
+    {"claimId": "C21", "claim": "Shorter failed or censored runs are more efficient than longer successful runs."},
+    {"claimId": "C22", "claim": "Footrule and duplicate-aware earth mover distance provide independent corroboration."}
+  ],
+  "benchmarkPolicy": {
+    "confirmationOnly": true,
+    "minimumWitnesses": 7,
+    "requiredBoundaries": [
+      "retained_E01_local_only",
+      "exact_small_necessary",
+      "matched_barrier_intervention",
+      "metric_suppression",
+      "behavioral_null",
+      "native_empirical_large_zero_global",
+      "engineered_empirical_large_global_regression"
+    ],
+    "e07LeakageRule": "Scenario identifiers and witnesses in the S14 confirmation manifest must not be used for E07 policy search, surrogate fitting, threshold selection, or prompt/model selection."
+  },
+  "completionRule": "The synthesis is supportive when every registered major claim has exactly one strongest category, every benchmark boundary has a replayable witness, all links and provenance hashes validate, the adaptive rule is applied without exception, and report inputs are complete. The substantive narrative may still be constraining."
+}

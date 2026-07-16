@@ -32,6 +32,15 @@ from .necessary_detour import (
     solve_primary_all_starts,
     tied_value_goal_mask,
 )
+from .taxonomy import (
+    CATEGORY_ORDER,
+    UNSUPPORTED,
+    EvidenceFlags,
+    anthropomorphic_assertion_hits,
+    strongest_supported_category,
+    supported_categories,
+    validate_claim_assignment,
+)
 
 __all__ = [
     "DistanceProfile",
@@ -62,4 +71,11 @@ __all__ = [
     "solve_lexicographic_witness",
     "solve_primary_all_starts",
     "tied_value_goal_mask",
+    "CATEGORY_ORDER",
+    "UNSUPPORTED",
+    "EvidenceFlags",
+    "anthropomorphic_assertion_hits",
+    "strongest_supported_category",
+    "supported_categories",
+    "validate_claim_assignment",
 ]
