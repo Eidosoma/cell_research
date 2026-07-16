@@ -82,6 +82,50 @@ observed_category_counts <- table(factor(
 assert_identical(as.integer(observed_category_counts), expected_category_counts,
                  "S14 taxonomy counts")
 
+# Independently reconstruct the frozen strongest-category rule from each row's
+# stored boolean gates. This checks the central taxonomy rather than just totals.
+reconstruct_category <- function(flags_json) {
+  f <- jsonlite::fromJSON(flags_json, simplifyVector = TRUE)
+  passed <- character()
+  if (isTRUE(f$replayable_local_worsening)) {
+    passed <- c(passed, "local_observable_backtracking")
+  }
+  if (isTRUE(f$named_global_worsening) && isTRUE(f$explicit_goal_projection)) {
+    passed <- c(passed, "global_regression")
+  }
+  if (isTRUE(f$isolated_barrier_contrast) && isTRUE(f$matched_pre_state) &&
+      isTRUE(f$valid_stream_scope)) {
+    passed <- c(passed, "barrier_correlated_detour")
+  }
+  if (isTRUE(f$exact_goal_reachable) &&
+      isTRUE(f$exact_minimum_excursion_positive)) {
+    passed <- c(passed, "necessary_detour")
+  }
+  adaptive_gates <- c(
+    "named_global_worsening", "explicit_goal_projection",
+    "observed_successful_recovered_global_excursion",
+    "intervention_relative_utility", "no_created_impossibility_as_benefit",
+    "no_censoring_as_efficiency", "matched_null_exceedance",
+    "same_support_metric_goal", "replay_and_provenance_pass"
+  )
+  if (all(vapply(adaptive_gates, function(gate) isTRUE(f[[gate]]), logical(1)))) {
+    passed <- c(passed, "adaptive_detour")
+  }
+  if (!length(passed)) return("not_supported_in_E03")
+  category_order[max(match(passed, category_order))]
+}
+reconstructed <- vapply(claims$flags_json, reconstruct_category, character(1))
+assert_identical(reconstructed, claims$strongest_supported_category,
+                 "S14 gate-level claim reconstruction")
+
+evidence_paths <- unique(trimws(unlist(strsplit(claims$evidence_paths, ";", fixed = TRUE))))
+evidence_paths <- evidence_paths[nzchar(evidence_paths)]
+missing_evidence <- evidence_paths[!file.exists(file.path("/artifacts", evidence_paths))]
+if (length(missing_evidence)) {
+  stop(sprintf("missing S14 evidence path(s): %s", paste(missing_evidence, collapse = ", ")),
+       call. = FALSE)
+}
+
 s07_report <- paste(readLines(
   file.path(step_dir, "S07", "research_step_full_results.md"),
   warn = FALSE
@@ -233,6 +277,8 @@ validation <- list(
   ),
   verifiedFacts = list(
     taxonomyClaims = 22L,
+    taxonomyGateReconstructions = 22L,
+    taxonomyEvidencePathsResolved = length(evidence_paths),
     taxonomyCounts = stats::setNames(as.list(expected_category_counts), category_order),
     s07FamiliesWithNecessity = list(adjacent = 3192L, inversion = 501L,
                                     footrule = 480L, maximumRank = 444L),
