@@ -1,0 +1,218 @@
+{
+  "schemaVersion": "e03.s13.memory_information_contract.v1",
+  "researchStepId": "S13",
+  "title": "Vary memory and information access",
+  "frozenAtUtc": "2026-07-15T23:38:21Z",
+  "frozenBeforeOutcomes": true,
+  "frozenQuestion": "Do four transparent local capability additions—one-bit failure memory, a bounded stagnation counter, recent-direction memory, and radius-two sensing—change completion, censoring, metric-specific detours, residual error, or successful-run cost, and which additions are necessary for any effect?",
+  "claimBoundary": "Capability arms are engineered policies distinct from the publication model. Results are computational behavior under frozen E01 mechanical transition semantics, not biological memory, anticipation, learning, subjective foresight, or a universal scheduler claim.",
+  "s12Constraint": {
+    "acceptedAsValid": true,
+    "statement": "S12 observed zero running-minimum and accepted-action worsening events for inversion count, Spearman footrule, and maximum rank error in 96,768 empirical n=12-24 runs.",
+    "rule": "S13 retains every metric independently. It does not pool global metrics with adjacent descents, select outcomes after observing events, redefine an episode, or treat a new zero as model failure.",
+    "crossLayerBoundary": "The S11 exact-small-n open-loop barrier-removal effect and S12 empirical-large-n native barrier-removal effect have opposing signs on non-overlapping supports. They remain separate tables and denominators; no coefficient, effect, bootstrap, or narrative average pools them."
+  },
+  "capabilityPipeline": [
+    "Consume the same state-blind raw actor, Bubble-side, and conflict-priority addresses in every paired arm.",
+    "Initialize all added memory independently to zero/none for every run.",
+    "Derive the preferred Bubble side from the raw side; a pending failure bit has first priority to flip it, otherwise a saturated bounded counter flips it.",
+    "If radius-two sensing is enabled, evaluate only adjacent normal targets visible within offsets -2,-1,+1,+2 and propose the adjacent swap with the greatest strictly positive reduction in direction-specific inversions on edges wholly inside that local window; ties prefer the derived side, then the lower target position. Fall back to the native proposal if no local candidate improves.",
+    "If recent-direction memory is enabled, veto a proposed swap whose actor displacement is opposite the actor's most recent accepted displacement.",
+    "Apply authoritative E01 mechanical validation, synchronous conflict resolution, atomic commit, ledger charging, and terminal precedence.",
+    "Update added memory from the declared actor-local outcome only."
+  ],
+  "capabilities": {
+    "failure_bit": {
+      "mutableStatesPerActor": 2,
+      "minimumBitsPerActor": 1,
+      "initialState": 0,
+      "update": "Set to one only after the actor's swap is mechanically rejected because the observed target is stuck. On that actor's next charged opportunity, use it to flip a Bubble side before observation and then clear it unless another target-stuck rejection occurs.",
+      "informationAdded": "One outcome bit; no target identity, position, metric, ledger, terminal, or future-stream information."
+    },
+    "counter_2bit": {
+      "mutableStatesPerActor": 4,
+      "minimumBitsPerActor": 2,
+      "initialState": 0,
+      "bounds": [0, 3],
+      "update": "Reset to zero after an accepted swap or Selection cursor update; otherwise increment by one with saturation at three. A saturated Bubble actor flips the raw side before its next observation.",
+      "informationAdded": "A bounded actor-local stagnation count only."
+    },
+    "recent_direction": {
+      "mutableStatesPerActor": 3,
+      "minimumBitsPerActor": 2,
+      "initialState": "none",
+      "states": ["none", "left", "right"],
+      "update": "After an accepted swap, both displaced identities store their own displacement direction. A later actor proposal in the opposite direction is vetoed; the memory otherwise persists.",
+      "informationAdded": "The identity's own most recent accepted displacement direction only."
+    },
+    "radius2": {
+      "mutableStatesPerActor": 1,
+      "minimumBitsPerActor": 0,
+      "initialState": "stateless",
+      "radius": 2,
+      "actionBoundary": "Only an adjacent swap may be added. Native Selection cursor swaps remain native fallbacks; radius-two sensing never creates a nonadjacent action.",
+      "observationBoundary": "The overlay may read own position/direction and values/fault modes at offsets -2,-1,+1,+2. It cannot read identities' policies, analysis labels, global metrics/ranks, terminal predicates, exact reachability, future draws, or positions outside the window."
+    }
+  },
+  "arms": [
+    {"id": "native", "failureBit": false, "counter2Bit": false, "recentDirection": false, "radius2": false},
+    {"id": "failure_bit", "failureBit": true, "counter2Bit": false, "recentDirection": false, "radius2": false},
+    {"id": "counter_2bit", "failureBit": false, "counter2Bit": true, "recentDirection": false, "radius2": false},
+    {"id": "recent_direction", "failureBit": false, "counter2Bit": false, "recentDirection": true, "radius2": false},
+    {"id": "radius2", "failureBit": false, "counter2Bit": false, "recentDirection": false, "radius2": true},
+    {"id": "full", "failureBit": true, "counter2Bit": true, "recentDirection": true, "radius2": true},
+    {"id": "full_minus_failure", "failureBit": false, "counter2Bit": true, "recentDirection": true, "radius2": true},
+    {"id": "full_minus_counter", "failureBit": true, "counter2Bit": false, "recentDirection": true, "radius2": true},
+    {"id": "full_minus_recent", "failureBit": true, "counter2Bit": true, "recentDirection": false, "radius2": true},
+    {"id": "full_minus_radius2", "failureBit": true, "counter2Bit": true, "recentDirection": true, "radius2": false}
+  ],
+  "pairedContrasts": {
+    "singleAdditions": [
+      ["failure_bit", "native"],
+      ["counter_2bit", "native"],
+      ["recent_direction", "native"],
+      ["radius2", "native"]
+    ],
+    "fullVersusNative": [["full", "native"]],
+    "leaveOneOutAblations": [
+      ["full", "full_minus_failure"],
+      ["full", "full_minus_counter"],
+      ["full", "full_minus_recent"],
+      ["full", "full_minus_radius2"]
+    ],
+    "signConvention": "first arm minus second arm",
+    "pairingUnit": "identical physical start, fault/intervention state, replicate, raw opportunity root, and event budget"
+  },
+  "evidenceTiers": {
+    "largeEmpirical": {
+      "source": "/artifacts/research_steps/S12/larger_n_design.parquet",
+      "selection": "Every S12 factorial cell and all baseline/remove/move/add arms with replicate_index 0 or 1; selection is outcome-blind.",
+      "scenarioBlocks": 6048,
+      "physicalStartInterventionRows": 24192,
+      "armsPerPhysicalRow": 10,
+      "expectedRuns": 241920,
+      "sizes": [12, 18, 24],
+      "primaryBudget": "8*n^2 charged opportunities",
+      "longHorizon": "Extend every replicate-zero primary-active arm to 4 times its primary budget and require an exact prefix checkpoint.",
+      "reachabilityLabel": "out_of_exact_domain_large_n",
+      "scheduler": "Reuse the S12 SHA-rooted counter-addressed external actor/side/priority stream exactly. Native S13 summaries must match the selected S12 native rows."
+    },
+    "smallExactAnchor": {
+      "sources": [
+        "/artifacts/research_steps/S09/necessary_start_coverage.parquet",
+        "/artifacts/research_steps/S04/state_family_inventory.parquet"
+      ],
+      "starts": 407,
+      "cellViewEligibleStarts": 387,
+      "traditionalIneligibleStarts": 20,
+      "traditionalRule": "Retain all 20 in a coverage table as not_applicable_traditional_global_controller. Do not add local cell memory to an omniscient traditional controller or drop it from the denominator silently.",
+      "replicatesPerEligibleStart": 4,
+      "armsPerPhysicalRow": 10,
+      "expectedRuns": 15480,
+      "sizes": [4, 5],
+      "primaryBudget": 2048,
+      "longHorizon": "Extend every replicate-zero primary-active arm to 8192 and require an exact prefix checkpoint.",
+      "scheduler": "A new SHA-rooted serial counter-addressed empirical stream shared by all capability arms within start and replicate.",
+      "claimBoundary": "S07 exact classification describes the unmodified start under its original family. Capability trajectories are empirical paths from an exact-labelled start; no augmented-policy reachability or necessity claim is made without a new exact graph."
+    }
+  },
+  "expectedAccounting": {
+    "runs": 257400,
+    "runMetricRows": 1029600,
+    "largeRuns": 241920,
+    "smallRuns": 15480,
+    "largeTraceRunsMinimum": 2420,
+    "smallTraceRunsMinimum": 774,
+    "authoritativeOrIndependentParityMinimum": 500
+  },
+  "metrics": [
+    "adjacent_descents",
+    "inversion_count",
+    "spearman_footrule",
+    "maximum_rank_error"
+  ],
+  "episodeDefinition": "Use S12's running-minimum accepted-occupancy-checkpoint episode unchanged, including batch-level checkpoints and right-censored open episodes. Retain positive-run and above-initial sensitivities without changing the primary definition.",
+  "estimands": {
+    "allRuns": [
+      "paired completion risk difference",
+      "paired quiescence and event-budget-censoring risk differences",
+      "paired final metric and residual-error difference",
+      "paired metric-specific detour-occurrence difference",
+      "paired episode-count, maximum-depth, maximum-duration, and open-episode differences",
+      "paired accepted-swap, memory-update, rejection, conflict-loss, observation-read, comparison, and full-ledger differences"
+    ],
+    "successfulPairsOnly": [
+      "activation, accepted-swap, observation-read, comparison, and full-ledger cost differences only when both arms complete"
+    ],
+    "forbiddenEfficiency": "A failed, quiescent, impossible, or censored run is never called efficient because it is short.",
+    "strata": [
+      "evidence tier",
+      "metric",
+      "capability contrast",
+      "n",
+      "policy profile",
+      "scheduler profile",
+      "intervention type",
+      "S07 exact start classification and necessity signature in the small tier only",
+      "S12 structural reachability boundary in the large tier",
+      "primary and long-horizon terminal/censoring status"
+    ]
+  },
+  "uncertainty": {
+    "method": "Two-thousand-draw deterministic percentile bootstrap over independent physical starts/scenario blocks, keeping all capability arms and interventions for a block together.",
+    "primaryInterval": 0.95,
+    "interpretation": "Finite designed-corpus uncertainty, not an unqualified scheduler probability or biological population interval."
+  },
+  "zeroEventHandling": {
+    "rule": "Retain event and nonevent counts for every metric and contrast before estimation.",
+    "bothZero": "Report risk difference 0 with [0,0] finite-corpus bootstrap interval, exact paired discordance counts 0/0, and status joint_zero_in_tested_corpus. Do not fit an odds ratio or borrow information from another metric.",
+    "oneZero": "Report exact paired discordance counts and paired risk difference with cluster bootstrap. Do not add continuity corrections, delete the metric, or pool it.",
+    "nonzero": "Report paired risk difference and clustered bootstrap interval. Odds ratios and hierarchical models are not primary S13 estimands.",
+    "noOutcomeAdaptivePolicyChange": true
+  },
+  "complexityAccounting": {
+    "requiredColumns": [
+      "arm",
+      "mutable_state_count_per_actor",
+      "minimum_bits_per_actor",
+      "declared_stored_bits_per_actor",
+      "added_sensing_radius",
+      "maximum_added_neighbor_reads_per_activation",
+      "maximum_added_local_comparisons_per_activation",
+      "native_observation_scope",
+      "action_scope",
+      "forbidden_information"
+    ],
+    "combinationRule": "Independent memory-state product; minimum bits are ceil(log2(product)). Declared stored bits are additive implementation fields. Radius-two sensing is stateless and does not reduce native observation costs."
+  },
+  "successCriterion": "Supportive only if full versus native changes completion by at least 0.05 in either evidence tier with a 95% paired cluster-bootstrap interval excluding zero, and at least one leave-one-out component changes completion by at least 0.02 with its interval excluding zero, with all semantic, pairing, complexity, sensing, reset, and provenance gates passing. Otherwise classify null or constraining according to the observed direction and identifiability.",
+  "validation": [
+    "exact run, arm, tier, metric, start, intervention, factor, and pair accounting",
+    "native large-tier equality to selected frozen S12 outcomes and metrics",
+    "state-reset fixtures including run-order independence and all-zero/none initialization",
+    "raw actor/side/priority address equality within every pair and state equality through the pre-divergence prefix",
+    "policy complexity table equals arm definitions and observed state/radius maxima never exceed declarations",
+    "radius-two sentinel fixtures prove that changing positions outside the window cannot alter an overlay decision",
+    "gateway audit proves no metric, exact reachability, terminal evaluator, analysis label, scenario outcome, future draw, or global rank enters a capability proposal",
+    "ledger identities, terminal agreement, complete/quiescent/censored separation, and survivor-only efficiency",
+    "deterministic full-corpus replay digests, retained-trace metric reconstruction, and at least 500 independent/authoritative parity cases",
+    "all replicate-zero long-horizon prefixes match exactly",
+    "all four metrics and zero-event statuses are present without pooling",
+    "small exact-anchor and large empirical results remain separate and the opposing S11/S12 barrier-removal effects are not pooled",
+    "all execution inputs remain byte-unchanged and no S14 artifact is created"
+  ],
+  "escalationTriggers": [
+    "any hidden global information or radius violation",
+    "any state-reset, native-S12 parity, paired-stream, pre-divergence, replay, terminal, ledger, or long-prefix mismatch",
+    "any need to drop a metric, arm, capability, censored run, exact-start coverage row, intervention, or declared factor",
+    "any attempt to pool exact-small-n and empirical-large-n supports or their opposing barrier-removal effects",
+    "any policy or estimand change selected after opening S13 outcomes"
+  ],
+  "retention": {
+    "output": "/artifacts/research_steps/S13",
+    "cache": "/cache/e03_s13",
+    "summary": "Every run and run-metric row",
+    "traces": "At least 1% of large runs and 5% of small runs selected by run ID before outcomes, plus all semantic mismatches if any",
+    "source": "Repository-backed code remains in Git and is not copied into artifacts"
+  }
+}
