@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "e05.s04.dynamic-fault-spec.v1",
+  "researchStepId": "S04",
+  "benchmarkVersion": "E05-dynamic-fault-processes-v1",
+  "frozenQuestion": "Can temporary, intermittent, sensing, and movement-mediated dynamic fault processes be executed reproducibly over the validated regeneration checkpoints with calibrated hazards and durations, isolated random streams, exact cost accounting, and an explicit RNG-coupling boundary?",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, stream counters, ledger, and S04 process state",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "informationPermission": "policy_native_local",
+    "legalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "target": "direction-aware strict unequal inversion distance",
+    "runtimeAnchorLesion": "segment_reversal_central_v1",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "runtimeOverlay": {
+    "scenarioMutation": "none",
+    "rootScenarioId": "retain the original executable S01 scenario ID for scheduler, policy, and S04 process streams",
+    "processStateLocation": "typed runtime state outside immutable Scenario cells and outside policy-visible observations",
+    "mechanicalPlacement": "after policy proposal construction and authoritative mechanical validation, before conflict resolution and commit",
+    "temporaryFreezeMobility": "while active, the selected identity may neither initiate a state change nor be the target of a Swap",
+    "claimBoundary": "the overlay is mobility-equivalent for eligible state changes but is not byte-equivalent to rebuilding a static stuck Scenario"
+  },
+  "profiles": [
+    {
+      "profileId": "temporary_freeze_fixed_16_v1",
+      "family": "temporary_freezing",
+      "classification": "exogenous_fault",
+      "onset": "exact S02 checkpoint after the S03 anchor lesion and before the first recovery opportunity",
+      "targetSelection": "identity at floor((n-1)/2) in post-anchor occupancy",
+      "failureSemantics": "complete runtime mobility block for the selected identity",
+      "recoverySemantics": "recover before opportunity onset+16; active for exactly 16 charged opportunities unless the task terminates first",
+      "durationProfile": "fixed",
+      "fixedDurationOpportunities": 16,
+      "streams": []
+    },
+    {
+      "profileId": "temporary_freeze_geometric_1_16_v1",
+      "family": "temporary_freezing",
+      "classification": "exogenous_fault",
+      "onset": "exact S02 checkpoint after the S03 anchor lesion and before the first recovery opportunity",
+      "targetSelection": "identity at floor((n-1)/2) in post-anchor occupancy",
+      "failureSemantics": "complete runtime mobility block for the selected identity",
+      "recoverySemantics": "while active, consume one recovery-hazard draw per charged opportunity; a hit recovers after that opportunity, giving geometric support 1,2,...",
+      "durationProfile": "geometric_hazard",
+      "recoveryHazardNumerator": 1,
+      "recoveryHazardDenominator": 16,
+      "streams": ["temporary_freeze_recovery_hazard_s04_v1"]
+    },
+    {
+      "profileId": "intermittent_movement_markov_1_16_1_4_v1",
+      "family": "intermittent_movement_failure",
+      "classification": "exogenous_fault",
+      "initialState": "available",
+      "availableToFailed": {"numerator": 1, "denominator": 16},
+      "failedToAvailable": {"numerator": 1, "denominator": 4},
+      "transitionTiming": "one transition draw before each charged proposal outcome",
+      "failureSemantics": "post-transition failed state rejects an otherwise eligible Swap; NoOp and MemoryUpdate are unchanged",
+      "streams": ["intermittent_movement_transition_s04_v1"]
+    },
+    {
+      "profileId": "probabilistic_sensing_value_status_1_8_v1",
+      "family": "probabilistic_sensing_failure",
+      "classification": "exogenous_fault",
+      "valueError": {"numerator": 1, "denominator": 8, "perturbation": "plus_or_minus_one_from_same_draw"},
+      "statusError": {"numerator": 1, "denominator": 8, "mapping": "one_of_other_two_modes_from_same_draw"},
+      "drawSemantics": "one value draw per authorized logical read and one status draw per authorized other-cell read",
+      "protectedFields": ["identity", "position", "actor_policy", "actor_direction", "actor_self_fault", "permission_metadata"],
+      "trustedValidatorUsesGroundTruth": true,
+      "streams": ["probabilistic_sensing_value_s04_v1", "probabilistic_sensing_status_s04_v1"]
+    },
+    {
+      "profileId": "movement_fatigue_threshold_3_cooldown_8_v1",
+      "family": "movement_dependent_fatigue",
+      "classification": "endogenous_mediator",
+      "loadIncrement": "one per identity participation in an accepted Swap, for both initiator and displaced identity",
+      "threshold": 3,
+      "failureSemantics": "on reaching threshold, reset load and block the identity from initiating a state change or being swapped for the next 8 charged opportunities",
+      "recoverySemantics": "deterministic cooldown on the global opportunity clock; load remains zero at recovery",
+      "cooldownOpportunities": 8,
+      "streams": []
+    }
+  ],
+  "shamProfile": {
+    "profileId": "matched_dynamic_process_sham_v1",
+    "family": "none",
+    "classification": "control",
+    "streams": [],
+    "semantics": "execute from the identical post-anchor state with no dynamic process; do not consume dummy process draws"
+  },
+  "streamRegistry": [
+    {
+      "name": "temporary_freeze_recovery_hazard_s04_v1",
+      "owner": "temporary_freeze_geometric_1_16_v1",
+      "address": "(original executable scenario ID, global opportunity index, draw index 0)",
+      "consumption": "one draw per active frozen opportunity"
+    },
+    {
+      "name": "intermittent_movement_transition_s04_v1",
+      "owner": "intermittent_movement_markov_1_16_1_4_v1",
+      "address": "(original executable scenario ID, global opportunity index, draw index 0)",
+      "consumption": "one draw per charged opportunity"
+    },
+    {
+      "name": "probabilistic_sensing_value_s04_v1",
+      "owner": "probabilistic_sensing_value_status_1_8_v1",
+      "address": "(original executable scenario ID, global opportunity index, authorized read ordinal)",
+      "consumption": "one draw per authorized logical read"
+    },
+    {
+      "name": "probabilistic_sensing_status_s04_v1",
+      "owner": "probabilistic_sensing_value_status_1_8_v1",
+      "address": "(original executable scenario ID, global opportunity index, authorized read ordinal)",
+      "consumption": "one draw per authorized other-cell read"
+    }
+  ],
+  "pairingContract": {
+    "preProcess": "active and matched sham share the exact S02 checkpoint and S03 anchor-lesion state",
+    "baseRuntimeRoot": "same original executable scenario ID and seed",
+    "baseStreamStatus": "shared_prefix_until_arm_terminal_or_path_divergence",
+    "processStreams": "active-only, semantically isolated, and never substituted for a base or other process stream",
+    "staticReconstructionContrast": "scenario_paired_rng_unpaired because changing immutable fault content changes the executable scenario ID",
+    "countChangingLesions": "not_executable in this fixed-identity S04 runtime panel"
+  },
+  "calibration": {
+    "fixedDurationEpisodes": 65536,
+    "geometricDurationEpisodes": 65536,
+    "hazardDraws": 1048576,
+    "markovTrajectories": 64,
+    "markovOpportunitiesPerTrajectory": 16384,
+    "sensingDrawsPerField": 1048576,
+    "probabilityTolerance": "absolute z score <= 6.0 under the declared binomial law",
+    "geometricMeanTolerance": 0.4,
+    "stationaryFailureFractionTolerance": 0.01
+  },
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "activeProfilesPerCheckpoint": 5,
+    "arms": ["matched_dynamic_process_sham", "active_dynamic_process"],
+    "plannedCheckpointCount": 384,
+    "plannedPairCount": 1920,
+    "plannedRunCount": 3840,
+    "exactReplay": "every planned run",
+    "sourceConstruction": "exact reconstruction of all validated S02 checkpoints followed by the validated S03 central segment reversal anchor"
+  },
+  "claimBoundary": "S04 validates transparent computational fault-process semantics and calibration. It does not establish biological damage, fatigue, recovery, regeneration, or causal efficacy outside the declared simulator."
+}

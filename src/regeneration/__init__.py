@@ -32,6 +32,23 @@ from .lesions import (
     validate_application,
     validate_lesion_spec,
 )
+from .dynamic_faults import (
+    ACTIVE_PROFILES,
+    DYNAMIC_RUN_SCHEMA_VERSION,
+    DYNAMIC_SPEC_SCHEMA,
+    DynamicFaultContract,
+    DynamicProfile,
+    DynamicProcessController,
+    DynamicRun,
+    DynamicSensingTransformer,
+    dynamic_pair_id,
+    dyadic_hit,
+    exact_replay_dynamic,
+    probability_z,
+    rng_coupling_audit,
+    run_dynamic_phase,
+    validate_dynamic_spec,
+)
 
 __all__ = [
     "BASELINE_SCENARIO_SCHEMA",
@@ -60,4 +77,19 @@ __all__ = [
     "inverse_lesion",
     "validate_application",
     "validate_lesion_spec",
+    "ACTIVE_PROFILES",
+    "DYNAMIC_RUN_SCHEMA_VERSION",
+    "DYNAMIC_SPEC_SCHEMA",
+    "DynamicFaultContract",
+    "DynamicProfile",
+    "DynamicProcessController",
+    "DynamicRun",
+    "DynamicSensingTransformer",
+    "dynamic_pair_id",
+    "dyadic_hit",
+    "exact_replay_dynamic",
+    "probability_z",
+    "rng_coupling_audit",
+    "run_dynamic_phase",
+    "validate_dynamic_spec",
 ]
