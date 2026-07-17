@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "e05.s02.timing-spec.v1",
+  "researchStepId": "S02",
+  "benchmarkVersion": "E05-damage-timing-v1",
+  "frozenQuestion": "Does operational recovery depend on whether the same calibrated lesion occurs before, during, or after target formation, and how do progress and event clocks differ?",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "benchmarkVersion": "E05-regeneration-task-v1",
+    "checkpointState": "occupancy, Selection cursors, activation count, stream counters, ledger, and global event clock",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "stabilization": "target absorbing certificate plus uniform scheduler coverage of at least two opportunities per identity within 20*n",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "rngStatus": "shared_prefix_until_arm_terminal",
+    "target": "direction-aware strict unequal inversion distance"
+  },
+  "timingConditions": [
+    {
+      "timingConditionId": "initialization",
+      "clock": "initialization",
+      "nominalFraction": 0.0,
+      "triggerRule": "before the first charged policy opportunity at global event index 0"
+    },
+    {
+      "timingConditionId": "progress_25",
+      "clock": "progress_first_crossing",
+      "nominalFraction": 0.25,
+      "triggerRule": "first post-opportunity checkpoint with (initialDistance-currentDistance)/initialDistance >= 0.25"
+    },
+    {
+      "timingConditionId": "event_25",
+      "clock": "paired_uninjured_completion_fraction",
+      "nominalFraction": 0.25,
+      "triggerRule": "checkpoint after ceil(0.25 * paired uninjured completion opportunities)"
+    },
+    {
+      "timingConditionId": "progress_50",
+      "clock": "progress_first_crossing",
+      "nominalFraction": 0.5,
+      "triggerRule": "first post-opportunity checkpoint with (initialDistance-currentDistance)/initialDistance >= 0.50"
+    },
+    {
+      "timingConditionId": "event_50",
+      "clock": "paired_uninjured_completion_fraction",
+      "nominalFraction": 0.5,
+      "triggerRule": "checkpoint after ceil(0.50 * paired uninjured completion opportunities)"
+    },
+    {
+      "timingConditionId": "progress_75",
+      "clock": "progress_first_crossing",
+      "nominalFraction": 0.75,
+      "triggerRule": "first post-opportunity checkpoint with (initialDistance-currentDistance)/initialDistance >= 0.75"
+    },
+    {
+      "timingConditionId": "event_75",
+      "clock": "paired_uninjured_completion_fraction",
+      "nominalFraction": 0.75,
+      "triggerRule": "checkpoint after ceil(0.75 * paired uninjured completion opportunities)"
+    },
+    {
+      "timingConditionId": "post_completion",
+      "clock": "post_completion_stabilized",
+      "nominalFraction": 1.0,
+      "triggerRule": "after exact target completion and the inherited S01 stabilization certificate"
+    }
+  ],
+  "unreachableTriggerRule": {
+    "progress": "retain both planned arms with triggerStatus=unreached_terminal_before_progress_threshold and executionStatus=not_run_trigger_unreached; do not substitute an event time",
+    "event": "retain both planned arms with triggerStatus=unreached_no_paired_completion_reference and executionStatus=not_run_trigger_unreached; do not substitute a budget fraction",
+    "exclusion": "no planned row is silently excluded"
+  },
+  "eventClockReference": {
+    "definition": "the completion opportunity count of the same paired uninjured S01 construction trajectory",
+    "rounding": "ceil(fraction * completion opportunities)",
+    "policyVisibility": "not visible to policies or scheduler",
+    "missingReference": "explicitly unreachable; no fallback"
+  },
+  "lesionCalibration": {
+    "operator": "s01_validation_adjacent_swap_v1",
+    "severity": "exactly +1 strict unequal inversion",
+    "role": "S02 timing calibration fixture only; not the S03 lesion library",
+    "shamSeverity": 0
+  },
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "sourceConstruction": "exact S01 counter-addressed construction keys and seeds",
+    "arms": ["matched_no_injury", "validation_injury"]
+  },
+  "claimBoundary": "Damage timing and recovery are operational simulator interventions. They do not establish biological regeneration, biological memory, learning, or causal efficacy outside the declared computational system."
+}

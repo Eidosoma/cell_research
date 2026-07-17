@@ -11,6 +11,15 @@ from .tasks import (
     validate_pairing_rows,
     validate_task_spec,
 )
+from .timing import (
+    TIMING_SCENARIO_SCHEMA,
+    TIMING_SPEC_SCHEMA,
+    TimingClock,
+    build_timing_panel,
+    locate_trigger,
+    validate_timing_pairing,
+    validate_timing_spec,
+)
 
 __all__ = [
     "BASELINE_SCENARIO_SCHEMA",
@@ -22,4 +31,11 @@ __all__ = [
     "strict_unequal_inversions",
     "validate_pairing_rows",
     "validate_task_spec",
+    "TIMING_SCENARIO_SCHEMA",
+    "TIMING_SPEC_SCHEMA",
+    "TimingClock",
+    "build_timing_panel",
+    "locate_trigger",
+    "validate_timing_pairing",
+    "validate_timing_spec",
 ]
