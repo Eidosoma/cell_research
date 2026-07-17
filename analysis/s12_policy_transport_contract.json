@@ -1,0 +1,132 @@
+{
+  "schema": "e04.s12.policy_transport_contract.v1",
+  "researchStepId": "S12",
+  "title": "Model policy-specific transport",
+  "frozenQuestion": "Can policy-specific actor velocity, blocked-action collision load, experienced positional flux, and residence time predict composition-corrected aggregation trajectories in held-out mixtures, compositions, value-association constructions, and kinetic interventions?",
+  "scope": {
+    "starts": "S12",
+    "stopsBefore": "S13",
+    "sourcePopulation": "S07 frozen holdout corpus: 186 conditions x 25 scenarios x 6 regimes",
+    "trajectoryGrid": "101 accepted-swap-normalized points from 0.00 through 1.00",
+    "target": "paper-denominator same-policy adjacency minus the validated S02 exact-composition expectation",
+    "predictiveUse": "retrospective trajectory prediction from complete-run transport summaries; not online forecasting"
+  },
+  "mechanisticConstraint": {
+    "s11r": "S11R found no support-qualified completion-feasible value perturbation in its frozen ladder; S12 carries this as a component-separation constraint and does not repair or reopen that intervention.",
+    "s11": "S11 Shapley quantities are excluded from features, targets, model fitting, adequacy decisions, and causal interpretation.",
+    "claimBoundary": "Predictive adequacy does not identify a unique transport mechanism, mediation path, or causal effect."
+  },
+  "transportDefinitions": {
+    "actorVelocity": "For policy k, total absolute actor-to-target displacement from accepted swaps initiated by k divided by actor activations of k; positions per actor activation.",
+    "collisionLoad": "For policy k, native no-op activations plus intervention-gate rejections divided by actor activations. It is an operational blocked-action/no-op load, not a literal physical impact count.",
+    "experiencedFlux": "For policy k, absolute displacement experienced by every identity of k, including target displacement, divided by policy count and total system activations/10000; positions per cell per 10,000 activations.",
+    "residenceTime": "For each identity, 100 divided by one plus the number of accepted-swap-grid transitions at which its position changed; average within policy. Units are percentage points of accepted-swap progress and the measure is interval-censored at the 1% grid.",
+    "missingPolicyRule": "Absent policies have zero-valued transport fields and a separate present indicator; no undefined value is imputed from outcomes."
+  },
+  "split": {
+    "developmentConditions": "native_control, absent association, pairwise p20_80 through p80_20 plus balanced_rotating three-way",
+    "fitReplicateOrdinals": [15, 25, 35, 45, 65, 75, 85, 95, 115, 125, 135, 145, 165, 175, 185, 195, 215, 225, 235, 245],
+    "calibrationReplicateOrdinals": [5, 55, 105, 155, 205],
+    "nativeCompositionHoldout": "native_control absent-association pairwise p10_90/p90_10 and all rare_*_10 three-way conditions",
+    "nativeAssociationHoldout": "native_control positive and negative policy-value association at every composition",
+    "interventionHoldout": "all non-native S07 regimes and all 186 conditions; activation_equal is the sole calibration-feasible confirmatory intervention, while displacement_equal, target_range_equal, success_equal, and joint_equal are descriptive stress tests",
+    "isolation": "All model family and hyperparameter selection uses development fit/calibration rows only. External native and intervention outcomes remain unopened by the fitting stage until the selected model is refit, serialized, and hashed."
+  },
+  "features": {
+    "preOutcome": [
+      "initial corrected aggregation",
+      "policy fractions and policy-present indicators",
+      "unique-versus-repeated input indicator",
+      "achieved initial policy-value Spearman correlation",
+      "achieved policy-value eta squared"
+    ],
+    "transport": [
+      "actor velocity by Bubble/Insertion/Selection",
+      "collision load by Bubble/Insertion/Selection",
+      "experienced flux by Bubble/Insertion/Selection",
+      "residence time by Bubble/Insertion/Selection"
+    ],
+    "forbidden": [
+      "post-initial aggregation values as covariates",
+      "condition outcome labels",
+      "S11 Shapley estimates",
+      "S11R calibration outcomes",
+      "analysis labels",
+      "held-out residuals during model selection"
+    ]
+  },
+  "modelFamilies": {
+    "meanShape": "simple baseline: development mean change-from-initial trajectory shifted to each scenario's observed initial corrected aggregation",
+    "staticRidge": "simple covariate baseline: ridge regression from pre-outcome features to 12-component PCA trajectory scores",
+    "transportRidge": "ridge regression from pre-outcome plus transport features to 12-component PCA trajectory scores",
+    "transportForest": "300-tree ExtraTrees multi-output regression from pre-outcome plus transport features to the same PCA scores",
+    "transportMarkov": "coarse first-order ridge state model for one-step aggregation change using current predicted aggregation, progress basis, and frozen static/transport summaries; evaluated by recursive rollout"
+  },
+  "modelSelection": {
+    "ridgeAlphas": [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+    "forestCandidates": [
+      {"maxDepth": 8, "minSamplesLeaf": 5},
+      {"maxDepth": 14, "minSamplesLeaf": 5},
+      {"maxDepth": null, "minSamplesLeaf": 5},
+      {"maxDepth": null, "minSamplesLeaf": 15}
+    ],
+    "pcaComponents": 12,
+    "criterion": "lowest calibration condition-mean trajectory RMSE among transportRidge, transportForest, and transportMarkov; ties within 0.0001 select the simpler family in that order: transportRidge, transportMarkov, transportForest",
+    "refit": "refit the selected frozen family and strongest simple baseline on all development fit plus calibration scenarios before hashing and opening external outcomes"
+  },
+  "endpoints": {
+    "primary": "condition-mean trajectory RMSE over all 101 points",
+    "secondary": [
+      "trajectory MAE",
+      "absolute peak error",
+      "absolute positive-area error",
+      "absolute final-value error",
+      "mean residual",
+      "lag-1 residual autocorrelation"
+    ],
+    "uncertainty": "pointwise 90% split-conformal bands from development calibration condition-mean absolute residuals; report empirical held-out coverage"
+  },
+  "adequacyCriteria": {
+    "nativeExternal": {
+      "rmseMaximum": 0.05,
+      "minimumRmseImprovementOverStrongestBaseline": 0.25,
+      "peakMaeMaximum": 0.05,
+      "positiveAreaMaeMaximum": 0.03,
+      "absoluteMeanResidualMaximum": 0.02,
+      "coverageRange": [0.8, 0.98]
+    },
+    "activationEqual": {
+      "rmseMaximum": 0.06,
+      "minimumRmseImprovementOverStrongestBaseline": 0.1,
+      "peakMaeMaximum": 0.06,
+      "positiveAreaMaeMaximum": 0.04
+    },
+    "classification": "supportive only if every native-external and activation_equal gate passes; null if absolute error gates pass but transport does not improve enough over the strongest baseline; constraining/contradictory if absolute native or activation intervention adequacy fails"
+  },
+  "failureRegions": {
+    "groups": [
+      "input profile",
+      "policy set",
+      "composition profile",
+      "correlation profile",
+      "regime",
+      "condition"
+    ],
+    "flag": "group RMSE above its applicable frozen maximum or group primary-model RMSE at least 10% worse than the strongest baseline"
+  },
+  "validation": [
+    "S01-S11R artifact-manifest hash and file hash immutability",
+    "S13 artifact absence",
+    "raw S07 row accounting and scenario/regime pairing",
+    "zero split overlap and exact frozen condition/replicate assignment",
+    "occupancy permutation and label/count preservation",
+    "recalculated corrected adjacency equals the stored S07 trajectory",
+    "actor-velocity structural identity",
+    "collision/success/memory activation accounting",
+    "experienced-flux displacement conservation",
+    "residence bounds and deterministic feature extraction",
+    "model-freeze hash before external evaluation",
+    "complete prediction, metric, residual, and condition accounting",
+    "focused tests and deterministic model replay"
+  ]
+}
