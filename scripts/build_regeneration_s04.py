@@ -12,6 +12,7 @@ from importlib.metadata import version as package_version
 import json
 import os
 from pathlib import Path
+import pickle
 import platform
 import subprocess
 import sys
@@ -1084,7 +1085,8 @@ def build(specification: Mapping[str, Any], workers: int) -> dict[str, Any]:
 
 def _spec_markdown(specification: Mapping[str, Any]) -> str:
     profiles = "\n".join(
-        f"- `{item['profileId']}` — {item['failureSemantics']}"
+        f"- `{item['profileId']}` — "
+        f"{item.get('failureSemantics') or item.get('drawSemantics') or item.get('loadIncrement')}"
         for item in specification["profiles"]
     )
     return f"""# S04 dynamic fault process specification
@@ -1542,7 +1544,31 @@ def main() -> None:
     _validate_inputs()
     specification = _load_json(CONFIG)
     git_commit = _git("rev-parse", "HEAD")
-    panel = build(specification, args.workers)
+    cache_path = Path(f"/cache/e05_s04_panel_{git_commit}.pickle")
+    if cache_path.is_file():
+        with cache_path.open("rb") as handle:
+            cached = pickle.load(handle)
+        if cached["specificationSha256"] != _digest(specification):
+            raise RuntimeError("S04 panel cache specification mismatch")
+        if cached["workerCount"] != args.workers:
+            raise RuntimeError("S04 panel cache worker-count mismatch")
+        panel = cached["panel"]
+        print(f"loaded validated panel cache {cache_path}", flush=True)
+    else:
+        panel = build(specification, args.workers)
+        temporary_cache = cache_path.with_suffix(".pickle.tmp")
+        with temporary_cache.open("wb") as handle:
+            pickle.dump(
+                {
+                    "specificationSha256": _digest(specification),
+                    "workerCount": args.workers,
+                    "panel": panel,
+                },
+                handle,
+                protocol=pickle.HIGHEST_PROTOCOL,
+            )
+        temporary_cache.replace(cache_path)
+        print(f"wrote validated panel cache {cache_path}", flush=True)
     write_outputs(
         args.artifacts_dir, specification, panel, args.workers, git_commit
     )
