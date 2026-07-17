@@ -91,7 +91,7 @@ INPUTS: tuple[Path, ...] = (
     Path("/workspace/FULL_PLAN.md"),
     Path("/workspace/RESEARCH_PLAN.md"),
     Path("/workspace/input-attachments/MANIFEST.json"),
-    Path("/workspace/input-attachments/_metadata/ATTACHMENT.md"),
+    Path("/workspace/input-attachments/21c2278b-9950-4e39-a2c8-df578a2508ec/_metadata/ATTACHMENT.md"),
     S01_DIR / "research_step_full_results.md",
     S01_DIR / "task_spec.md",
     S01_DIR / "task_spec.json",
@@ -115,7 +115,7 @@ INPUTS: tuple[Path, ...] = (
     Path("/previous-artifacts/E02/research_steps/S05/fault_package/fault_semantics_contract.md"),
     Path("/previous-artifacts/E02/research_steps/S05/fault_package/exogenous_stream_validation.json"),
     Path("/previous-artifacts/E02/research_steps/S08/semantic_random_stream_specification.json"),
-    Path("/previous-artifacts/E02/research_steps/S08/semantic_stream_isolation_validation.json"),
+    Path("/previous-artifacts/E02/research_steps/S08/stream_name_isolation_validation.json"),
     Path("/previous-artifacts/E02/research_steps/S08/scenario_id_validation.json"),
 )
 
