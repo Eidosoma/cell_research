@@ -4,11 +4,15 @@ import json
 from pathlib import Path
 import unittest
 
+import pandas as pd
+
 from analysis.chimeric_replication import policy_edge_summary
 from analysis.composition_sweep import (
     EXPECTED_CONDITIONS,
     EXPECTED_RUNS,
     SweepCondition,
+    _aligned_event_budgets,
+    _interpretation_changes,
     build_conditions,
     load_base_draws,
     materialize_sweep_scenario,
@@ -87,6 +91,57 @@ class CompositionSweepTests(unittest.TestCase):
         edges, rates = policy_edge_summary(scenario, scenario.initial_occupancy)
         self.assertEqual(edges, {"Bubble": 1, "Selection": 1})
         self.assertEqual(rates, {"Bubble": 0.5, "Selection": 0.5})
+
+    def test_event_budgets_align_from_frozen_manifest(self) -> None:
+        runs = pd.DataFrame(
+            {"scenario_id": ["scenario-b", "scenario-a"], "activation_count": [7, 3]}
+        )
+        manifest = pd.DataFrame(
+            {"scenario_id": ["scenario-a", "scenario-b"], "event_budget": [5, 10]}
+        )
+        budgets = _aligned_event_budgets(runs, manifest)
+        self.assertEqual(budgets.tolist(), [10, 5])
+        self.assertTrue(runs.activation_count.le(budgets).all())
+
+    def test_interpretation_change_uses_exact_composition_baseline(self) -> None:
+        condition_ids = [f"fixture-{index:03d}" for index in range(EXPECTED_CONDITIONS)]
+        response = pd.DataFrame(
+            {
+                "condition_id": condition_ids,
+                "grid_index": [100] * EXPECTED_CONDITIONS,
+                "mean_publication_aggregation": [0.70] * EXPECTED_CONDITIONS,
+                "mean_composition_baseline": [0.81] * EXPECTED_CONDITIONS,
+                "mean_corrected_aggregation": [-0.11] * EXPECTED_CONDITIONS,
+            }
+        )
+        summary = pd.DataFrame(
+            {
+                "condition_id": condition_ids,
+                "input_profile": ["unique_1_100"] * EXPECTED_CONDITIONS,
+                "policy_set_label": ["Bubble+Insertion"] * EXPECTED_CONDITIONS,
+                "composition_class": ["pairwise"] * EXPECTED_CONDITIONS,
+                "composition_profile": ["p10_90"] * EXPECTED_CONDITIONS,
+                "first_policy_count": [10] * EXPECTED_CONDITIONS,
+                "rare_policy": [None] * EXPECTED_CONDITIONS,
+                "correlation_profile": ["absent"] * EXPECTED_CONDITIONS,
+                "runs": [250] * EXPECTED_CONDITIONS,
+                "mean_corrected_auc_over_progress": [-0.08] * EXPECTED_CONDITIONS,
+                "corrected_final_publication_aggregation_ci95_low": [-0.13]
+                * EXPECTED_CONDITIONS,
+                "corrected_final_publication_aggregation_ci95_high": [-0.09]
+                * EXPECTED_CONDITIONS,
+            }
+        )
+        result = _interpretation_changes(response, summary)
+        self.assertTrue(result.final_interpretation_changed.all())
+        self.assertTrue(
+            result.final_interpretation_category.eq(
+                "universal_positive_composition_nonpositive"
+            ).all()
+        )
+        self.assertAlmostEqual(
+            result.final_excess_change_after_correction.iloc[0], -0.31
+        )
 
     def test_repository_contract_is_frozen_to_s03(self) -> None:
         path = (

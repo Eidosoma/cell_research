@@ -861,6 +861,17 @@ def _checkpoint_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _aligned_event_budgets(runs: pd.DataFrame, manifest: pd.DataFrame) -> pd.Series:
+    """Align frozen scenario budgets to compact run rows with strict identity checks."""
+    if manifest.scenario_id.duplicated().any():
+        raise ValueError("scenario manifest has duplicate IDs")
+    budget_by_scenario = manifest.set_index("scenario_id").event_budget
+    budgets = runs.scenario_id.map(budget_by_scenario)
+    if budgets.isna().any():
+        raise ValueError("run table contains scenarios absent from frozen manifest")
+    return budgets.astype(np.int64)
+
+
 def _run_frame(results: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
     rows = [
         {
@@ -1227,6 +1238,84 @@ def _correlation_fidelity(manifest: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("condition_id").reset_index(drop=True)
 
 
+def _interpretation_changes(
+    response: pd.DataFrame, summary: pd.DataFrame
+) -> pd.DataFrame:
+    """Quantify how the exact composition baseline changes zero-excess claims."""
+    final = response[response.grid_index.eq(len(GRID) - 1)][
+        [
+            "condition_id",
+            "mean_publication_aggregation",
+            "mean_composition_baseline",
+            "mean_corrected_aggregation",
+        ]
+    ].rename(
+        columns={
+            "mean_publication_aggregation": "mean_raw_final",
+            "mean_composition_baseline": "mean_exact_composition_baseline",
+            "mean_corrected_aggregation": "mean_corrected_final",
+        }
+    )
+    columns = [
+        "condition_id",
+        "input_profile",
+        "policy_set_label",
+        "composition_class",
+        "composition_profile",
+        "first_policy_count",
+        "rare_policy",
+        "correlation_profile",
+        "runs",
+        "mean_corrected_auc_over_progress",
+        "corrected_final_publication_aggregation_ci95_low",
+        "corrected_final_publication_aggregation_ci95_high",
+    ]
+    frame = summary[columns].merge(final, on="condition_id", validate="one_to_one")
+    frame["mean_raw_auc_over_progress"] = (
+        frame.mean_corrected_auc_over_progress + frame.mean_exact_composition_baseline
+    )
+    frame["universal_half_final_excess"] = frame.mean_raw_final - 0.5
+    frame["exact_composition_final_excess"] = frame.mean_corrected_final
+    frame["final_excess_change_after_correction"] = (
+        frame.exact_composition_final_excess - frame.universal_half_final_excess
+    )
+    frame["universal_half_auc_excess"] = frame.mean_raw_auc_over_progress - 0.5
+    frame["exact_composition_auc_excess"] = frame.mean_corrected_auc_over_progress
+    frame["auc_excess_change_after_correction"] = (
+        frame.exact_composition_auc_excess - frame.universal_half_auc_excess
+    )
+    frame["universal_half_final_positive"] = frame.universal_half_final_excess.gt(0)
+    frame["exact_composition_final_positive"] = frame.exact_composition_final_excess.gt(
+        0
+    )
+    frame["final_interpretation_changed"] = (
+        frame.universal_half_final_positive != frame.exact_composition_final_positive
+    )
+    frame["corrected_final_ci95_excludes_zero"] = (
+        frame.corrected_final_publication_aggregation_ci95_low.gt(0)
+        | frame.corrected_final_publication_aggregation_ci95_high.lt(0)
+    )
+    frame["final_interpretation_category"] = np.select(
+        [
+            frame.universal_half_final_positive
+            & frame.exact_composition_final_positive,
+            ~frame.universal_half_final_positive
+            & frame.exact_composition_final_positive,
+            frame.universal_half_final_positive
+            & ~frame.exact_composition_final_positive,
+        ],
+        [
+            "both_positive",
+            "composition_positive_universal_nonpositive",
+            "universal_positive_composition_nonpositive",
+        ],
+        default="both_nonpositive",
+    )
+    if len(frame) != EXPECTED_CONDITIONS:
+        raise AssertionError("interpretation table must contain every S03 condition")
+    return frame.sort_values("condition_id").reset_index(drop=True)
+
+
 def _variance_ratio_bootstrap(
     extreme: np.ndarray, balanced: np.ndarray, address: str
 ) -> tuple[float, float, float]:
@@ -1558,12 +1647,14 @@ def build_artifacts(checkpoint: Path, output: Path) -> dict[str, Any]:
     response, summary = _response_and_condition_summaries(results, run_frame)
     contrasts = _primary_contrasts(run_frame)
     fidelity = _correlation_fidelity(manifest)
+    interpretation = _interpretation_changes(response, summary)
     minority = _minority_discreteness(run_frame)
     _write_parquet(run_frame, output / "composition_sweep.parquet")
     _write_parquet(response, output / "response_surface.parquet")
     summary.to_csv(output / "condition_summary.csv", index=False)
     contrasts.to_csv(output / "factorial_effects.csv", index=False)
     fidelity.to_csv(output / "correlation_fidelity.csv", index=False)
+    interpretation.to_csv(output / "interpretation_changes.csv", index=False)
     minority.to_csv(output / "extreme_minority_variance.csv", index=False)
 
     composition_pass = bool(
@@ -1635,6 +1726,7 @@ def validate_artifacts(output: Path) -> dict[str, Any]:
     summary = pd.read_csv(output / "condition_summary.csv")
     contrasts = pd.read_csv(output / "factorial_effects.csv")
     fidelity = pd.read_csv(output / "correlation_fidelity.csv")
+    interpretation = pd.read_csv(output / "interpretation_changes.csv")
     minority = pd.read_csv(output / "extreme_minority_variance.csv")
     replay = json.loads((output / "deterministic_replay.json").read_text())
     criteria = json.loads((output / "success_criteria.json").read_text())
@@ -1751,7 +1843,7 @@ def validate_artifacts(output: Path) -> dict[str, Any]:
     )
     check(
         "event_budget_respected",
-        runs.activation_count.le(runs.event_budget).all(),
+        runs.activation_count.le(_aligned_event_budgets(runs, manifest)).all(),
         int(runs.activation_count.max()),
     )
     expected_nulls = runs.policy_counts_json.map(
@@ -1804,6 +1896,27 @@ def validate_artifacts(output: Path) -> dict[str, Any]:
         for base in scalar_interval_columns
     )
     check("condition_interval_order", interval_order, len(scalar_interval_columns))
+    check(
+        "interpretation_accounting",
+        len(interpretation) == EXPECTED_CONDITIONS
+        and not interpretation.condition_id.duplicated().any(),
+        len(interpretation),
+    )
+    check(
+        "interpretation_correction_identities",
+        np.allclose(
+            interpretation.mean_raw_final
+            - interpretation.mean_exact_composition_baseline,
+            interpretation.mean_corrected_final,
+            atol=1e-15,
+        )
+        and np.allclose(
+            interpretation.final_excess_change_after_correction,
+            0.5 - interpretation.mean_exact_composition_baseline,
+            atol=1e-15,
+        ),
+        int(interpretation.final_interpretation_changed.sum()),
+    )
     check(
         "primary_contrast_accounting",
         len(contrasts) == 112
