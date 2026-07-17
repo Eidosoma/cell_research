@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "e05.s05.nudge-recovery-spec.v1",
+  "researchStepId": "S05",
+  "benchmarkVersion": "E05-nudge-dependent-unfreezing-v1",
+  "frozenAtUtc": "2026-07-17T21:22:02Z",
+  "implementationStateAtFreeze": "S05 runtime controller skeleton present; no fixture, calibration, confirmatory, or matching-sensitivity run executed",
+  "frozenQuestion": "Does recovery triggered only by explicit local contact evidence produce repair outcomes distinguishable from spontaneous recovery schedules matched to each mechanism's calibration-split marginal recovery-time distribution, with censored cases retained and no confirmatory-outcome conditioning?",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "dynamicSpec": "/artifacts/research_steps/S04/dynamic_fault_package/dynamic_fault_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, native stream counters, native ledger, and an initially fresh S05 runtime overlay",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "informationPermission": "policy_native_local",
+    "legalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "target": "direction-aware strict unequal inversion distance",
+    "runtimeAnchorLesion": "segment_reversal_central_v1",
+    "runtimeScenarioBoundary": "original_s01_scenario_id_runtime_overlay",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "runtimeOverlay": {
+    "scenarioMutation": "none",
+    "rootScenarioId": "retain the original executable S01 scenario ID",
+    "placement": "after proposal construction and authoritative mechanical validation, before conflict resolution and commit",
+    "freezeMobility": "while active, selected identity cannot initiate an eligible state change or be the target of an eligible Swap",
+    "policyVisibility": "the selected cell remains normal in policy-visible observations, as in S04",
+    "recoveryBoundary": "the triggering contact remains blocked; recovery takes effect for the next charged opportunity",
+    "claimBoundary": "runtime mobility equivalence only; no static-stuck scenario reconstruction or changed RNG root"
+  },
+  "contactEvent": {
+    "eligibility": "an authoritative mechanically eligible Swap involving the selected frozen identity",
+    "locality": "absolute pre-event actor-target position difference equals one",
+    "counting": "at most one qualifying contact record per charged serial opportunity",
+    "otherIdentity": "immutable identity ID of the non-selected Swap participant",
+    "side": "left or right from the non-selected participant's pre-event position relative to the selected identity",
+    "inbound": "the non-selected neighbor is the initiating actor and the selected identity is the trusted target",
+    "excluded": [
+      "NoOp",
+      "MemoryUpdate",
+      "mechanically ineligible Swap",
+      "non-adjacent Swap",
+      "post-recovery interaction"
+    ]
+  },
+  "mechanisms": [
+    {
+      "mechanismId": "attempted_contact_k3_v1",
+      "semantics": "recover after the third qualifying adjacent contact, regardless of initiator and without reset or decay",
+      "threshold": 3,
+      "state": "integer contact counter"
+    },
+    {
+      "mechanismId": "accumulated_displacement_pressure_k3_v1",
+      "semantics": "add exactly one proxy unit for each qualifying inbound neighbor-initiated displacement attempt and recover at three units; units never decay",
+      "threshold": 3,
+      "state": "integer event-count proxy",
+      "physicalForceClaim": false
+    },
+    {
+      "mechanismId": "distinct_neighbor_k2_v1",
+      "semantics": "recover after qualifying contacts involving two distinct immutable non-selected identity IDs",
+      "threshold": 2,
+      "state": "set of immutable identity IDs"
+    },
+    {
+      "mechanismId": "local_two_sided_quorum_window_16_v1",
+      "semantics": "recover when the rolling inclusive 16-opportunity window contains qualifying inbound contacts from both pre-event sides by two distinct immutable neighbor identities",
+      "windowOpportunities": 16,
+      "quorum": "one left identity and one different right identity",
+      "state": "event-indexed deque of inbound identity and side evidence"
+    }
+  ],
+  "matching": {
+    "calibrationReplicates": [0, 1],
+    "confirmatoryReplicates": [2, 3],
+    "splitFrozenBeforeRuns": true,
+    "donorOutcome": "calibration active-arm recovery duration in charged opportunities, or an explicit unrecovered/censored sentinel",
+    "assignment": "counter-addressed deterministic bijection between calibration donor records and confirmatory recipients within each declared stratum",
+    "stream": "nudge_spontaneous_matching_assignment_s05_v1",
+    "runtimeDraws": "none; the assigned schedule is frozen before each control trajectory",
+    "choices": [
+      "empirical_bijection_n_policy_v1",
+      "empirical_bijection_n_v1",
+      "empirical_bijection_pooled_v1"
+    ],
+    "primaryChoice": "empirical_bijection_n_policy_v1",
+    "sensitivityChoices": [
+      "empirical_bijection_n_v1",
+      "empirical_bijection_pooled_v1"
+    ],
+    "censoring": "unrecovered calibration cases remain point-mass donor records and are never dropped or imputed",
+    "outcomeConditioningProhibited": "assignment strata, ranks, and schedules do not use confirmatory completion, distance, recovery, or terminal outcomes"
+  },
+  "pairingContract": {
+    "preProcess": "all arms share the exact S02 checkpoint, S03 reversal anchor occupancy/hash, selected identity, global clock, native stream counters, ledger, target, and phase budget",
+    "baseRuntimeRoot": "same original executable scenario ID and seed",
+    "baseStreamStatus": "shared_prefix_until_arm_terminal_or_state_path_divergence",
+    "contactCounters": "endogenous and stream-free",
+    "matchingStream": "construction-only isolated stream with no dummy runtime draws",
+    "staticReconstructionContrast": "not executed; a reconstructed stuck Scenario would be scenario_paired_rng_unpaired"
+  },
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "mechanismsPerCheckpoint": 4,
+    "plannedCheckpointCount": 384,
+    "calibrationCheckpointCount": 192,
+    "confirmatoryCheckpointCount": 192,
+    "plannedCalibrationActiveRuns": 768,
+    "plannedConfirmatoryActiveRuns": 768,
+    "plannedConfirmatoryControlRuns": 2304,
+    "plannedRunCount": 3840,
+    "plannedPairwiseContrasts": 2304,
+    "exactReplay": "every planned run",
+    "sourceConstruction": "exact reconstruction of all validated S02 checkpoints followed by the validated S03 central segment reversal anchor"
+  },
+  "successCriteria": {
+    "primaryEstimand": "within each mechanism, paired confirmatory completion difference between contact-dependent recovery and empirical_bijection_n_policy_v1 spontaneous recovery",
+    "test": "two-sided exact McNemar test on discordant pairs",
+    "multiplicity": "Holm correction across four mechanisms at family-wise alpha 0.05",
+    "supportive": "all validation gates pass and at least one mechanism has Holm-adjusted p <= 0.05",
+    "null": "all validation gates pass and no mechanism has Holm-adjusted p <= 0.05",
+    "constrainingContradictory": "a required semantic, matching, replay, accounting, or inherited-contract validation fails, or the mechanism/control comparison is not identifiable",
+    "secondary": [
+      "paired phase-activation difference",
+      "paired final strict-unequal-inversion distance difference",
+      "recovery incidence and duration",
+      "robustness across n-only and pooled empirical-bijection matching choices"
+    ],
+    "censorRule": "retain every non-recovery and terminal case in the primary completion table; do not form a recovered-only outcome cohort"
+  },
+  "pressureInterpretation": "abstract_event_count_proxy",
+  "claimBoundary": "S05 tests transparent computational recovery rules. Contact, pressure, quorum, recovery, and repair are operational simulator constructs, not biological or mechanical measurements."
+}

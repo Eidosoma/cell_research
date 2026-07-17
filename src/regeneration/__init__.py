@@ -49,6 +49,21 @@ from .dynamic_faults import (
     run_dynamic_phase,
     validate_dynamic_spec,
 )
+from .nudge_recovery import (
+    MATCHING_ASSIGNMENT_STREAM,
+    NUDGE_RUN_SCHEMA_VERSION,
+    NUDGE_SPEC_SCHEMA,
+    MatchingChoice,
+    NudgeMechanism,
+    NudgeRecoveryContract,
+    NudgeRecoveryController,
+    NudgeRun,
+    RecoveryMode,
+    exact_replay_nudge,
+    nudge_case_id,
+    run_nudge_phase,
+    validate_nudge_spec,
+)
 
 __all__ = [
     "BASELINE_SCENARIO_SCHEMA",
@@ -92,4 +107,17 @@ __all__ = [
     "rng_coupling_audit",
     "run_dynamic_phase",
     "validate_dynamic_spec",
+    "MATCHING_ASSIGNMENT_STREAM",
+    "NUDGE_RUN_SCHEMA_VERSION",
+    "NUDGE_SPEC_SCHEMA",
+    "MatchingChoice",
+    "NudgeMechanism",
+    "NudgeRecoveryContract",
+    "NudgeRecoveryController",
+    "NudgeRun",
+    "RecoveryMode",
+    "exact_replay_nudge",
+    "nudge_case_id",
+    "run_nudge_phase",
+    "validate_nudge_spec",
 ]
