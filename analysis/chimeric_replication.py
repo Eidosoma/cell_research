@@ -508,6 +508,27 @@ def _composition_null(counts: Mapping[str, int], n: int) -> tuple[float, float]:
     return reference * (n - 1) / n, reference
 
 
+def policy_edge_summary(
+    scenario: Scenario, occupancy: Sequence[str]
+) -> tuple[dict[str, int], dict[str, float]]:
+    """Return per-policy same-policy edge counts and paper-style local rates."""
+    policy_counts = {
+        policy: sum(cell.policy.value == policy for cell in scenario.cells)
+        for policy in sorted({cell.policy.value for cell in scenario.cells})
+    }
+    edge_counts = {policy: 0 for policy in policy_counts}
+    for left_id, right_id in zip(occupancy, occupancy[1:]):
+        left = scenario.cell_map[left_id].policy.value
+        right = scenario.cell_map[right_id].policy.value
+        if left == right:
+            edge_counts[left] += 1
+    rates = {
+        policy: edge_counts[policy] / policy_counts[policy]
+        for policy in policy_counts
+    }
+    return edge_counts, rates
+
+
 def _floor_grid(points: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     if not points:
         raise ValueError("trajectory is empty")
@@ -592,6 +613,12 @@ def run_reference_summary(scenario: Scenario, *, family: str, retain_raw_trace: 
         for direction in sorted({cell.direction.value for cell in scenario.cells})
     }
     publication_null, reference_null = _composition_null(label_counts, len(labels))
+    initial_policy_edges, initial_policy_rates = policy_edge_summary(
+        scenario, initial_occupancy
+    )
+    final_policy_edges, final_policy_rates = policy_edge_summary(
+        scenario, state.occupancy
+    )
     homogeneous = len(direction_counts) == 1
     expected_order = next(iter(direction_counts)) if homogeneous else None
     if expected_order == "ascending":
@@ -635,6 +662,18 @@ def run_reference_summary(scenario: Scenario, *, family: str, retain_raw_trace: 
         "final_consensus_ordered": final_ordered,
         "elapsed_seconds": elapsed,
         "policy_counts_json": json.dumps(policy_counts, sort_keys=True, separators=(",", ":")),
+        "initial_policy_edge_counts_json": json.dumps(
+            initial_policy_edges, sort_keys=True, separators=(",", ":")
+        ),
+        "final_policy_edge_counts_json": json.dumps(
+            final_policy_edges, sort_keys=True, separators=(",", ":")
+        ),
+        "initial_policy_homotypy_rates_json": json.dumps(
+            initial_policy_rates, sort_keys=True, separators=(",", ":")
+        ),
+        "final_policy_homotypy_rates_json": json.dumps(
+            final_policy_rates, sort_keys=True, separators=(",", ":")
+        ),
         "clustering_label_counts_json": json.dumps(label_counts, sort_keys=True, separators=(",", ":")),
         "direction_counts_json": json.dumps(direction_counts, sort_keys=True, separators=(",", ":")),
         "publication_aggregation_null": publication_null,

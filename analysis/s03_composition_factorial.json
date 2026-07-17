@@ -1,0 +1,139 @@
+{
+  "schema": "e04.s03.composition_factorial.v1",
+  "researchStepId": "S03",
+  "title": "Sweep mixture proportions and value correlations",
+  "frozenAtUtc": "2026-07-17T00:26:26Z",
+  "frozenBeforeSimulation": true,
+  "frozenHypothesis": "Composition-corrected aggregation magnitude and sorting kinetics depend on exact policy composition and policy-value association.",
+  "evidenceLayer": "clean_room_reference",
+  "upstream": {
+    "baseDrawSource": "/previous-artifacts/E01/research_steps/S08/base_draw_bank.parquet",
+    "baseDrawSplit": "exploratory",
+    "protectedRowsAllowed": false,
+    "replicatesPerCondition": 250,
+    "s01ArtifactManifestSha256": "df9860285fc5b1ed9f7442fb68ea5e9ed9e407918d90988d0b3592f4b3ef8079",
+    "s02ArtifactManifestSha256": "9e632eedac59f6b08ff6b619ce2451a99b49c952319af2747076fd7bb3411b54"
+  },
+  "factorial": {
+    "inputProfiles": [
+      "unique_1_100",
+      "repeated_1_10_x10"
+    ],
+    "policyPairs": [
+      ["Bubble", "Insertion"],
+      ["Bubble", "Selection"],
+      ["Insertion", "Selection"]
+    ],
+    "pairwiseFirstPolicyCounts": [10, 20, 30, 40, 50, 60, 70, 80, 90],
+    "pairwiseSecondPolicyCountRule": "100 - firstPolicyCount",
+    "threeWayPolicies": ["Bubble", "Insertion", "Selection"],
+    "threeWayProfiles": [
+      {
+        "id": "balanced_rotating",
+        "rule": "34/33/33 with the single extra identity rotating by replicateOrdinal modulo 3"
+      },
+      {
+        "id": "rare_bubble_10",
+        "counts": {"Bubble": 10, "Insertion": 45, "Selection": 45}
+      },
+      {
+        "id": "rare_insertion_10",
+        "counts": {"Bubble": 45, "Insertion": 10, "Selection": 45}
+      },
+      {
+        "id": "rare_selection_10",
+        "counts": {"Bubble": 45, "Insertion": 45, "Selection": 10}
+      }
+    ],
+    "correlationProfiles": [
+      "positive",
+      "negative",
+      "absent"
+    ],
+    "conditionCount": 186,
+    "intendedRunCount": 46500
+  },
+  "scenarioGeneration": {
+    "n": 100,
+    "direction": "consensus_ascending",
+    "faultMode": "none",
+    "architecture": "cell_view",
+    "maxActivations": 1000000,
+    "valueConstruction": "Reuse valuesById and initialOccupancyIndices from each immutable E01 exploratory base draw; every condition sharing inputProfile and replicateOrdinal has the same values, initial value sequence, and pairingBlockId.",
+    "policyOrder": {
+      "pairwise": "the policy tuple order printed in policyPairs",
+      "threeWay": ["Bubble", "Insertion", "Selection"]
+    },
+    "positiveRule": "Sort identities by increasing value with deterministic random tie-breaking, then assign contiguous exact-count blocks in policy order.",
+    "negativeRule": "Sort identities by decreasing value with the same deterministic tie-breaking, then assign contiguous exact-count blocks in policy order.",
+    "absentRule": "Uniformly permute identities independently of value, then assign contiguous exact-count blocks in policy order.",
+    "associationMetric": "Spearman correlation between midrank(value) and midrank(policy ordinal); eta-squared of value by policy is an order-invariant strength sensitivity.",
+    "seedVersion": "E04/S03/SHA256_COUNTER/v1",
+    "masterSeedHex": "e0403000000000000000000000000001",
+    "workerOrderUsedAsRandomness": false,
+    "runtimePairingBoundary": "Initial values and occupancy are paired. Runtime seeds share a base address, but the validated simulator also keys streams by content-derived scenarioId; transition randomness is therefore reproducible but not asserted identical across conditions."
+  },
+  "metrics": {
+    "primaryMagnitude": [
+      "corrected_final_publication_aggregation",
+      "corrected_auc_over_accepted_swap_progress"
+    ],
+    "primaryKinetics": [
+      "successful_swap_count",
+      "activation_count"
+    ],
+    "secondary": [
+      "corrected_peak_of_run",
+      "peak_progress_of_run",
+      "fraction_grid_above_composition_null",
+      "final_minority_homotypy_rate",
+      "final_minority_homotypy_excess"
+    ],
+    "compositionCorrection": "sum_k n_k(n_k-1)/n^2 for the publication /n score",
+    "minorityHomotypy": "same-minority linear edges divided by minority count; exact random expectation (n_minority-1)/n and lattice resolution 1/n_minority",
+    "peakBoundary": "Peak metrics are descriptive secondary outcomes and are not dynamic-null or maximum-selection corrected."
+  },
+  "primaryContrasts": {
+    "composition": {
+      "population": "absent-correlation pairwise conditions",
+      "contrasts": "first-policy count 10 vs 50 and 90 vs 50, separately by input profile and policy pair",
+      "contrastCountPerMetric": 12,
+      "interval": "paired 10000-draw bootstrap with Bonferroni 95% family coverage; individual confidence level 0.9958333333333333"
+    },
+    "correlation": {
+      "population": "50/50 pairwise and balanced_rotating three-way conditions",
+      "contrasts": "positive vs absent and negative vs absent, separately by input profile and policy set",
+      "contrastCountPerMetric": 16,
+      "interval": "paired 10000-draw bootstrap with Bonferroni 95% family coverage; individual confidence level 0.996875"
+    }
+  },
+  "secondaryUncertainty": {
+    "conditionScalarIntervals": "deterministic 10000-draw whole-run bootstrap 95% intervals",
+    "meanTrajectoryBands": "pointwise 95% t intervals; not simultaneous and not peak intervals",
+    "varianceAnalysis": "SD, IQR, unique lattice values, and paired-bootstrap extreme-to-balanced variance ratios",
+    "bootstrapSeedAddress": "SHA256(E04/S03/bootstrap/<estimand-address>)"
+  },
+  "successCriteria": {
+    "execution": "All 46500 intended runs are accounted for; exact counts, pairing, association direction, value conservation, baseline identities, and artifacts validate; no protected row is read.",
+    "compositionMagnitude": "At least one predeclared composition contrast has an adjusted interval excluding zero and absolute corrected-AUC difference at least 0.03.",
+    "correlationMagnitude": "At least one predeclared correlation contrast has an adjusted interval excluding zero and absolute corrected-final difference at least 0.05.",
+    "kinetics": "At least one predeclared composition or correlation contrast has an adjusted interval excluding zero and absolute accepted-swap difference at least 5% of its reference-condition mean.",
+    "supportive": "Execution plus all three scientific criteria pass.",
+    "null": "Execution passes but no usable composition/correlation signal meets the frozen practical criteria.",
+    "constrainingContradictory": "Execution passes but only a subset of the magnitude/kinetic hypothesis is supported, association control fails, or extreme discreteness materially limits the claimed scope."
+  },
+  "validation": {
+    "association": "Every positive run has rho > 0; every negative run has rho < 0; each absent condition has absolute mean rho <= 0.03 and at least 90% of absent-condition 95% mean intervals contain zero.",
+    "counts": "Every observed policy count equals its condition/replicate rule and sums to 100.",
+    "pairing": "Each of 500 input-profile/replicate blocks contains exactly 93 conditions with one immutable value/occupancy hash.",
+    "replay": "18 preregistered scenarios spanning both inputs, all correlations, and extreme/balanced pairwise or rare three-way classes replay exactly.",
+    "upstreamImmutability": "S01 and S02 manifests and every listed artifact retain their recorded hashes.",
+    "artifactChecks": "Schemas, row accounting, correction identities, interval ordering, figure presence, source commit, and manifest hashes all pass."
+  },
+  "claimBoundaries": [
+    "S03 estimates associations within the deterministic clean-room simulator, not biological effects.",
+    "The policy ordinal is a construction device; eta-squared is retained because policy is otherwise nominal.",
+    "Static composition correction does not replace the S05 static null distributions or S06 dynamic peak correction.",
+    "S03 does not measure alternative clustering metrics assigned to S04 and must stop before S04."
+  ]
+}
