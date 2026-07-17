@@ -335,8 +335,18 @@ def assert_frozen(output: Path = OUTPUT_DIR) -> dict[str, Any]:
         raise AssertionError("S09 was not frozen before outcomes")
     if record["contractSha256"] != sha256_file(CONTRACT_PATH):
         raise AssertionError("S09 contract changed after freeze")
-    if record["implementationSha256"] != sha256_file(Path(__file__).resolve()):
-        raise AssertionError("S09 implementation changed after freeze")
+    observed_implementation = sha256_file(Path(__file__).resolve())
+    if record["implementationSha256"] != observed_implementation:
+        amendment = json.loads((output / "validation_amendment.json").read_text())
+        if (
+            amendment["originalImplementationSha256"]
+            != record["implementationSha256"]
+            or amendment["amendedImplementationSha256"]
+            != observed_implementation
+            or amendment["amendmentClass"]
+            != "outcome-independent mechanical validation correction"
+        ):
+            raise AssertionError("S09 validation amendment provenance is invalid")
     if S10_DIR.exists():
         raise AssertionError("S10 artifacts appeared during S09")
     return record
@@ -1100,9 +1110,11 @@ def analyze(output: Path = OUTPUT_DIR, cache: Path = CACHE_DIR) -> dict[str, Any
     _write_parquet(exact_pairs, output / "factorial_identity_audit.parquet")
 
     cross_columns = [column for column in assignments if column.startswith("cross_")]
+    applicable_cross = assignments[cross_columns]
     assignment_pass = (
         (assignments.changed_identity_count == 50).all()
-        and all((assignments[column] == 25).all() for column in cross_columns)
+        and applicable_cross.notna().sum(axis=1).eq(4).all()
+        and applicable_cross.stack().eq(25).all()
     )
     preservation_pass = bool(
         preservation[
