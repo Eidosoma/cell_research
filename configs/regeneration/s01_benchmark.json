@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "e05.s01.task-spec.v1",
+  "researchStepId": "S01",
+  "benchmarkVersion": "E05-regeneration-task-v1",
+  "frozenQuestion": "Are sorting from random disorder and recovery after injury to an achieved or partial pattern operationally distinct tasks?",
+  "taskFamilies": [
+    {
+      "taskFamily": "development_random",
+      "startState": "outcome-blind random disorder with strictly positive target distance",
+      "preInjuryRequirement": null,
+      "injuryOnset": null,
+      "primaryTarget": "direction-specific non-strict sorted value sequence",
+      "secondaryTarget": null,
+      "successRule": "reach exact target distance zero within the development opportunity budget"
+    },
+    {
+      "taskFamily": "repair_achieved",
+      "startState": "post-injury state derived from a previously achieved and stabilized target",
+      "preInjuryRequirement": "target distance zero plus an absorbing-state and scheduler-coverage stabilization certificate",
+      "injuryOnset": "after the achieved-state stabilization certificate",
+      "primaryTarget": "restore exact target distance zero",
+      "secondaryTarget": "retain the restored target through the declared observation boundary",
+      "successRule": "return to exact target distance zero within the phase-local recovery opportunity budget"
+    },
+    {
+      "taskFamily": "repair_partial",
+      "startState": "post-injury state derived from an endogenous active checkpoint at first crossing of 50 percent inversion progress",
+      "preInjuryRequirement": "strictly positive pre-injury target distance below the initial random-disorder distance",
+      "injuryOnset": "atomic checkpoint immediately after the first 50 percent progress crossing",
+      "primaryTarget": "regain or improve the pre-injury strict-inversion distance",
+      "secondaryTarget": "reach exact target distance zero",
+      "successRule": "regain checkpoint quality and reach the final target within the phase-local recovery opportunity budget"
+    }
+  ],
+  "executionDefaults": {
+    "architecture": "distributed_local",
+    "scheduler": "uniform_random_activation",
+    "schedulerSensitivity": "random_permutation_sweep",
+    "mobility": "normal",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "actionFailure": "none",
+    "sensing": "exact",
+    "informationPermission": "policy_native_local"
+  },
+  "eventBudget": {
+    "profile": "profile_scaled_frozen_s07_v1",
+    "developmentOpportunities": "100*n^2",
+    "recoveryOpportunities": "100*n^2 after injury",
+    "terminalHandling": "budget exhaustion is failure for success and right censoring for time; quiescence is a competing failure",
+    "ledgerRule": "pre-injury, stabilization, injury, and recovery costs are retained separately and also summed; no phase cost is discarded"
+  },
+  "stabilization": {
+    "achievedRule": "target distance zero, no admissible occupancy-changing action, and complete post-target actor coverage without an accepted movement",
+    "uniformCoverageRule": "at least two opportunities per identity",
+    "uniformCoverageCap": "20*n opportunities",
+    "permutationSensitivityRule": "two complete sweeps (2*n opportunities)",
+    "partialRule": "no quiescent stabilization is imposed; the active checkpoint is captured atomically with state and internal-memory hashes"
+  },
+  "controls": [
+    "matched no-injury continuation from the identical pre-injury checkpoint",
+    "development from the paired original random-disorder scenario",
+    "future permanent-fault and spontaneous-recovery controls remain reserved for S04-S05"
+  ],
+  "pairing": {
+    "profile": "e05.s01.preinjury-shared-prefix-v1",
+    "sharedFields": [
+      "pairingBlockId",
+      "executableScenarioId",
+      "preInjuryStateHash",
+      "preInjuryEventIndex",
+      "runtimeSeed",
+      "injurySeed",
+      "policy",
+      "direction",
+      "eventBudgetProfile",
+      "recoveryBudget",
+      "rngPairingStatus"
+    ],
+    "rngStatus": "shared_prefix_until_arm_terminal"
+  },
+  "claimBoundary": "Repair and regeneration are operational simulator tasks only; success does not establish active biological repair, biological memory, learning, or causal mechanism outside the declared computational intervention.",
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "inputProfile": "counter_addressed_random_permutation_unique_values",
+    "injuryFixture": "s01_validation_adjacent_swap_v1"
+  }
+}
