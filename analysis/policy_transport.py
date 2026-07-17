@@ -20,6 +20,7 @@ import platform
 import subprocess
 import sys
 from typing import Any, Iterable, Mapping, Sequence
+import xml.etree.ElementTree as ET
 
 import joblib
 import matplotlib
@@ -1249,6 +1250,238 @@ def evaluate_model() -> dict[str, Any]:
     return decision
 
 
+def diagnostic_augmentation() -> dict[str, Any]:
+    """Add outcome-neutral uncertainty and feature-support diagnostics.
+
+    This stage is intentionally downstream of the sealed evaluation. It cannot
+    refit a model, change a threshold, or alter the adequacy decision.
+    """
+    assert_frozen()
+    model_record = json.loads((OUTPUT / "model_freeze_record.json").read_text())
+    if not model_record["externalOutcomesOpened"]:
+        raise AssertionError("diagnostics require the sealed evaluation first")
+    decision_before = sha256_file(OUTPUT / "adequacy_decision.json")
+    model_before = sha256_file(OUTPUT / "mechanism_model/policy_transport_model.joblib")
+    performance = pd.read_parquet(OUTPUT / "heldout_performance.parquet")
+
+    stratified_rows = []
+    stratifiers = [
+        ["regime", "correlation_profile"],
+        ["regime", "input_profile"],
+        ["regime", "policy_set_label"],
+        ["regime", "composition_profile"],
+    ]
+    for columns in stratifiers:
+        for keys, group in performance.groupby(columns, sort=True, dropna=False):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            rmse = float(np.sqrt(np.mean(group.rmse**2)))
+            baseline_rmse = float(np.sqrt(np.mean(group.baseline_rmse**2)))
+            row = {
+                "stratifier": "+".join(columns),
+                "conditions": len(group),
+                "rmse": rmse,
+                "baseline_rmse": baseline_rmse,
+                "rmse_improvement": 1.0 - rmse / baseline_rmse,
+                "peak_mae": float(group.peak_absolute_error.mean()),
+                "positive_area_mae": float(group.positive_area_absolute_error.mean()),
+                "mean_residual": float(group.mean_residual.mean()),
+                "median_lag1_residual_acf": float(group.lag1_residual_acf.median()),
+                "coverage": float(group.conformal_coverage.mean()),
+            }
+            for column, value in zip(columns, keys, strict=True):
+                row[column] = str(value)
+            stratified_rows.append(row)
+    write_parquet(
+        pd.DataFrame(stratified_rows), OUTPUT / "stratified_performance.parquet"
+    )
+
+    groups: list[tuple[str, str, pd.DataFrame]] = []
+    native = performance[
+        performance.evaluation_stratum.isin(
+            ["native_composition_holdout", "native_association_holdout"]
+        )
+    ]
+    groups.append(("native_external_combined", "native_control", native))
+    for (stratum, regime), group in performance.groupby(
+        ["evaluation_stratum", "regime"], sort=True
+    ):
+        groups.append((str(stratum), str(regime), group))
+    rng = np.random.Generator(np.random.PCG64DXSM(BOOTSTRAP_SEED))
+    uncertainty_rows = []
+    for stratum, regime, group in groups:
+        rmse_values = group.rmse.to_numpy()
+        baseline_values = group.baseline_rmse.to_numpy()
+        peak_values = group.peak_absolute_error.to_numpy()
+        area_values = group.positive_area_absolute_error.to_numpy()
+        residual_values = group.mean_residual.to_numpy()
+        indices = rng.integers(0, len(group), size=(10_000, len(group)))
+        rmse_draws = np.sqrt(np.mean(rmse_values[indices] ** 2, axis=1))
+        baseline_draws = np.sqrt(np.mean(baseline_values[indices] ** 2, axis=1))
+        draws = {
+            "rmse": rmse_draws,
+            "baseline_rmse": baseline_draws,
+            "rmse_improvement": 1.0 - rmse_draws / baseline_draws,
+            "peak_mae": np.mean(peak_values[indices], axis=1),
+            "positive_area_mae": np.mean(area_values[indices], axis=1),
+            "mean_residual": np.mean(residual_values[indices], axis=1),
+        }
+        for metric, values in draws.items():
+            uncertainty_rows.append(
+                {
+                    "evaluation_stratum": stratum,
+                    "regime": regime,
+                    "conditions": len(group),
+                    "bootstrap_draws": 10_000,
+                    "metric": metric,
+                    "estimate": float(np.mean(values)),
+                    "ci95_low": float(np.quantile(values, 0.025)),
+                    "ci95_high": float(np.quantile(values, 0.975)),
+                }
+            )
+    write_parquet(
+        pd.DataFrame(uncertainty_rows), OUTPUT / "performance_uncertainty.parquet"
+    )
+
+    transport = pd.read_parquet(OUTPUT / "transport_statistics.parquet")
+    split = pd.read_parquet(OUTPUT / "split_manifest.parquet")
+    trajectories = pd.read_parquet(
+        "/artifacts/research_steps/S07/observed_kinetic_trajectories.parquet"
+    )
+    initial = trajectories[trajectories.progress == 0.0][
+        ["regime", "condition_id", "corrected_mean"]
+    ].rename(columns={"corrected_mean": "initial_corrected"})
+    scenario = pd.read_parquet(
+        S03_MANIFEST,
+        columns=[
+            "scenario_id",
+            "achieved_spearman_rho",
+            "achieved_eta_squared",
+            "input_profile",
+        ],
+    )
+    split_covariates = split.merge(scenario, on="scenario_id", how="left")
+    condition_covariates = (
+        split_covariates.groupby(["regime", "condition_id", "split"], sort=True)
+        .agg(
+            achieved_spearman_rho=("achieved_spearman_rho", "mean"),
+            achieved_eta_squared=("achieved_eta_squared", "mean"),
+            unique_input=(
+                "input_profile",
+                lambda values: float(str(values.iloc[0]).startswith("unique")),
+            ),
+        )
+        .reset_index()
+    )
+    metric_pivot = transport.pivot_table(
+        index=["regime", "condition_id", "split"],
+        columns="policy",
+        values=[
+            "actor_velocity",
+            "collision_load",
+            "experienced_flux",
+            "residence_time",
+            "policy_count",
+            "policy_present",
+        ],
+        aggfunc="mean",
+        fill_value=0.0,
+    )
+    metric_pivot.columns = [
+        (
+            f"fraction_{policy.lower()}"
+            if metric == "policy_count"
+            else f"present_{policy.lower()}"
+            if metric == "policy_present"
+            else f"{metric}_{policy.lower()}"
+        )
+        for metric, policy in metric_pivot.columns
+    ]
+    metric_pivot = metric_pivot.reset_index()
+    for name in [column for column in metric_pivot if column.startswith("fraction_")]:
+        metric_pivot[name] /= 100.0
+    condition_features = (
+        metric_pivot.merge(
+            condition_covariates,
+            on=["regime", "condition_id", "split"],
+            how="left",
+        )
+        .merge(initial, on=["regime", "condition_id"], how="left")
+        .sort_values(["regime", "condition_id"])
+        .reset_index(drop=True)
+    )
+    names = STATIC_NAMES + TRANSPORT_NAMES
+    development = condition_features[
+        condition_features.split.isin(["development_fit", "development_calibration"])
+    ].drop_duplicates(["regime", "condition_id"])
+    evaluation = condition_features[
+        ~condition_features.split.isin(["development_fit", "development_calibration"])
+    ].copy()
+    center = development[names].mean(axis=0).to_numpy()
+    scale = development[names].std(axis=0, ddof=1).replace(0.0, 1.0).to_numpy()
+    development_z = (development[names].to_numpy() - center) / scale
+    evaluation_z = (evaluation[names].to_numpy() - center) / scale
+    distances = np.sqrt(
+        np.min(
+            np.sum(
+                (evaluation_z[:, None, :] - development_z[None, :, :]) ** 2,
+                axis=2,
+            ),
+            axis=1,
+        )
+    )
+    evaluation["nearest_development_distance"] = distances
+    support = evaluation.merge(
+        performance[
+            [
+                "regime",
+                "condition_id",
+                "rmse",
+                "baseline_rmse",
+                "mean_residual",
+                "lag1_residual_acf",
+            ]
+        ],
+        on=["regime", "condition_id"],
+        how="left",
+    )
+    support["out_of_support"] = support.nearest_development_distance > float(
+        np.quantile(distances, 0.75)
+    )
+    write_parquet(support, OUTPUT / "support_diagnostics.parquet")
+    finite = support[["nearest_development_distance", "rmse"]].dropna()
+    distance_rmse_correlation = float(
+        finite.nearest_development_distance.corr(finite.rmse, method="spearman")
+    )
+    amendment = {
+        "schema": "e04.s12.postfreeze_diagnostic_amendment.v1",
+        "researchStepId": "S12",
+        "purpose": "Add condition-bootstrap uncertainty and frozen-feature support-distance diagnostics after sealed evaluation.",
+        "modelRefit": False,
+        "modelFamilyChanged": False,
+        "featuresChanged": False,
+        "thresholdsChanged": False,
+        "adequacyDecisionChanged": False,
+        "modelSha256Before": model_before,
+        "modelSha256After": sha256_file(
+            OUTPUT / "mechanism_model/policy_transport_model.joblib"
+        ),
+        "adequacyDecisionSha256Before": decision_before,
+        "adequacyDecisionSha256After": sha256_file(OUTPUT / "adequacy_decision.json"),
+        "bootstrapDrawsPerGroup": 10_000,
+        "featureSupportDimensions": len(names),
+        "distanceRmseSpearman": distance_rmse_correlation,
+    }
+    if (
+        amendment["modelSha256Before"] != amendment["modelSha256After"]
+        or amendment["adequacyDecisionSha256Before"]
+        != amendment["adequacyDecisionSha256After"]
+    ):
+        raise AssertionError("diagnostic augmentation changed frozen inference")
+    write_json(OUTPUT / "postfreeze_diagnostic_amendment.json", amendment)
+    return amendment
+
+
 def _write_model_diagnostics(bundle: Mapping[str, Any]) -> None:
     primary = bundle["primary"]
     names = STATIC_NAMES + TRANSPORT_NAMES
@@ -1420,6 +1653,32 @@ def finalize() -> dict[str, Any]:
     decision = json.loads((OUTPUT / "adequacy_decision.json").read_text())
     validation = json.loads((OUTPUT / "transport_validation.json").read_text())
     accounting = json.loads((OUTPUT / "evaluation_accounting.json").read_text())
+    fit_rows, _, _ = load_development()
+    replay_rows = fit_rows[:32]
+    replay_x = feature_matrix(replay_rows, True)
+    replay_y0 = curve_matrix(replay_rows)[:, 0]
+    first_bundle = joblib.load(OUTPUT / "mechanism_model/policy_transport_model.joblib")
+    second_bundle = joblib.load(
+        OUTPUT / "mechanism_model/policy_transport_model.joblib"
+    )
+    for bundle in (first_bundle, second_bundle):
+        regressor = bundle["primary"].get("regressor")
+        if hasattr(regressor, "n_jobs"):
+            regressor.n_jobs = 1
+    first_prediction = predict_model(first_bundle["primary"], replay_x, replay_y0)
+    second_prediction = predict_model(second_bundle["primary"], replay_x, replay_y0)
+    deterministic = {
+        "schema": "e04.s12.deterministic_model_replay.v1",
+        "researchStepId": "S12",
+        "rows": len(replay_rows),
+        "firstSha256": hashlib.sha256(first_prediction.tobytes()).hexdigest(),
+        "secondSha256": hashlib.sha256(second_prediction.tobytes()).hexdigest(),
+        "maxAbsoluteError": float(np.max(np.abs(first_prediction - second_prediction))),
+        "bitwisePassed": bool(np.array_equal(first_prediction, second_prediction)),
+        "numericalTolerance": 1e-15,
+        "passed": bool(np.max(np.abs(first_prediction - second_prediction)) <= 1e-15),
+    }
+    write_json(OUTPUT / "deterministic_model_replay.json", deterministic)
     upstream_after = {}
     for step in [f"S{i:02d}" for i in range(1, 12)] + ["S11R"]:
         upstream_after[step] = _verify_manifest(
@@ -1447,6 +1706,26 @@ def finalize() -> dict[str, Any]:
         "gitCommitBeforeS12": _git("rev-parse", "HEAD"),
     }
     write_json(OUTPUT / "environment.json", environment)
+    junit_path = OUTPUT / "repository_tests.junit.xml"
+    test_cases = failures = errors = skipped = 0
+    if junit_path.exists():
+        root = ET.parse(junit_path).getroot()
+        suites = [root] if root.tag == "testsuite" else list(root.findall("testsuite"))
+        test_cases = sum(int(float(suite.attrib.get("tests", 0))) for suite in suites)
+        failures = sum(int(float(suite.attrib.get("failures", 0))) for suite in suites)
+        errors = sum(int(float(suite.attrib.get("errors", 0))) for suite in suites)
+        skipped = sum(int(float(suite.attrib.get("skipped", 0))) for suite in suites)
+    tests = {
+        "schema": "e04.s12.test_summary.v1",
+        "researchStepId": "S12",
+        "tests": test_cases,
+        "failures": failures,
+        "errors": errors,
+        "skipped": skipped,
+        "passed": junit_path.exists() and failures == 0 and errors == 0,
+        "junitPath": str(junit_path),
+    }
+    write_json(OUTPUT / "test_summary.json", tests)
     validation_summary = {
         "schema": "e04.s12.validation_summary.v1",
         "researchStepId": "S12",
@@ -1454,12 +1733,16 @@ def finalize() -> dict[str, Any]:
             validation["passed"]
             and immutability["allPassed"]
             and immutability["s13Absent"]
+            and deterministic["passed"]
+            and tests["passed"]
         ),
         "transport": validation,
         "accounting": accounting,
         "upstreamImmutability": immutability["allPassed"],
         "s13Absent": immutability["s13Absent"],
         "modelFreezePassed": True,
+        "deterministicModelReplay": deterministic,
+        "repositoryTests": tests,
     }
     write_json(OUTPUT / "validation_summary.json", validation_summary)
     status = {
@@ -1467,7 +1750,20 @@ def finalize() -> dict[str, Any]:
         "stepNumber": 12,
         "success": validation_summary["success"],
         "status": "complete" if validation_summary["success"] else "blocked",
-        "artifactsWritten": [],
+        "artifactsWritten": [
+            "mechanism_model/",
+            "transport_statistics.parquet",
+            "transport_summary.csv",
+            "heldout_predictions.parquet",
+            "heldout_performance.parquet",
+            "fit_diagnostics.parquet",
+            "failure_regions.parquet",
+            "residual_diagnostics.parquet",
+            "support_diagnostics.parquet",
+            "performance_uncertainty.parquet",
+            "research_step_full_results.md",
+            "artifact_manifest.json",
+        ],
         "validationResult": "passed" if validation_summary["success"] else "failed",
         "outcomeClassification": decision["outcomeClassification"],
         "caveatsOrBlockers": [
@@ -1478,12 +1774,50 @@ def finalize() -> dict[str, Any]:
         "recommendedNextAction": "Return S12 to the Chief Scientist; do not start S13 automatically.",
     }
     write_json(OUTPUT / "status.json", status)
+    write_json(
+        OUTPUT / "commands.json",
+        {
+            "schema": "e04.s12.commands.v1",
+            "researchStepId": "S12",
+            "commands": [
+                "PYTHONPATH=. python analysis/policy_transport.py freeze",
+                "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. python analysis/policy_transport.py fit",
+                "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. python analysis/policy_transport.py evaluate",
+                "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. python analysis/policy_transport.py diagnose",
+                "ruff check analysis/policy_transport.py tests/test_policy_transport.py",
+                "PYTHONPATH=. pytest -q --junitxml=/artifacts/research_steps/S12/repository_tests.junit.xml <14 E04 test modules>",
+                "PYTHONPATH=. python analysis/policy_transport.py finalize",
+            ],
+        },
+    )
+    write_json(
+        OUTPUT / "provenance.json",
+        {
+            "schema": "e04.s12.provenance.v1",
+            "researchStepId": "S12",
+            "repository": str(REPOSITORY),
+            "sourceCommit": _git("rev-parse", "HEAD"),
+            "branch": _git("branch", "--show-current"),
+            "contractPath": str(CONTRACT),
+            "contractSha256": sha256_file(CONTRACT),
+            "modelPath": str(OUTPUT / "mechanism_model/policy_transport_model.joblib"),
+            "modelSha256": sha256_file(
+                OUTPUT / "mechanism_model/policy_transport_model.joblib"
+            ),
+            "sourceCorpus": json.loads((OUTPUT / "freeze_record.json").read_text())[
+                "rawCorpus"
+            ],
+            "s11rConstraint": "No completion-feasible corrective value intervention was available; S11 Shapley outputs were excluded from S12.",
+        },
+    )
     return {"decision": decision, "validation": validation_summary}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["freeze", "fit", "evaluate", "finalize"])
+    parser.add_argument(
+        "stage", choices=["freeze", "fit", "evaluate", "diagnose", "finalize"]
+    )
     return parser.parse_args()
 
 
@@ -1495,6 +1829,8 @@ def main() -> None:
         result = fit_models()
     elif args.stage == "evaluate":
         result = evaluate_model()
+    elif args.stage == "diagnose":
+        result = diagnostic_augmentation()
     else:
         result = finalize()
     print(json.dumps(_native(result), indent=2, sort_keys=True))
