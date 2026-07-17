@@ -1,0 +1,172 @@
+{
+  "schema": "e04.s14.aggregation_classification_contract.v1",
+  "researchStepId": "S14",
+  "title": "Classify the aggregation phenomenon",
+  "frozenBeforeSynthesis": true,
+  "frozenQuestion": "What bounded mechanism classification is justified by S01-S13 for chimeric aggregation after correcting measurement, chance, kinetics, identity, intervention, prediction, and conflicting-goal phase behavior?",
+  "scope": {
+    "starts": "S14",
+    "stopsBefore": "final report bundle generation or any successor experiment",
+    "evidenceUniverse": [
+      "E01 clean-room transition semantics and release boundary",
+      "E04 S01-S13 and S11R validated artifacts and canonical reports",
+      "the supplied paper's aggregation and opposing-goal claims"
+    ],
+    "claimBoundary": "Classifications describe the validated one-dimensional clean-room simulator and the tested conditions. They do not establish biological affinity, intention, emergent goals, a general transport mechanism, validated mediation, or a thermodynamic phase transition."
+  },
+  "classificationVocabulary": {
+    "supported_bounded": "The prespecified relevant gate passed within its named simulator support and no downstream evidence invalidated that bounded statement.",
+    "supported_conditioning_sensitive": "The primary gate passed, but a scientifically defensible conditioning choice removes or materially attenuates the result; both views must be retained.",
+    "partially_supported": "A named sub-gate passed but the composite or stronger terminology gate failed.",
+    "null_not_supported": "A valid prespecified test did not support the claim under the tested conditions; this is not evidence of universal absence.",
+    "constraining_contradictory": "The evidence invalidates or materially narrows a prior assumption, generalization, or interpretation.",
+    "not_identified": "The required intervention, feasibility, completion, or transfer gate failed, so no causal or general mechanism estimate is permitted."
+  },
+  "evidencePrecedence": [
+    "Preserve paper wording separately from E01 clean-room evidence; historical arrays and publication streams remain unavailable.",
+    "Require composition correction before interpreting the paper-denominator aggregation score.",
+    "Use dynamic null maxima for peak claims and peak plus positive area for persistence; duration alone is non-discriminating.",
+    "Treat global, mobility-matched, and value-conditioned nulls as different hypotheses, not interchangeable answers.",
+    "Give validated state-matched interventions and action-irrelevant controls precedence over observational metric correlations.",
+    "Do not interpret infeasible matching, failed completion comparability, or invalid assignment matching as a causal estimate.",
+    "Treat predictive adequacy as distinct from causal identification and require held-out transfer before generalizing a model.",
+    "Require state plus turnover/flux evidence and long-budget stability for dynamic regime terms."
+  ],
+  "decisionGates": [
+    {
+      "gateId": "G01_MEASUREMENT",
+      "question": "Is the aggregation score centered on the exact finite-n composition expectation and interpreted with duplicate-value limitations?",
+      "passEvidence": ["S02", "S04"],
+      "failureConsequence": "Raw distance from 0.5 cannot be called excess aggregation."
+    },
+    {
+      "gateId": "G02_DYNAMIC_CHANCE",
+      "question": "Do corrected peak and positive-area effects survive trajectory-level maximum correction under a declared null?",
+      "passEvidence": ["S05", "S06"],
+      "failureConsequence": "The signal is classified as compatible with the named chance model."
+    },
+    {
+      "gateId": "G03_IDENTITY",
+      "question": "Do action-irrelevant labels leave transitions unchanged while executable-policy switches alter continuation outcomes?",
+      "passEvidence": ["S08", "S09"],
+      "failureConsequence": "Behavior-linked identity cannot be distinguished from label grouping."
+    },
+    {
+      "gateId": "G04_KINETICS",
+      "question": "Is a label-blind kinetic intervention feasible, balanced, completion-comparable, and outcome-informative?",
+      "passEvidence": ["S07"],
+      "failureConsequence": "Only the feasible component may be interpreted; unmatched joint kinetics remain not identified."
+    },
+    {
+      "gateId": "G05_ATTRACTOR",
+      "question": "Do validity, intervention, completion, restoration, timing, and null-excess gates all pass after de-clustering?",
+      "passEvidence": ["S10"],
+      "failureConsequence": "Partial restoration may be reported, but operational attractor terminology is prohibited."
+    },
+    {
+      "gateId": "G06_MEDIATION",
+      "question": "Does a corrected, target-attaining value intervention pass completion comparability before holdout outcomes are opened?",
+      "passEvidence": ["S11R"],
+      "failureConsequence": "S11 remains descriptive and validated mediation or component separation is prohibited."
+    },
+    {
+      "gateId": "G07_TRANSPORT",
+      "question": "Does a frozen transport model beat simple baselines across held-out compositions, strong policy-value association, and interventions without structured residual failure?",
+      "passEvidence": ["S12"],
+      "failureConsequence": "Predictive use is restricted to passed support; no general transport mechanism is claimed."
+    },
+    {
+      "gateId": "G08_PHASE",
+      "question": "Does each regime satisfy its frozen state and turnover/flux definition with replicate and longer-budget support?",
+      "passEvidence": ["S13"],
+      "failureConsequence": "Plateaus are not relabeled as equilibrium, oscillation, metastability, or a phase transition."
+    }
+  ],
+  "terminology": {
+    "permitted": [
+      "composition-corrected aggregation",
+      "transient spatial dependence",
+      "behavior-linked executable-policy identity",
+      "partial restoration",
+      "fixed quiescence",
+      "flux-supported dynamic equilibrium",
+      "active dominance",
+      "local predictive adequacy",
+      "mixed-origin behavior-linked process"
+    ],
+    "qualifiedOnly": {
+      "aggregation": "Name the metric, denominator, composition correction, and null family.",
+      "path dependence": "Restrict to deterministic state-matched clean-room continuations and disclosed cursor semantics.",
+      "kinetic contribution": "State that activation opportunity was feasible but full kinetic matching was infeasible.",
+      "equilibrium": "Use dynamic equilibrium only when sustained turnover/flux and long-budget stability pass; otherwise use fixed quiescence or unresolved transient.",
+      "dominance": "Use only the S13 operational active-dominance definition within the tested grid.",
+      "phase behavior": "Use as a finite factorial regime map, not a thermodynamic phase transition."
+    },
+    "prohibitedAsPositiveClaims": [
+      "operational attractor",
+      "validated mediation",
+      "general transport mechanism",
+      "oscillation",
+      "metastability",
+      "biological affinity",
+      "attraction",
+      "preference",
+      "intention",
+      "emergent goal",
+      "thermodynamic phase transition"
+    ],
+    "negativeReportingRule": "A prohibited positive term may appear only to state that its prespecified gate failed, it was not detected, or it is outside the evidence boundary."
+  },
+  "overallClassificationRule": {
+    "supportive": "Measurement and dynamic-chance gates pass; identity controls distinguish inert labels from executable policies; and the final wording retains every failed stronger gate and conditioning sensitivity.",
+    "null": "Corrected aggregation does not survive the declared dynamic nulls, without contradiction of a prior assumption.",
+    "constrainingContradictory": "The synthesis cannot distinguish action-relevant policy behavior from labels/chance, or a claimed general mechanism survives only by ignoring a failed feasibility, conditioning, transfer, or phase gate."
+  },
+  "benchmarkRequirements": {
+    "families": [
+      "composition and denominator fixtures",
+      "balanced absent-association dynamic-null anchors",
+      "policy-value association stress tests",
+      "action-irrelevant identity controls",
+      "state-matched policy and label switches",
+      "de-clustering restoration challenge",
+      "kinetic feasibility and transfer failures",
+      "fixed-quiescent, flux-supported equilibrium, active-dominance, and unresolved phase exemplars"
+    ],
+    "requiredFields": [
+      "benchmarkId",
+      "sourceStep",
+      "sourceArtifact",
+      "conditionSelector",
+      "endpoint",
+      "expectedDecision",
+      "acceptanceRule",
+      "splitRole",
+      "claimBoundary"
+    ],
+    "e07Rule": "Confirmation rows are held out from policy search and surrogate training."
+  },
+  "reportInputRequirements": [
+    "lay summary",
+    "claim matrix",
+    "evidence index",
+    "caveat index",
+    "provenance index",
+    "figure index",
+    "table index",
+    "terminology audit",
+    "benchmark index",
+    "E06/E07 handoff",
+    "report-input manifest"
+  ],
+  "validation": [
+    "all manifest-listed S01-S13 and S11R artifacts hash-match before and after S14",
+    "every claim has at least one evidence link, one caveat, one bounded classification, and one decision-gate mapping",
+    "every local artifact/index link exists and every recorded SHA-256 matches",
+    "every upstream PNG is indexed and every upstream CSV/Parquet table is indexed",
+    "terminology scan permits prohibited terms only in explicit negative or boundary statements",
+    "benchmark selectors resolve to nonempty source rows and include all required families",
+    "report inputs are complete but no final report bundle, PDF, HTML, or combined manuscript is generated",
+    "focused tests and deterministic synthesis replay pass"
+  ]
+}
