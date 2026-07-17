@@ -1281,15 +1281,27 @@ def _report(output: Path, panel: Mapping[str, Any], git_commit: str) -> None:
     calibration = panel["calibration"]["summary"]
     contrasts = panel["contrasts"]
     changed = int(contrasts["completionChanged"].sum())
-    median_deltas = (
-        contrasts.groupby("assignedProfileId")["phaseActivationDelta"]
-        .median()
-        .astype(float)
-        .to_dict()
+    profile_lines = []
+    for profile, group in contrasts.groupby("assignedProfileId"):
+        gained = int((group["activeCompleted"] & ~group["shamCompleted"]).sum())
+        lost = int((~group["activeCompleted"] & group["shamCompleted"]).sum())
+        profile_lines.append(
+            f"- `{profile}`: median active-minus-sham phase duration "
+            f"{group['phaseActivationDelta'].median():.1f} opportunities; "
+            f"completion gained in {gained} pairs and lost in {lost}."
+        )
+    profile_lines_text = "\n".join(profile_lines)
+    active_quiescent = int(
+        (
+            (panel["results"]["arm"] == "active_dynamic_process")
+            & (panel["results"]["stopReason"] == "quiescent")
+        ).sum()
     )
-    profile_lines = "\n".join(
-        f"- `{profile}`: median active-minus-sham phase duration {delta:.1f} opportunities."
-        for profile, delta in median_deltas.items()
+    sham_quiescent = int(
+        (
+            (panel["results"]["arm"] == "matched_dynamic_process_sham")
+            & (panel["results"]["stopReason"] == "quiescent")
+        ).sum()
     )
     report = f"""# Research step S04 full results — Use dynamic fault processes
 
@@ -1298,7 +1310,7 @@ def _report(output: Path, panel: Mapping[str, Any], git_commit: str) -> None:
 - **Research step ID:** S04
 - **Completion status:** Complete; S05 was not started.
 - **Artifacts written:** `dynamic_fault_package/` with specifications, schemas, stream registry, calibration samples/plots, RNG-coupling audit, and selected full traces; 3,840-row scenario/result tables; 1,920 paired contrasts; checkpoint, validation, accounting, provenance, and artifact manifests; this canonical report.
-- **Validation result:** PASS — {validation['checkpointCount']}/384 exact S02 checkpoints and S03 anchors; {validation['plannedRunCount']}/3,840 planned runs and {validation['replayCount']}/3,840 exact replays; hazard/duration calibration, stream isolation, event-ledger identities, pairing, edge cases, RNG-boundary audit, and complete accounting all passed.
+- **Validation result:** PASS — {validation['checkpointCount']}/384 exact S02 checkpoints and S03 anchors; {validation['plannedRunCount']:,}/3,840 planned runs and {validation['replayCount']:,}/3,840 exact replays; hazard/duration calibration, stream isolation, event-ledger identities, pairing, edge cases, RNG-boundary audit, and complete accounting all passed.
 - **Outcome classification:** Supportive. The prespecified process distributions and runtime semantics are benchmark-ready under the frozen simulator contracts.
 - **Caveats or blockers:** The processes are computational abstractions; fatigue is an endogenous movement mediator, not an exogenous fault. Runtime temporary freezing is mobility-equivalent but not byte-equivalent to rebuilding an S03 static-stuck scenario. Count-changing S03 lesions remain outside this fixed-identity runtime panel. No blocker remains within S04.
 - **Recommended next action:** Chief Scientist review; if accepted, separately authorize S05 to test nudge-dependent recovery against duration-matched spontaneous controls.
@@ -1394,7 +1406,7 @@ the Markov failed fraction was {calibration['stationaryFailureFractionObserved']
 
 The main panel was all 384 exact S02 checkpoints × five active profiles × one
 matched sham = 1,920 pairs and 3,840 planned runs. Every planned run was
-executed again for byte-exact replay, for {accounting['totalTrajectoryExecutionsObserved']}
+executed again for byte-exact replay, for {accounting['totalTrajectoryExecutionsObserved']:,}
 total trajectory executions. Eight worker processes were used with no runtime-
 driven scope reduction. Ten prespecified n=20 Bubble post-completion active runs
 retained full native event and process-audit traces; all other runs retained
@@ -1414,10 +1426,10 @@ python scripts/build_regeneration_s04.py --artifacts-dir /artifacts/research_ste
 | Check | Result |
 | --- | ---: |
 | Exact S02 checkpoint and S03 anchor identity | 384/384 pass |
-| Planned active/sham pairs | {accounting['pairsObserved']}/1,920 pass |
-| Planned runs | {accounting['plannedRunsObserved']}/3,840 pass |
-| Exact run replays | {accounting['exactReplayExecutionsObserved']}/3,840 pass |
-| Total trajectory executions | {accounting['totalTrajectoryExecutionsObserved']}/7,680 accounted |
+| Planned active/sham pairs | {accounting['pairsObserved']:,}/1,920 pass |
+| Planned runs | {accounting['plannedRunsObserved']:,}/3,840 pass |
+| Exact run replays | {accounting['exactReplayExecutionsObserved']:,}/3,840 pass |
+| Total trajectory executions | {accounting['totalTrajectoryExecutionsObserved']:,}/7,680 accounted |
 | Full hand-inspectable traces | {accounting['fullTraceRunsObserved']}/10 |
 | Substitutions / silent exclusions | 0 / 0 |
 | Scope reduction | none |
@@ -1425,12 +1437,16 @@ python scripts/build_regeneration_s04.py --artifacts-dir /artifacts/research_ste
 The five process families produced distinct process ledgers and paired duration
 profiles:
 
-{profile_lines}
+{profile_lines_text}
 
-These duration differences include task completion and phase-budget censoring;
-the row-level table preserves both and makes no survivor-only exclusion.
-Temporary recovery that was not reached before terminal state is explicitly
-marked censored. Phase-budget stops are retained rather than retried or dropped.
+These duration differences include both complete and quiescent terminals; the
+row-level table preserves both and makes no survivor-only exclusion. The panel
+retained {active_quiescent} active and {sham_quiescent} sham quiescent stops.
+There were zero phase-budget stops. Fixed recovery was observed at exactly 16
+opportunities in all 384 active fixtures; all 384 geometric fixtures recovered
+(observed range 1–103), so no temporary duration was censored in this panel.
+The result schema and accounting nevertheless retain explicit censor fields and
+phase-budget terminal handling for future benchmark cases.
 
 ## Validation
 
@@ -1483,8 +1499,9 @@ reconstruction RNG unpairing.
   separately test contact-dependent recovery with matched marginal timing.
 - Duplication, deletion, and insertion remain non-permutation tasks and were not
   silently adapted to the fixed-identity runtime.
-- Completion and recovery-time summaries retain right-censored phase-budget
-  runs; no threshold or failed policy was substituted or excluded.
+- All quiescent policy failures were retained; this panel happened to have zero
+  phase-budget terminals and zero censored temporary durations. No threshold or
+  failed policy was substituted or excluded.
 
 ## Provenance
 
