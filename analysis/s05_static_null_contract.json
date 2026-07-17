@@ -1,0 +1,177 @@
+{
+  "schema": "e04.s05.static_null_contract.v1",
+  "researchStepId": "S05",
+  "title": "Construct static null distributions",
+  "frozenAtUtc": "2026-07-17T04:50:19Z",
+  "frozenBeforePopulationAnalysis": true,
+  "prePopulationAmendment": {
+    "amendedAtUtc": "2026-07-17T04:50:19Z",
+    "originalContractSha256": "34a8479914812ecf7b142d0f710f236abae1ca978d4b6a68771d0b6597498ec1",
+    "trigger": "The first uniformity-only validation, before any population replay or null-corpus generation, showed that a fixed total-variation cutoff of 0.01 is below ordinary multinomial fluctuation for 210 support points at 210,000 draws. The fixture otherwise had full support, zero preservation violations, and chi-square p=0.232068.",
+    "change": "Replace the fixed TV<=0.01 rule by a support-size-aware bound TV<=max(0.01, 2*sqrt((supportSize-1)/(2*pi*draws))).",
+    "unchanged": "Null hypotheses, sufficient statistics, populations, seeds, draw counts, metrics, inference, success gates, and all other validation rules."
+  },
+  "question": "At fixed accepted-swap progress points, do observed policy-label arrangements exceed valid static label-permutation distributions after fixing exact composition, and how does inference change when policy-value association is also fixed?",
+  "sourcePopulation": {
+    "s04Table": "/artifacts/research_steps/S04/aggregation_metrics.parquet",
+    "s04ExpectedBytes": 75335939,
+    "s04ExpectedSha256": "97ce5985d9dc9b666f8c16345a2c678535037c53ad58867fc8305c975e6db647",
+    "scenarioCount": 46500,
+    "conditionCount": 186,
+    "replicatesPerCondition": 250,
+    "fullPointwiseGrid": [
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+      20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+      30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+      40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+      50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+      60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+      70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+      80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+      90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
+    ],
+    "conditionalAuditGrid": [0, 25, 50, 75, 100],
+    "conditionalAuditReplicateOrdinals": [
+      0, 10, 20, 30, 40, 50, 60, 70, 80, 90,
+      100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+      200, 210, 220, 230, 240
+    ],
+    "conditionalAuditScenarioCount": 4650,
+    "conditionalAuditSnapshotCount": 23250,
+    "protectedData": false
+  },
+  "nullHypotheses": [
+    {
+      "id": "global_count_fixed",
+      "role": "unconditional with respect to policy-value association",
+      "exchangeability": "Uniformly permute policy labels over all fixed position indices.",
+      "preserves": [
+        "open-path position coordinate and adjacency graph",
+        "the observed value at every position",
+        "the exact global count of every policy label",
+        "array length and all non-label state components"
+      ],
+      "doesNotPreserve": [
+        "policy label at its observed position",
+        "policy-by-value or policy-by-value-bin contingency",
+        "spatial label adjacency"
+      ],
+      "hypothesis": "Conditional on the fixed scaffold and exact global counts, every distinct global policy-label arrangement is equally likely.",
+      "interpretation": "Tests total static policy-label structure, including structure mediated by policy-value association."
+    },
+    {
+      "id": "value_stratum_count_fixed",
+      "role": "conditional on policy-value association",
+      "exchangeability": "Uniformly and independently permute policy labels within prespecified value strata while leaving the fixed position/value scaffold unchanged.",
+      "strata": {
+        "repeated_1_10_x10": "exact numeric value; ten strata of size ten",
+        "unique_1_100": "fixed numeric value deciles 1-10, 11-20, ..., 91-100; ten strata of size ten"
+      },
+      "preserves": [
+        "all sufficient statistics preserved by global_count_fixed",
+        "the exact policy-by-exact-value contingency for repeated inputs",
+        "the exact policy-by-value-decile contingency for unique inputs"
+      ],
+      "doesNotPreserve": [
+        "policy label at its observed position within a stratum",
+        "within-stratum spatial label adjacency"
+      ],
+      "hypothesis": "Conditional on the fixed scaffold and exact policy counts within every frozen value stratum, every distinct within-stratum policy-label arrangement is equally likely.",
+      "interpretation": "Tests spatial structure beyond the frozen resolution of policy-value association; it can remove a real policy-mediated mechanism and is not automatically the preferred null."
+    },
+    {
+      "id": "exact_value_count_fixed_unique_sensitivity",
+      "role": "over-conditioning diagnostic only",
+      "exchangeability": "For unique values, permute labels only among positions carrying the identical numeric value.",
+      "preserves": [
+        "the complete policy-by-exact-value assignment"
+      ],
+      "supportSize": 1,
+      "hypothesis": "No nontrivial exchangeability remains because every value stratum is a singleton.",
+      "interpretation": "No p-value is defined; reporting the degeneracy guards against over-conditioning away the entire mechanism."
+    }
+  ],
+  "metrics": {
+    "fullPointwise": [
+      "corrected_publication_aggregation",
+      "categorical_assortativity",
+      "largest_label_capture",
+      "signed_neighbor_nmi"
+    ],
+    "conditionalAudit": [
+      "corrected_publication_aggregation",
+      "categorical_assortativity",
+      "largest_label_capture",
+      "signed_neighbor_nmi",
+      "equal_value_corrected_excess"
+    ],
+    "upperTailDirection": "larger values indicate stronger homotypic clustering for every reported metric",
+    "excluded": {
+      "mean_run_length": "algebraically redundant with adjacency on the open path",
+      "neighbor_nmi": "unsigned and therefore also rewards alternation",
+      "equal_value_corrected_excess_on_unique_inputs": "structurally undefined because there are no equal-value adjacent edges"
+    }
+  },
+  "sampling": {
+    "generator": "NumPy PCG64DXSM with SHA-256-addressed 128-bit seeds",
+    "distinctArrangementRule": "Permute labeled positions uniformly; because each distinct multiset arrangement has the same product of label-count factorial preimages, induced distinct label arrangements are uniform.",
+    "globalCompositionProfiles": [
+      [90, 10],
+      [80, 20],
+      [70, 30],
+      [60, 40],
+      [50, 50],
+      [45, 45, 10],
+      [34, 33, 33]
+    ],
+    "globalArrangementDrawsPerProfile": 250000,
+    "globalIndependentCalibrationDrawsPerProfile": 100000,
+    "globalGroupMeanDrawsPerProfileAndGroupSize": 10000,
+    "globalGroupSizes": [25, 250],
+    "conditionalDrawsPerConditionGrid": 2000,
+    "conditionalReplicatesPerConditionGrid": 25,
+    "uniformityDrawsPerFixture": 210000,
+    "seedNamespace": "E04/S05/static_nulls/v1",
+    "workerLimit": 8,
+    "threadEnvironment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "inference": {
+    "observedUnitFullPointwise": "condition mean over all 250 paired scenarios at each of 101 fixed grid points",
+    "observedUnitConditionalAudit": "condition mean over the frozen 25-scenario subset at each of five fixed grid points",
+    "pValue": "one-sided conservative Monte Carlo p=(1+number of null statistics greater than or equal to observed)/(B+1)",
+    "calibrationPValue": "randomized upper-tail p=(number strictly greater + U*(number tied + 1))/(B+1), with independent U, used only for false-positive calibration",
+    "multiplicity": "Benjamini-Hochberg q-values within each grid point, metric, and null family across the 186 conditions",
+    "pointwiseBoundary": "No maximum, earliest crossing, duration, area above threshold, or ever-significant statistic is a confirmatory S05 result; those trajectory-level questions belong to S06.",
+    "conditioningComparison": "Report paired changes in null means, standardized deviations, p-values, q-values, and the count of global-significant results that do or do not remain significant under value-stratum conditioning."
+  },
+  "validation": {
+    "s04Integrity": "The canonical S04 table must exist, have 75,335,939 bytes, and match SHA-256 97ce5985d9dc9b666f8c16345a2c678535037c53ad58867fc8305c975e6db647; the S04 manifest entry must agree.",
+    "snapshotReplay": "Every frozen snapshot scenario must match S03/S04 scenario identity, terminal reason, accepted swaps, final state hash, and original trajectory hash; captured metrics must match the canonical S04 row at each selected grid point.",
+    "uniformityFixtures": [
+      "global n=6 counts 3/3 (20 distinct arrangements)",
+      "global n=7 counts 3/2/2 (210 distinct arrangements)",
+      "two value strata of size three with counts 2/1 in each (9 distinct conditional arrangements)",
+      "six unique singleton exact-value strata (one arrangement; degeneracy check)"
+    ],
+    "uniformityPassRule": "Every support point observed; chi-square p greater than 0.0001 for each nondegenerate fixture; total-variation distance at most max(0.01, 2*sqrt((supportSize-1)/(2*pi*draws))); exact support accounting matches multinomial products.",
+    "preservationPassRule": "Zero global-count, stratum-count, position-scaffold, or value-scaffold violations across all generated draws and replayed snapshots.",
+    "globalFalsePositivePassRule": "For alpha 0.01, 0.05, and 0.10, each randomized empirical rate is within max(5 binomial SE, 0.002) of alpha and each conservative rate is no greater than alpha plus that tolerance.",
+    "conditionalFalsePositivePassRule": "Pooling independently randomized pseudo-observations across condition-grid groups by input and estimable metric, each rate is within max(5 binomial SE, 0.01) of alpha at 0.01, 0.05, and 0.10.",
+    "upstreamImmutability": "Every S01-S04 manifested artifact remains byte-identical; S04 table availability and checksum are recorded separately from any external collection-skip metadata."
+  },
+  "successCriteria": {
+    "execution": "All frozen corpora, 18,786 full pointwise condition-grid rows, 930 conditional condition-grid groups, snapshot replays, and required reports validate.",
+    "calibration": "Uniformity, preservation, and both global and conditional false-positive checks pass.",
+    "primaryAdjacency": "At fixed progress 25%, at least four of the six balanced pairwise absent-association input-by-policy conditions have global-count-fixed adjacency q<=0.05; at fixed progress 100%, at least 12 of 16 balanced positive/negative association conditions have global-count-fixed adjacency q<=0.05.",
+    "metricCorroboration": "At least two of categorical assortativity, largest-label capture, and signed neighbor NMI meet the same 12-of-16 fixed-final association threshold.",
+    "conditioningDescriptor": "Classify the result as conditioning-sensitive if at least 25% of globally significant conditional-audit tests become nonsignificant under value-stratum conditioning; otherwise classify it as conditioning-robust. This descriptor does not override calibration or the primary classification.",
+    "classification": "Supportive if execution, calibration, primary adjacency, and metric corroboration pass; constraining/contradictory if execution and calibration pass but either scientific gate fails or conditioning removes most apparent signal; null if calibrated tests yield no usable pointwise signal."
+  },
+  "claimBoundary": "These are static randomization tests for computational label arrangements at prespecified fixed progress points. They do not establish a dynamic null, correct maxima over time, identify causality, demonstrate attraction or restoration, or support biological claims."
+}
