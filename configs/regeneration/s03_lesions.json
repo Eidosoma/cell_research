@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "e05.s03.lesion-spec.v1",
+  "researchStepId": "S03",
+  "benchmarkVersion": "E05-lesion-library-v1",
+  "frozenQuestion": "Which explicit lesion operators can be applied reproducibly at every validated S02 checkpoint while preserving the inherited state, timing, budget, target, and pairing contracts and using metrics valid for each operator's identity semantics?",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "checkpointState": "occupancy, cells, Selection cursors, activation count/global event clock, stream counters, and ledger",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "stabilization": "target absorbing certificate plus uniform scheduler coverage of at least two opportunities per identity within 20*n",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "target": "direction-aware strict unequal inversion distance for permutation tasks; declared survivor or augmented order distance plus identity edit for count-changing tasks",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "prohibitedOperators": [
+    "s01_validation_adjacent_swap_v1"
+  ],
+  "operators": [
+    {
+      "operatorId": "freeze_stuck_one_central_v1",
+      "family": "freezing",
+      "countSemantics": "identity_conserving",
+      "targetProfile": "original_permutation_target_v1",
+      "metricProfile": "permutation_inversion_distance_v1",
+      "reversibility": "exact_with_fault_tombstone",
+      "parameterRule": "replace the fault mode of the identity at floor((n-1)/2) with E02 stuck; occupancy is unchanged"
+    },
+    {
+      "operatorId": "segment_reversal_central_v1",
+      "family": "segment_reversal",
+      "countSemantics": "identity_conserving",
+      "targetProfile": "original_permutation_target_v1",
+      "metricProfile": "permutation_inversion_distance_v1",
+      "reversibility": "self_inverse",
+      "parameterRule": "reverse a centered segment of length min(n,max(4,round_half_up(0.2*n)))"
+    },
+    {
+      "operatorId": "local_scramble_sattolo_v1",
+      "family": "local_scrambling",
+      "countSemantics": "identity_conserving",
+      "targetProfile": "original_permutation_target_v1",
+      "metricProfile": "permutation_inversion_distance_v1",
+      "reversibility": "exact_recorded_inverse_permutation",
+      "parameterRule": "apply a counter-addressed Sattolo single-cycle derangement to a centered window of length min(n,max(5,round_half_up(0.2*n)))"
+    },
+    {
+      "operatorId": "block_transposition_adjacent_equal_v1",
+      "family": "block_transposition",
+      "countSemantics": "identity_conserving",
+      "targetProfile": "original_permutation_target_v1",
+      "metricProfile": "permutation_inversion_distance_v1",
+      "reversibility": "self_inverse",
+      "parameterRule": "swap two centered adjacent equal blocks, each of length max(2,round_half_up(0.1*n))"
+    },
+    {
+      "operatorId": "duplication_tandem_v1",
+      "family": "duplication",
+      "countSemantics": "derived_identity_addition",
+      "targetProfile": "augmented_multiset_target_v1",
+      "metricProfile": "augmented_multiset_order_distance_v1+identity_cardinality_edit_distance_v1",
+      "reversibility": "exact_by_removing_generated_identity",
+      "parameterRule": "create a provenance-linked identity copy of the central occupied cell and insert it immediately after its source"
+    },
+    {
+      "operatorId": "deletion_central_v1",
+      "family": "deletion",
+      "countSemantics": "identity_removal",
+      "targetProfile": "sorted_survivor_target_v1",
+      "metricProfile": "survivor_order_distance_v1+identity_cardinality_edit_distance_v1",
+      "reversibility": "conditional_exact_with_tombstone",
+      "parameterRule": "remove the central occupied identity, its cell record, and any owned cursor while retaining a complete tombstone"
+    },
+    {
+      "operatorId": "insertion_out_of_place_max_v1",
+      "family": "out_of_place_insertion",
+      "countSemantics": "novel_identity_addition",
+      "targetProfile": "augmented_sorted_target_v1",
+      "metricProfile": "augmented_order_distance_v1+identity_cardinality_edit_distance_v1",
+      "reversibility": "exact_by_removing_generated_identity",
+      "parameterRule": "insert a new maximum-valued identity at the direction-wrong boundary: left for ascending and right for descending"
+    }
+  ],
+  "identityContract": {
+    "identityConservingFamilies": [
+      "freezing",
+      "segment_reversal",
+      "local_scrambling",
+      "block_transposition"
+    ],
+    "countChangingFamilies": [
+      "duplication",
+      "deletion",
+      "out_of_place_insertion"
+    ],
+    "survivorStateRule": "all surviving cells and their policy state are preserved byte-for-byte; no cursor remapping or reset",
+    "newSelectionCursorRule": "a generated Selection identity starts at its post-lesion direction boundary",
+    "interventionClockRule": "the lesion is instantaneous and does not advance activation count, ledger, or stream counters"
+  },
+  "targetContract": {
+    "permutationTasks": "retain the exact S01 target and direction-aware strict unequal inversion metric",
+    "duplication": "sort the augmented multiset including the linked copy; report identity addition separately",
+    "deletion": "sort surviving identities only; report identity deficit separately and do not call the original target feasible without the tombstone",
+    "insertion": "sort the augmented set including the novel maximum; report identity addition separately",
+    "runtimeFeasibility": "target sequence feasibility is distinct from executability in the fixed-identity E01 engine"
+  },
+  "pairingContract": {
+    "sham": "canonical identity transform of the exact S02 checkpoint",
+    "preInjury": "active and sham share exact S02 pre-injury state and event prefix",
+    "postInjuryOccupancyOnly": "shared_prefix_until_arm_terminal",
+    "postInjuryFaultChange": "scenario_paired_rng_unpaired because scenario content and scenario ID change",
+    "postInjuryCountChange": "not_executable_in_e01_fixed_identity_engine; no post-injury coupling claim"
+  },
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "operatorsPerCheckpoint": 7,
+    "arms": ["matched_sham", "active_lesion"],
+    "sourceConstruction": "exact reconstruction of all 384 validated S02 trigger checkpoints"
+  },
+  "severityContract": {
+    "descriptors": [
+      "validPostTargetOrderDistanceBefore",
+      "validPostTargetOrderDistanceAfter",
+      "validPostTargetOrderDistanceDelta",
+      "normalizedOrderDistanceDelta",
+      "directlyAffectedIdentityCount",
+      "directlyAffectedIdentityFraction",
+      "movedExistingIdentityCount",
+      "normalizedExistingDisplacementL1",
+      "identityAdditionCount",
+      "identityRemovalCount",
+      "identityCardinalityEditDistance",
+      "frozenIdentityCount"
+    ],
+    "calibrationRule": "report descriptors rather than asserting cross-family scalar equivalence; stratify by n, timing, policy, direction, and operator"
+  },
+  "claimBoundary": "S03 validates deterministic computational lesion semantics and target/metric contracts. It does not test recovery performance, establish biological lesion equivalence, or claim that severity descriptors are biologically commensurate."
+}

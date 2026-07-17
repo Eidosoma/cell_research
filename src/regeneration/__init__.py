@@ -20,6 +20,18 @@ from .timing import (
     validate_timing_pairing,
     validate_timing_spec,
 )
+from .lesions import (
+    LESION_FIXTURE_SCHEMA,
+    LESION_SPEC_SCHEMA,
+    OPERATOR_IDS,
+    PROHIBITED_OPERATOR_IDS,
+    LesionApplication,
+    LesionState,
+    apply_lesion,
+    inverse_lesion,
+    validate_application,
+    validate_lesion_spec,
+)
 
 __all__ = [
     "BASELINE_SCENARIO_SCHEMA",
@@ -38,4 +50,14 @@ __all__ = [
     "locate_trigger",
     "validate_timing_pairing",
     "validate_timing_spec",
+    "LESION_FIXTURE_SCHEMA",
+    "LESION_SPEC_SCHEMA",
+    "OPERATOR_IDS",
+    "PROHIBITED_OPERATOR_IDS",
+    "LesionApplication",
+    "LesionState",
+    "apply_lesion",
+    "inverse_lesion",
+    "validate_application",
+    "validate_lesion_spec",
 ]
