@@ -1,0 +1,173 @@
+{
+  "schema": "e04.s07.kinetic_matching_contract.v1",
+  "researchStepId": "S07",
+  "title": "Equalize policy kinetics",
+  "frozenQuestion": "Does label-blind equalization of policy activation opportunity, experienced displacement, executed target range, and successful-action rate reduce composition-corrected aggregation after dynamic global and mobility-matched null correction?",
+  "scope": {
+    "starts": "S07",
+    "stopsBefore": "S08",
+    "conditions": 186,
+    "calibrationAnchors": "balanced 50/50 pairwise, absent policy-value association, both input profiles",
+    "calibrationReplicateOrdinals": [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101, 111, 121, 131, 141, 151, 161, 171, 181, 191, 201, 211, 221, 231, 241],
+    "holdoutReplicateOrdinals": [5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145, 155, 165, 175, 185, 195, 205, 215, 225, 235, 245],
+    "calibrationScenarios": 150,
+    "holdoutScenarios": 4650,
+    "gridPoints": 101,
+    "eventBudget": 1000000,
+    "progressDefinition": "floor(progress * final accepted swaps), progress 0.00 through 1.00; censored runs retain their observed event-budget trajectory",
+    "metric": "paper-denominator same-policy adjacency minus the validated S02 exact-composition expectation",
+    "referenceDrawsPerConditionFamily": 500,
+    "calibrationDrawsPerConditionFamily": 12,
+    "retainedFullTrajectoryDrawsPerConditionFamily": 20
+  },
+  "labelBlindBoundary": {
+    "allowedRuntimeInputs": [
+      "actor identity",
+      "actor executable policy class",
+      "native policy proposal kind",
+      "native actor and target positions",
+      "event index",
+      "frozen intervention parameters",
+      "counter-addressed intervention random stream"
+    ],
+    "forbiddenRuntimeInputs": [
+      "analysis_label",
+      "neighbor policy or Algotype label",
+      "same-policy adjacency",
+      "aggregation score",
+      "condition correlation label",
+      "future state or holdout outcome"
+    ],
+    "policyPreservation": "The native policy function, direction, observations, comparisons, target, and Selection cursor update are unchanged. An intervention may choose the next actor through a state-blind scheduler or reject an otherwise mechanically valid native swap; it may not rewrite a proposal or target.",
+    "audit": "Repeat representative runs after assigning arbitrary secret analysis labels; every transition, kinetic ledger, trajectory, and terminal result must be identical. Source-level tests forbid analysis_label access in the intervention module."
+  },
+  "kineticDefinitions": {
+    "activationOpportunity": "actor activations per cell, normalized by total activations / n; policy value 1 denotes equal per-cell opportunity",
+    "experiencedDisplacement": "sum of absolute positional displacement over both identities moved by each accepted swap, attributed to each displaced identity's executable policy, divided by policy cell count and by total activations / 10000",
+    "actorDisplacement": "sum of absolute native actor-to-target distance for accepted swaps initiated by a policy, divided by its actor activations",
+    "executedTargetRange": "mean absolute actor-to-target distance among accepted native swap proposals initiated by the policy",
+    "nativeTargetRange": "mean absolute actor-to-target distance among all mechanically valid native swap proposals before intervention rejection",
+    "successfulActionRate": "accepted native swap proposals initiated by the policy divided by that policy's actor activations",
+    "structuralIdentity": "actor displacement per activation equals successful-action rate times executed target range whenever at least one accepted swap is present"
+  },
+  "regimes": [
+    {
+      "id": "native_control",
+      "role": "paired unmodified reference",
+      "scheduler": "frozen E01 uniform counter-addressed actor scheduler",
+      "swapGate": "none"
+    },
+    {
+      "id": "activation_equal",
+      "role": "activation-only intervention",
+      "scheduler": "deterministic counter-addressed identity cycles; every cycle is a policy-blind permutation of all identities",
+      "swapGate": "none",
+      "balanceTargets": ["activationOpportunity"]
+    },
+    {
+      "id": "displacement_equal",
+      "role": "displacement-only intervention",
+      "scheduler": "native uniform scheduler",
+      "swapGate": "policy-indexed Bernoulli gate on mechanically valid native swaps, independent of target distance",
+      "balanceTargets": ["experiencedDisplacement"]
+    },
+    {
+      "id": "target_range_equal",
+      "role": "target-range-only intervention",
+      "scheduler": "native uniform scheduler",
+      "swapGate": "distance gate exp(-kappa_policy * (distance - 1)) on mechanically valid native swaps; proposals and targets are unchanged",
+      "balanceTargets": ["executedTargetRange"]
+    },
+    {
+      "id": "success_equal",
+      "role": "successful-action-rate-only intervention",
+      "scheduler": "native uniform scheduler",
+      "swapGate": "policy-indexed Bernoulli gate on mechanically valid native swaps, independent of target distance",
+      "balanceTargets": ["successfulActionRate"]
+    },
+    {
+      "id": "joint_equal",
+      "role": "joint four-descriptor intervention where feasible",
+      "scheduler": "deterministic counter-addressed identity cycles",
+      "swapGate": "policy-indexed Bernoulli gate multiplied by exp(-kappa_policy * (distance - 1))",
+      "balanceTargets": [
+        "activationOpportunity",
+        "experiencedDisplacement",
+        "executedTargetRange",
+        "successfulActionRate"
+      ]
+    }
+  ],
+  "calibration": {
+    "holdoutIsolation": "No holdout trajectory or endpoint may be read before all regime parameters and feasibility labels are frozen in calibration_models.json.",
+    "commonTarget": "For displacement, target range, and success, use the minimum finite native calibration mean across policies so interventions only remove or defer native actions.",
+    "probabilityInitialization": "For displacement_equal and success_equal, initialize each policy gate as min(1, common_target / native_policy_mean), clipped below at 0.02.",
+    "probabilityRefinement": "At most two deterministic multiplicative updates using common_target / observed_policy_mean, clipped to [0.02, 1]. Retain the first feasible iterate; otherwise retain the lowest frozen objective.",
+    "targetRangeGrid": [0.0, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4],
+    "targetRangeSelection": "Choose the smallest kappa giving a feasible target-range regime. If none is feasible, choose the feasible candidate with the smallest target-range imbalance; if none preserves completion, retain the smallest-imbalance candidate and label it infeasible.",
+    "jointInitialization": "Use identity-cycle activation plus the success-rate gate probabilities and selected target-range kappa; apply at most two deterministic probability refinements against displacement and success targets.",
+    "objective": "mean squared normalized balance gap across the regime's named targets plus 100 times completion deficit and 25 times completion-comparability deficit",
+    "parametersFrozenBeforeHoldout": true
+  },
+  "balanceAndFeasibility": {
+    "activationTolerance": "median pairwise absolute gap <= 0.02 and 90th percentile <= 0.04 in normalized per-cell activation opportunity",
+    "displacementTolerance": "median pairwise relative gap <= 0.10 and 90th percentile <= 0.20",
+    "targetRangeTolerance": "median pairwise absolute gap <= 0.25 positions and 90th percentile <= 0.50 positions",
+    "successRateTolerance": "median pairwise relative gap <= 0.10 and 90th percentile <= 0.20",
+    "completionTolerance": "at least 95% complete in every calibration anchor and no anchor more than 5 percentage points below paired native control",
+    "completionComparabilityAudit": [
+      "completion fraction and Wilson interval",
+      "event-budget censoring",
+      "accepted swaps",
+      "activations",
+      "final non-strict ordering",
+      "value conservation"
+    ],
+    "regimeFeasible": "all named balance targets and completion tolerance pass on calibration",
+    "holdoutGeneralization": "report the same gates without retuning; a calibration-feasible regime is not relabeled using holdout outcomes"
+  },
+  "nullsAndEndpoints": {
+    "primaryNullFamilies": ["label_permuted_global", "mobility_matched"],
+    "diagnosticNullFamilies": ["label_permuted_value_stratified"],
+    "primaryOutcomes": ["peak", "positive_area"],
+    "excludedDecisionOutcome": "duration above zero; retained only as an explicitly non-discriminating descriptive field if emitted",
+    "peak": "maximum of the complete 101-point condition-mean corrected trajectory",
+    "positiveArea": "integral of the positive part of the piecewise-linear corrected trajectory",
+    "adjustedEffect": "observed endpoint minus mean of 500 complete-trajectory null endpoints",
+    "effectInterval": "observed endpoint minus the 97.5th and 2.5th null percentiles",
+    "pValue": "(1 + count(reference null endpoint >= observed endpoint)) / 501",
+    "multiplicity": "Benjamini-Hochberg across 186 conditions separately within regime, null family, and outcome; intervention-versus-control contrasts use paired bootstrap intervals with familywise Bonferroni coverage over the six primary anchors",
+    "valueConditioningBoundary": "Value-stratified nulls are mechanism-sensitive diagnostics and never replace the global and mobility-matched primary endpoints."
+  },
+  "primaryAnchorsAndOutcomeRule": {
+    "population": "six balanced 50/50 pairwise absent-association holdout conditions",
+    "substantialReduction": "for a calibration-feasible joint_equal regime, median paired reduction versus native control is at least 25% for both global-null adjusted peak and global-null adjusted positive area, and at least 4 of 6 Bonferroni intervals exclude zero in the reduction direction",
+    "mobilityRobustness": "the direction of the median reduction is the same under mobility-matched null adjustment for peak and positive area",
+    "supportive": "joint_equal is calibration-feasible and both substantialReduction and mobilityRobustness pass",
+    "null": "joint_equal is calibration-feasible but the substantial reduction rule does not pass with adequate completion and precision",
+    "constrainingOrContradictory": "joint_equal is not calibration-feasible without violating completion or native policy/target preservation, or a primary endpoint materially increases under feasible matching",
+    "individualRegimes": "activation, displacement, target-range, and success interventions are reported regardless of joint feasibility, but an infeasible regime's aggregation endpoints are descriptive and cannot satisfy the supportive rule"
+  },
+  "validation": [
+    "frozen split and parameter hashes",
+    "zero calibration/holdout overlap",
+    "exact native-control replay against S03 for every holdout scenario",
+    "native proposal and sorting-direction preservation",
+    "label-blind secret-label invariance",
+    "deterministic rerun equality",
+    "complete run and null accounting",
+    "balance and completion audits",
+    "null false-positive calibration",
+    "dynamic null count, value-stratum, mobility, length, and pairing preservation",
+    "multiplicity completeness",
+    "S01-S06 byte immutability",
+    "S08 artifact absence"
+  ],
+  "claimBoundaries": [
+    "Kinetic matching is an intervention on the clean-room simulator, not a biological mechanism measurement.",
+    "A swap gate changes which native actions execute and may alter path length even though the policy proposal is unchanged.",
+    "Failure to match Selection target range while completing is evidence of a structural feasibility constraint under this intervention class, not proof that no alternative redesigned policy could match it.",
+    "Value conditioning can remove the policy-value pathway and remains diagnostic.",
+    "S07 does not run identity controls or start S08."
+  ]
+}
