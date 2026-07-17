@@ -1,0 +1,152 @@
+{
+  "schema": "e04.s08.identity_control_contract.v1",
+  "researchStepId": "S08",
+  "title": "Use policy and label identity controls",
+  "frozenQuestion": "Does composition-corrected aggregation follow executable policy identity rather than immutable action-irrelevant analysis labels, and how much apparent aggregation can be created by label composition, value-correlated assignment, or post hoc label selection without changing a transition?",
+  "scope": {
+    "starts": "S08",
+    "stopsBefore": "S09",
+    "sourceRegime": "S07 native_control only",
+    "excludedSourceRegimes": [
+      "activation_equal",
+      "displacement_equal",
+      "target_range_equal",
+      "success_equal",
+      "joint_equal"
+    ],
+    "excludedReason": "S07 joint matching was infeasible and no S07 intervention is a matched S08 causal control.",
+    "mixedConditions": 186,
+    "mixedReplicatesPerCondition": 25,
+    "mixedScenarios": 4650,
+    "homogeneousConditions": 6,
+    "homogeneousReplicatesPerCondition": 25,
+    "homogeneousScenarios": 150,
+    "gridPoints": 101,
+    "holdoutReplicateOrdinals": [5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145, 155, 165, 175, 185, 195, 205, 215, 225, 235, 245]
+  },
+  "identityLayers": {
+    "cellIdentity": "Immutable cell_id used to carry value, executable policy, direction, internal Selection cursor, and analysis metadata through movement.",
+    "executablePolicy": "Bubble, Insertion, or Selection; the only identity-like field that selects a policy implementation.",
+    "analysisLabel": "Immutable metadata attached to a cell identity or reconstructed from a frozen assignment; never available to policy observation, proposal, validation, scheduling, stopping, or actuation.",
+    "groupingFunction": "The prespecified mapping from immutable cell identity to the label whose spatial adjacency is measured. Changing it is an analysis change, not a transition intervention."
+  },
+  "labelBlindBoundary": {
+    "allowedPolicyObservations": [
+      "actor position",
+      "actor value",
+      "neighbor or target position where native policy permits",
+      "neighbor or target value where native policy permits",
+      "fault state where native policy permits",
+      "actor Selection cursor for Selection only",
+      "sorting direction"
+    ],
+    "forbiddenPolicyObservations": [
+      "actor analysis label",
+      "neighbor analysis label",
+      "target analysis label",
+      "same-label adjacency",
+      "condition identifier",
+      "grouping-function identifier",
+      "future state or endpoint"
+    ],
+    "runtimeKeyRule": "A labelled validation copy must retain the unlabeled scenario_id and runtime seed so adding metadata cannot indirectly change counter-addressed scheduler draws. The labelled scenario is structurally validated before the runtime key is restored, then executed with scenario-ID recomputation disabled.",
+    "sourceAudit": "Reference policy, scheduler, terminal, and transition modules must not access Cell.analysis_label. Existing action-interface permission tests and new AST tests enforce this boundary."
+  },
+  "controlFamilies": [
+    {
+      "id": "distinct_labels_identical_policy",
+      "question": "Can two exact-count labels cluster when all 100 cells execute the identical policy?",
+      "population": "Bubble-only, Insertion-only, and Selection-only trajectories for both unique_1_100 and repeated_1_10_x10 inputs; 25 frozen holdout base draws per condition.",
+      "executablePolicies": "One policy per condition.",
+      "analysisAssignment": "ghost_random_exact channel 0: a counter-addressed uniform permutation of 50 label-A and 50 label-B assignments, independent of values, positions, and outcomes.",
+      "primary": true
+    },
+    {
+      "id": "same_label_distinct_policies",
+      "question": "What remains of label aggregation when every identity in a native mixed-policy trajectory has the same analysis label?",
+      "population": "All 186 S07 native-control conditions and 25 frozen holdout scenarios per condition.",
+      "executablePolicies": "Unchanged S03 policy mixtures.",
+      "analysisAssignment": "collapsed: every identity receives label merged:all.",
+      "primary": true
+    },
+    {
+      "id": "action_irrelevant_ghost_labels",
+      "question": "Do exact-count labels assigned independently of executable policy and value acquire reproducible aggregation on native mixed-policy trajectories?",
+      "population": "All 186 S07 native-control conditions and 25 frozen holdout scenarios per condition.",
+      "executablePolicies": "Unchanged S03 policy mixtures.",
+      "analysisAssignment": "ghost_random_exact channel 0, with 50 label-A and 50 label-B identities per scenario.",
+      "primary": true
+    }
+  ],
+  "assignmentLibrary": {
+    "seedNamespace": "E04/S08/identity_controls/v1",
+    "channels": 512,
+    "primaryChannel": 0,
+    "referenceChannels": "1 through 500",
+    "calibrationChannels": "501 through 511",
+    "ghostRandomExact": "For each source runtime scenario, use a SHA-256-addressed PCG64DXSM generator to permute 512 broadcast copies of 50 ghost:A and 50 ghost:B labels along the identity axis. Channel row order 0 through 511 is frozen and deterministic; counts are exactly 50/50.",
+    "collapsed": "Assign merged:all to all 100 identities; exact count is 100.",
+    "executablePolicy": "Use the immutable executable Policy enum as the grouping label; this is the S07 native-policy reference, not a new run.",
+    "valueBlockedDiagnostic": "For homogeneous-policy trajectories only, order identities by value then a frozen counter-addressed tie rank; assign the first 50 value:block:A and the rest value:block:B. This is a deliberately confounded post hoc grouping diagnostic and never a primary control.",
+    "bestOfChannelsDiagnostic": "Within the prespecified candidate set channels 0 through 19, report the largest condition endpoint and its inflation over channel 0. No selected channel is promoted to a confirmatory label."
+  },
+  "transitionValidation": {
+    "homogeneousLabelledReplays": 150,
+    "mixedAnchorConditions": "Six balanced 50/50 pairwise absent-association conditions.",
+    "mixedAnchorScenarios": 150,
+    "mixedAssignmentsPerScenario": ["collapsed", "ghost_random_exact channel 0"],
+    "mixedLabelledReplays": 300,
+    "totalLabelledReplayComparisons": 450,
+    "exactFields": [
+      "stop_reason",
+      "activation_count",
+      "successful_swap_count",
+      "final_state_hash",
+      "trajectory_sha256",
+      "occupancy_b64",
+      "corrected_curve_sha256",
+      "ledger_json"
+    ]
+  },
+  "metrics": {
+    "publicationAdjacency": "same-label edges divided by n=100",
+    "exactCompositionExpectation": "sum_k n_k(n_k-1)/n^2; 0.49 for 50/50 labels and 0.99 for a single label of count 100",
+    "correctedAdjacency": "publication adjacency minus the exact-composition expectation",
+    "primaryOutcomes": ["peak", "positive_area"],
+    "peak": "maximum of the complete 101-point condition-mean corrected label trajectory",
+    "positiveArea": "piecewise-linear integral of the positive part of the complete condition-mean corrected label trajectory",
+    "nullAdjustedEffect": "channel-0 endpoint minus the mean endpoint over reference channels 1 through 500",
+    "pValue": "(1 + count(reference endpoint >= channel-0 endpoint)) / 501",
+    "multiplicity": "Benjamini-Hochberg across conditions separately within control family and outcome.",
+    "policyReference": "S07 native-control policy curves and global dynamic-null adjusted effects are reused byte-for-byte; no kinetic intervention is used."
+  },
+  "postHocArtifactRules": {
+    "compositionArtifact": "Report raw collapsed-label adjacency and the exact corrected value; also show the erroneous excess that a universal 0.5 baseline would create.",
+    "valueCorrelationArtifact": "Report value-blocked label trajectories on identical-policy runs, including final corrected adjacency, to show grouping induced by label-value construction alone.",
+    "selectionArtifact": "Report best-of-20 minus primary-channel endpoint across every condition and outcome.",
+    "exclusionRule": "Only channel 0 and assignments named primary above enter the success rule. Value-blocked and best-of-20 results are diagnostics and cannot support the hypothesis."
+  },
+  "calibration": {
+    "pseudoObservations": "Channels 501 through 511 are each ranked against channels 1 through 500, pooled across conditions separately for mixed and homogeneous populations.",
+    "alphas": [0.01, 0.05, 0.10],
+    "tolerance": "absolute deviation from alpha no greater than max(0.015, 3.5 times the binomial standard error)",
+    "ties": "Report randomized tie ranks and conservative upper-tail rates."
+  },
+  "successCriteria": {
+    "validity": "All 450 labelled replay comparisons are exact; policy source audit passes; every assignment has its frozen exact counts; all null-calibration checks pass; run and artifact accounting is complete; S01-S07 are byte-immutable; S09 artifacts are absent.",
+    "identicalPolicy": "For each primary outcome, at most one of six channel-0 identical-policy controls has BH q <= 0.05; median absolute null-adjusted effect is <= 0.01 for peak and <= 0.005 for positive area.",
+    "ghostLabels": "For each primary outcome, at most one of 186 channel-0 mixed-policy ghost controls has BH q <= 0.05; median absolute null-adjusted effect is <= 0.005 for peak and <= 0.0025 for positive area.",
+    "collapsedLabels": "Every same-label mixed-policy corrected trajectory is exactly zero, while its executable-policy curve and endpoint match the S07 native-control source exactly.",
+    "policyDiscrimination": "In all six balanced absent-association anchors, the S07 global-null adjusted executable-policy peak exceeds the ghost-label adjusted peak by >0.05 and positive area exceeds the ghost-label adjusted positive area by >0.02.",
+    "supportive": "Validity and all four scientific gates pass.",
+    "null": "Validity passes but one or more scientific gates fail without a directional contradiction and precision is insufficient.",
+    "constrainingOrContradictory": "A label changes a required transition, composition/assignment leakage is detected, arbitrary ghost labels show systematic primary aggregation, collapsed labels alter executable-policy trajectories, or policy discrimination reverses."
+  },
+  "claimBoundaries": [
+    "S08 tests immutable analysis labels in the E01 clean-room simulator; it does not prove that every possible implementation is label-blind.",
+    "A label grouping can appear spatially structured if it is correlated with value or chosen after looking at outcomes, even when it has no action pathway.",
+    "A single collapsed label makes raw adjacency nearly one by composition and therefore demonstrates why exact composition correction is mandatory.",
+    "Support would show that the validated aggregation statistic tracks executable policy identity better than arbitrary metadata; it would not establish affinity, attraction, biological adhesion, or an operational attractor.",
+    "S08 does not switch policy or label during a trajectory and does not start S09."
+  ]
+}
