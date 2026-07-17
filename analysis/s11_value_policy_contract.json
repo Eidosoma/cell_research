@@ -1,0 +1,104 @@
+{
+  "schema": "e04.s11.value_policy_contract.v1",
+  "researchStepId": "S11",
+  "title": "Separate value-position and policy-position effects",
+  "frozenQuestion": "At exposure-qualified aggregation checkpoints, how much of subsequent policy aggregation and sorting progress is attributable to the positional arrangement of values versus the positional arrangement of executable policies when each field is reassigned separately and jointly under deterministic state-matched continuations?",
+  "scope": {
+    "starts": "S11",
+    "stopsBefore": "S12",
+    "sourceRegime": "S07 native_control only",
+    "sourceConditions": "Six unique/repeated balanced 50/50 pairwise absent-association S06 anchors",
+    "sourceConditionCount": 6,
+    "replicatesPerCondition": 25,
+    "sourceScenarioCount": 150,
+    "gridPoints": 101,
+    "supportBankDraws": 250000,
+    "requiredSupportedAssignments": 33,
+    "valueDerangementCandidatesPerTarget": 128
+  },
+  "upstreamBoundaries": {
+    "s10UniqueValueBoundary": "A physical identity permutation preserving the exact value at every position is nontrivial only with duplicate values; it is impossible for the unique profile.",
+    "s11BoundaryCrossing": "S11 directly reassigns Cell.value and/or Cell.policy fields while fixing occupancy. This makes both interventions feasible for unique inputs but is a different, stronger intervention class than S10 physical de-clustering.",
+    "s10SupportMagnitude": "Policy targets reuse S10's exact MILP lower bound plus 250,000-draw, 33-assignment support qualification, applied within frozen ten-cell value-rank strata.",
+    "s10CompletionReference": "S10 identity-owned primary completion was 76%; S11 reports completion by arm and condition and uses an S10-informed 75% pooled, 60% per-condition qualification gate rather than silently treating absorbing event-budget or quiescent curves as completed.",
+    "heterogeneity": "All component estimates are reported by input profile and policy pair before pooling because S10 showed strong policy-pair heterogeneity."
+  },
+  "checkpoint": {
+    "definition": "For each of the six anchors, use the earliest validated S06 condition-mean corrected-adjacency maximum at accepted-swap progress no greater than 0.75.",
+    "exposureCap": 0.75,
+    "progressByCondition": {
+      "S03-REP-BUB-INS-P50-ABS": 0.16,
+      "S03-REP-BUB-SEL-P50-ABS": 0.36,
+      "S03-REP-INS-SEL-P50-ABS": 0.75,
+      "S03-UNQ-BUB-INS-P50-ABS": 0.19,
+      "S03-UNQ-BUB-SEL-P50-ABS": 0.33,
+      "S03-UNQ-INS-SEL-P50-ABS": 0.27
+    },
+    "targetRule": "Intervene after floor(progress times the validated scenario-specific final accepted-swap count), before the next activation."
+  },
+  "strataAndPolicyTargets": {
+    "strata": "Ten frozen value-rank strata of ten identities, defined from the immutable source values before simulation; for repeated inputs these equal the ten exact-value groups, whereas for unique inputs they are value deciles.",
+    "constraints": "Each target preserves both executable-policy counts inside every stratum and global 50/50 counts.",
+    "supportQualification": "Solve the exact minimum same-policy-edge count, draw 250,000 deterministic uniform within-stratum assignments, then select the smallest same-edge bin with at least 33 distinct assignments.",
+    "matchedPair": "Among the 33 supported assignments, select the largest subgroup having equal Hamming distance from the checkpoint policy sequence (tie: smaller Hamming); SHA order designates primary and matched. Thus policy primary and matched have exact same-edge and changed-position magnitudes.",
+    "adequacyGate": "Across the 150 primary targets, median immediate corrected-adjacency drop is at least 0.10 and at least 90% drop by at least 0.05."
+  },
+  "valueTargets": {
+    "definition": "For each policy target, permute only the positional values on that target's changed-position support, requiring every supported position to receive a different value and preserving the global value multiset.",
+    "matching": "Generate 128 deterministic valid derangements for each primary/matched support. Select the cross-bank pair minimizing absolute inversion-count difference, then absolute total value-change difference, with SHA hashes as fixed ties.",
+    "targetDistance": "Primary and matched value arms change exactly the same number of positions as their paired policy targets. Record Hamming support, total absolute value change, inversion count, both Sortedness definitions, and point-biserial policy–value association before and after.",
+    "interpretation": "Value shuffling changes explicit task progress and often policy–value association. It is not a pure mediator intervention and cannot identify a natural indirect effect."
+  },
+  "arms": [
+    {"id": "no_switch", "valueTarget": "original", "policyTarget": "original", "cursorRule": "identity_retain"},
+    {"id": "sham", "valueTarget": "original", "policyTarget": "original", "cursorRule": "identity_retain"},
+    {"id": "value_primary", "valueTarget": "primary", "policyTarget": "original", "cursorRule": "identity_retain"},
+    {"id": "value_matched", "valueTarget": "matched", "policyTarget": "original", "cursorRule": "identity_retain"},
+    {"id": "policy_primary", "valueTarget": "original", "policyTarget": "primary", "cursorRule": "retain_old_reset_new"},
+    {"id": "policy_matched", "valueTarget": "original", "policyTarget": "matched", "cursorRule": "retain_old_reset_new"},
+    {"id": "both_primary", "valueTarget": "primary", "policyTarget": "primary", "cursorRule": "retain_old_reset_new"},
+    {"id": "both_matched", "valueTarget": "matched", "policyTarget": "matched", "cursorRule": "retain_old_reset_new"},
+    {"id": "policy_transfer", "valueTarget": "original", "policyTarget": "primary", "cursorRule": "donor_transfer"},
+    {"id": "both_transfer", "valueTarget": "primary", "policyTarget": "primary", "cursorRule": "donor_transfer"}
+  ],
+  "statePreservation": {
+    "allArms": "Preserve occupancy, identity multiset, direction, fault, analysis label, activation count, stream counters, ledger, seed, maximum activations, scheduler, generation/runtime scenario_id, and source checkpoint.",
+    "valueOnly": "Preserve the exact executable-policy field on every identity and position; allow only value reassignment on the frozen support; preserve the global value multiset.",
+    "policyOnly": "Preserve the exact value field on every identity and position; allow only policy reassignment on the frozen support; preserve global and stratum policy counts.",
+    "both": "Apply the independently frozen paired value and policy assignments on the same support and no additional change.",
+    "sham": "Every Cell and RunState field is exact.",
+    "selectionPrimary": "Retain the cursor for identities remaining Selection, reset newly Selection ascending identities to zero, and remove cursors from identities no longer Selection.",
+    "selectionSensitivity": "Deterministically transfer each outgoing Selection cursor to one incoming Selection identity; retained Selection identities keep their own cursor."
+  },
+  "runtimeAndScheduler": {
+    "runtimeKey": "Validate each modified scenario under a content ID, then restore the source scenario_id fixture before continuation.",
+    "eventClock": "Continue the global activation_count and stream counters without reset.",
+    "coupling": "All arms use the same source seed, runtime key, cell order, scheduler, and global event index, so scheduled actor identities are exactly coupled. Policy-dependent Bubble-side queries remain coupled for unchanged-policy actors and are allowed to differ only when the intervention changes executable policy.",
+    "comparisonClock": "Sample 101 common activation-exposure points through the maximum paired terminal exposure and carry terminated states forward as absorbing."
+  },
+  "metricsAndEstimands": {
+    "aggregation": "Paper adjacency minus the exact 0.49 balanced-composition expectation.",
+    "taskProgress": "Reference non-strict Sortedness is the trajectory measure; paper strict Sortedness and exact inversion count are intervention-distance diagnostics.",
+    "factorial": "At every exposure point use Y00=no_switch, Y10=value_primary, Y01=policy_primary, and Y11=both_primary. Value Shapley=0.5[(Y10-Y00)+(Y11-Y01)], policy Shapley=0.5[(Y01-Y00)+(Y11-Y10)], interaction=Y11-Y10-Y01+Y00, and joint=Y11-Y00.",
+    "summaries": "Report signed area, positive area, negative area, final effect, and peak absolute effect for aggregation and task progress.",
+    "assignmentSensitivity": "Repeat direct value-only and policy-only effects with primary and matched assignments. A robust bound requires the primary and matched bootstrap intervals to exclude zero in the same direction.",
+    "uncertainty": "Use 10,000 deterministic paired bootstrap resamples within condition and a six-condition stratified bootstrap for pooled curves and signed areas."
+  },
+  "decisionRule": {
+    "validity": "All 150 native sources replay exactly; assignment, component preservation, sham identity, runtime-key, scheduler qualification, deterministic replay, accounting, upstream immutability, policy-observation, and S12-absence checks pass.",
+    "intervention": "The policy adequacy gate, 33-assignment support, exact primary/matched policy distance, exact value/support distance, global value multiset, and stratum policy-count checks pass.",
+    "completion": "No invariant error occurs and no_switch, value_primary, policy_primary, and both_primary each complete at least 75% pooled and 60% in every condition.",
+    "separableContribution": "Pooled primary-factorial value and policy Shapley signed-area 95% intervals both exclude zero, and the corresponding direct primary/matched assignment intervals exclude zero in the same direction.",
+    "supportive": "Validity, intervention, completion, and separableContribution all pass.",
+    "null": "Validity, intervention, and completion pass, but at least one component is imprecise without a stable contradiction.",
+    "constrainingOrContradictory": "A component changes sign across matched assignments, the direct assignment-sensitivity hull includes zero despite a precise primary claim, completion invalidates comparison, or the intervention/preservation contract fails."
+  },
+  "claimBoundaries": [
+    "Direct value reassignment changes task progress and is not a pure mediator intervention.",
+    "Direct policy reassignment changes an identity's executable Algotype and Selection state; it is not S10's physical within-value movement.",
+    "Unique-input results rely on coarse value-decile balance because exact value-policy conditioning would prohibit policy reassignment.",
+    "The factorial/Shapley decomposition is intervention-specific and simulator-local, not proof of natural causal mediation, biological adhesion, affinity, cognition, or intention.",
+    "Absorbing continuation curves do not erase completion differences, which are separately gated and reported.",
+    "S12 is not started."
+  ]
+}
