@@ -60,6 +60,7 @@ EXPECTED_CONDITIONS = 186
 REPLICATES = 250
 EXPECTED_RUNS = EXPECTED_CONDITIONS * REPLICATES
 BOOTSTRAP_DRAWS = 10_000
+VARIANCE_TOLERANCE = 1e-24
 S01_MANIFEST_SHA256 = "df9860285fc5b1ed9f7442fb68ea5e9ed9e407918d90988d0b3592f4b3ef8079"
 S02_MANIFEST_SHA256 = "9e632eedac59f6b08ff6b619ce2451a99b49c952319af2747076fd7bb3411b54"
 POLICY_CODES = {"Bubble": "BUB", "Insertion": "INS", "Selection": "SEL"}
@@ -1322,6 +1323,9 @@ def _variance_ratio_bootstrap(
     if len(extreme) != len(balanced):
         raise ValueError("variance ratio requires paired populations")
     n = len(extreme)
+    observed_denominator = float(np.var(balanced, ddof=1))
+    if observed_denominator <= VARIANCE_TOLERANCE:
+        return math.nan, math.nan, math.nan
     seed = derive_s03_seed("variance_bootstrap", address)
     generator = np.random.Generator(np.random.PCG64DXSM(seed))
     ratios = np.empty(BOOTSTRAP_DRAWS, dtype=np.float64)
@@ -1334,15 +1338,12 @@ def _variance_ratio_bootstrap(
             numerator,
             denominator,
             out=np.full(size, np.nan),
-            where=denominator > 0,
+            where=denominator > VARIANCE_TOLERANCE,
         )
-    observed_denominator = float(np.var(balanced, ddof=1))
-    observed = (
-        float(np.var(extreme, ddof=1)) / observed_denominator
-        if observed_denominator > 0
-        else math.nan
-    )
+    observed = float(np.var(extreme, ddof=1)) / observed_denominator
     finite = ratios[np.isfinite(ratios)]
+    if not len(finite):
+        return observed, math.nan, math.nan
     return (
         observed,
         float(np.quantile(finite, 0.025)),
@@ -1421,9 +1422,11 @@ def _minority_discreteness(run_frame: pd.DataFrame) -> pd.DataFrame:
                     extreme.corrected_final_publication_aggregation.std(ddof=1)
                 ),
                 "peak_variance_ratio_vs_balanced": peak_ratio[0],
+                "peak_variance_ratio_estimable": math.isfinite(peak_ratio[0]),
                 "peak_variance_ratio_ci95_low": peak_ratio[1],
                 "peak_variance_ratio_ci95_high": peak_ratio[2],
                 "final_variance_ratio_vs_balanced": final_ratio[0],
+                "final_variance_ratio_estimable": math.isfinite(final_ratio[0]),
                 "final_variance_ratio_ci95_low": final_ratio[1],
                 "final_variance_ratio_ci95_high": final_ratio[2],
             }
@@ -1953,6 +1956,32 @@ def validate_artifacts(output: Path) -> dict[str, Any]:
         .le(1e-12)
         .all(),
         sorted(minority.minimum_observed_nonzero_step.dropna().unique()),
+    )
+    check(
+        "minority_variance_estimability",
+        minority.peak_variance_ratio_estimable.eq(
+            minority.peak_variance_ratio_vs_balanced.notna()
+        ).all()
+        and minority.final_variance_ratio_estimable.eq(
+            minority.final_variance_ratio_vs_balanced.notna()
+        ).all()
+        and (~minority.final_variance_ratio_estimable).any(),
+        {
+            "peakEstimable": int(minority.peak_variance_ratio_estimable.sum()),
+            "finalEstimable": int(minority.final_variance_ratio_estimable.sum()),
+        },
+    )
+    estimable_peak = minority[minority.peak_variance_ratio_estimable]
+    estimable_final = minority[minority.final_variance_ratio_estimable]
+    check(
+        "minority_variance_interval_order",
+        estimable_peak.peak_variance_ratio_ci95_low.le(
+            estimable_peak.peak_variance_ratio_ci95_high
+        ).all()
+        and estimable_final.final_variance_ratio_ci95_low.le(
+            estimable_final.final_variance_ratio_ci95_high
+        ).all(),
+        [len(estimable_peak), len(estimable_final)],
     )
     check(
         "deterministic_replay",

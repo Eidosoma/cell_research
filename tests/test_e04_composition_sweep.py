@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 import unittest
 
@@ -13,6 +14,7 @@ from analysis.composition_sweep import (
     SweepCondition,
     _aligned_event_budgets,
     _interpretation_changes,
+    _variance_ratio_bootstrap,
     build_conditions,
     load_base_draws,
     materialize_sweep_scenario,
@@ -142,6 +144,14 @@ class CompositionSweepTests(unittest.TestCase):
         self.assertAlmostEqual(
             result.final_excess_change_after_correction.iloc[0], -0.31
         )
+
+    def test_zero_reference_variance_ratio_is_not_estimable(self) -> None:
+        result = _variance_ratio_bootstrap(
+            pd.Series([0.2] * 250).to_numpy(),
+            pd.Series([0.1] * 250).to_numpy(),
+            "fixture/degenerate",
+        )
+        self.assertTrue(all(math.isnan(value) for value in result))
 
     def test_repository_contract_is_frozen_to_s03(self) -> None:
         path = (
