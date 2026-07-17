@@ -1942,6 +1942,25 @@ def build_all(
             (output / "benchmark" / name).read_bytes()
         )
 
+    # The canonical report links the audit records that this same build
+    # finalizes below.  Materialize deterministic placeholders so the link
+    # audit checks the final path contract rather than build ordering.
+    for name in (
+        "artifact_link_audit.json",
+        "coverage_audit.json",
+        "terminology_validation.json",
+        "upstream_immutability_audit.json",
+        "validation_summary.json",
+    ):
+        json_dump(
+            output / name,
+            {
+                "schema": SCHEMA,
+                "researchStepId": "S14",
+                "status": "pending_finalization",
+            },
+        )
+
     markdown_paths = sorted(output.rglob("*.md")) + sorted(report_inputs.glob("*.md"))
     link_audit = markdown_link_audit(markdown_paths)
     terminology_validation = terminology_scan(markdown_paths, contract)
