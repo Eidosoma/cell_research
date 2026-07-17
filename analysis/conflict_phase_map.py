@@ -2120,6 +2120,12 @@ def finalize() -> None:
         "conflict_phase_map.svg",
         "state_flux_diagnostics.png",
         "state_flux_diagnostics.svg",
+        "research_step_full_results.md",
+        "status.json",
+        "commands.json",
+        "test_summary.json",
+        "provenance.json",
+        "repository_tests.junit.xml",
     ]
     missing = [name for name in required if not (OUTPUT / name).is_file()]
     if missing:
@@ -2148,7 +2154,10 @@ def finalize() -> None:
         "kernelValidation": json.loads((OUTPUT / "kernel_validation.json").read_text())["allPassed"],
         "primaryConditionCount": summary["conditionCount"] == 4500,
         "baseRunCount": summary["baseRunCount"] == 18000,
+        "sequentialRunCount": summary["sequentialRunCount"] == 12528,
+        "longRunCount": summary["longRunCount"] == 884,
         "longPrefixReplay": summary["prefixReplayAllPassed"],
+        "repositoryTests": json.loads((OUTPUT / "test_summary.json").read_text())["allRequiredPassed"],
         "occupancyBijection": bool(pd.read_parquet(OUTPUT / "phase_run_summaries.parquet").occupancy_bijection.all()),
         "stuckPreservation": bool(pd.read_parquet(OUTPUT / "phase_run_summaries.parquet").stuck_positions_preserved.all()),
         "fluxConservation": bool(
@@ -2178,6 +2187,25 @@ def finalize() -> None:
                 for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMBA_NUM_THREADS")
             },
             "gpuUsed": False,
+        },
+    )
+    artifacts = []
+    for path in sorted(OUTPUT.rglob("*")):
+        if path.is_file() and path.name != "artifact_manifest.json":
+            artifacts.append(
+                {
+                    "path": str(path.relative_to(OUTPUT)),
+                    "bytes": path.stat().st_size,
+                    "sha256": sha256_file(path),
+                }
+            )
+    write_json(
+        OUTPUT / "artifact_manifest.json",
+        {
+            "schema": "e04.s13.artifact_manifest.v1",
+            "researchStepId": "S13",
+            "artifactCount": len(artifacts),
+            "artifacts": artifacts,
         },
     )
 
