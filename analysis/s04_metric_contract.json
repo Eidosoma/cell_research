@@ -1,0 +1,132 @@
+{
+  "schema": "e04.s04.metric_contract.v1",
+  "researchStepId": "S04",
+  "title": "Measure aggregation multiple ways",
+  "frozenAtUtc": "2026-07-17T02:34:45Z",
+  "frozenBeforePopulationAnalysis": true,
+  "question": "Do the S03 aggregation findings persist under distinct, explicitly conditioned spatial summaries rather than depending on the paper's adjacency denominator alone?",
+  "population": {
+    "source": "the complete validated S03 factorial",
+    "scenarioCount": 46500,
+    "conditionCount": 186,
+    "replicatesPerCondition": 250,
+    "grid": "101 floor-indexed points over accepted-swap progress, identical to S01-S03",
+    "pairing": "preserve S03 base-draw and pairing-block construction",
+    "protectedData": false
+  },
+  "labelAndEdgeConventions": {
+    "label": "cell policy (Bubble, Insertion, or Selection)",
+    "line": "open one-dimensional occupancy array",
+    "edgeSet": "the n-1 unordered adjacent position pairs (i-1,i), i=1,...,n-1",
+    "paperDenominator": "n",
+    "edgeDenominator": "n-1",
+    "compositionConditioning": "exact fixed global policy counts unless explicitly marked value-conditioned",
+    "undefinedEncoding": "IEEE NaN in tables and null in JSON",
+    "trajectoryIndexing": "floor(progress * final accepted swaps) for progress 0.00,...,1.00"
+  },
+  "metrics": [
+    {
+      "id": "original_adjacency",
+      "definition": "C=sum over open-path edges of 1(equal policy); publication aggregation=C/n; edge aggregation=C/(n-1)",
+      "baseline": "publication: sum_k n_k(n_k-1)/n^2; edge: sum_k n_k(n_k-1)/(n(n-1))",
+      "primaryReportedForm": "publication corrected excess = C/n minus its exact fixed-composition expectation",
+      "range": "raw publication [0,(n-1)/n]; corrected range depends on composition"
+    },
+    {
+      "id": "categorical_assortativity",
+      "definition": "Each undirected edge contributes both orientations. With observed same-edge rate o=C/(n-1), endpoint-stub label fractions a_k=s_k/[2(n-1)], and chance c=sum_k a_k^2, r=(o-c)/(1-c).",
+      "conditioning": "degree-weighted endpoint marginals of the observed open path",
+      "primaryReportedForm": "r",
+      "undefined": "1-c=0 (homogeneous labels)",
+      "range": "[-1,1] when defined"
+    },
+    {
+      "id": "run_length",
+      "definition": "A run is a maximal contiguous constant-policy block; R is run count and mean run length is n/R.",
+      "primaryReportedForm": "mean_run_length",
+      "companions": ["run_count", "run_fraction_of_attainable = K/R"],
+      "note": "On an open path R=n-C, so this family is an exact monotone restatement of adjacency and is excluded from independent-robustness counting."
+    },
+    {
+      "id": "largest_cluster",
+      "definition": "L is the longest constant-policy run; L_k is the longest run for policy k.",
+      "primaryReportedForm": "largest_label_capture=max_k(L_k/n_k)",
+      "companions": ["largest_cluster_fraction=L/n", "largest_cluster_size=L"],
+      "range": "[1/max_k n_k,1] for capture where all labels have positive counts; [1/n,1] for array fraction"
+    },
+    {
+      "id": "neighbor_mutual_information",
+      "definition": "Each undirected edge contributes both directions to a 2(n-1) joint table; MI=sum p_kl log2[p_kl/(a_k a_l)], entropy H=-sum a_k log2(a_k), and NMI=MI/H.",
+      "primaryReportedForm": "signed_neighbor_nmi=sign(categorical assortativity)*NMI, with sign 0 when assortativity is numerically zero",
+      "companions": ["neighbor_mi_bits", "neighbor_nmi"],
+      "undefined": "H=0 (homogeneous endpoint labels)",
+      "note": "Unsigned MI detects dependence including alternation; the signed companion distinguishes homotypic clustering from heterotypic alternation."
+    },
+    {
+      "id": "equal_value_conditioned_clustering",
+      "definition": "Restrict to adjacent edges whose two values are equal. If E_v is the number of such edges and C_v the subset also equal in policy, raw=C_v/E_v.",
+      "baseline": "For each value stratum v, q_v=sum_k n_vk(n_vk-1)/[n_v(n_v-1)]. With e_v observed equal-value edges in that stratum, baseline=sum_v e_v q_v/E_v.",
+      "primaryReportedForm": "equal_value_corrected_excess=raw-baseline",
+      "undefined": "E_v=0; this is structurally true for the unique-value input",
+      "conditioning": "exact fixed policy counts within each value stratum, while retaining the observed equal-value edge allocation across strata"
+    }
+  ],
+  "validation": {
+    "handBuiltPatterns": [
+      "homogeneous AAAAA",
+      "segregated AAABBB",
+      "alternating ABABAB",
+      "three-label AABBCC",
+      "endpoint-sensitive ABAABB",
+      "duplicate-conditioned labels AABAAB on values 111222"
+    ],
+    "exhaustive": {
+      "nRange": [2, 9],
+      "kRange": [2, 4],
+      "restriction": "all labels represented",
+      "expectedCompositionProfiles": 246,
+      "expectedArrangements": 265016
+    },
+    "randomLabelCalibration": {
+      "drawsPerProfile": 100000,
+      "globalProfiles": [
+        [3,3], [1,5], [2,2,2],
+        [5,5], [1,9], [4,3,3],
+        [10,10], [2,18], [7,7,6],
+        [50,50], [10,90], [34,33,33]
+      ],
+      "duplicateProfiles": "n=20 and n=100, grouped/interleaved value layouts, with balanced and heterogeneous fixed within-value label counts",
+      "adjacencyPassRule": "absolute corrected mean <= max(5 Monte Carlo SE, 0.001)",
+      "equalValuePassRule": "absolute conditioned-corrected mean <= max(5 Monte Carlo SE, 0.001)",
+      "otherMetrics": "report finite-size and composition-dependent means, quantiles, undefined rates, and bounds; zero is not assumed"
+    },
+    "populationReplay": "every scenario ID, scenario JSON hash, terminal, accepted-swap count, final-state hash, and original-adjacency trajectory hash must match validated S03"
+  },
+  "inference": {
+    "bootstrapDraws": 10000,
+    "associationAnchors": "positive and negative versus absent at each input, each pairwise 50/50 policy set, and balanced three-way composition (16 paired contrasts)",
+    "compositionAudit": "10/90 and 90/10 versus 50/50 under absent correlation (12 paired contrasts), descriptive because alternate metrics have deliberately different composition scaling",
+    "independentDirectionalMetrics": [
+      "categorical_assortativity",
+      "largest_label_capture",
+      "signed_neighbor_nmi"
+    ],
+    "excludedFromIndependentCount": [
+      "original adjacency (reference)",
+      "run length (algebraically redundant)",
+      "unsigned neighbor MI (does not encode clustering direction)",
+      "equal-value conditioning (duplicate-specific estimand)"
+    ],
+    "familywiseIntervals": "Bonferroni 95% family coverage separately over 16 association contrasts for each metric",
+    "correlations": "Spearman and Kendall rank correlations on 186 condition-level final means and AUCs; pairwise complete observations",
+    "disagreement": "sign, rank-quartile, and adjusted-contrast disagreements are reported rather than discarded"
+  },
+  "successCriteria": {
+    "execution": "all 46,500 scenarios and 4,696,500 grid rows validate against S03",
+    "calibration": "all adjacency and estimable equal-value corrected random-label calibrations pass their frozen tolerance",
+    "associationRobustness": "at least 12 of 16 association anchors have a Bonferroni lower confidence bound above zero for at least two of the three independent directional metrics",
+    "rankRobustness": "corrected original-adjacency final condition means have Spearman rho >=0.70 with at least two of the three independent directional metrics",
+    "classification": "supportive if all four clauses pass; constraining/contradictory if execution/calibration pass but either robustness clause fails; null if execution is valid but no usable alternate signal is found"
+  },
+  "claimBoundary": "All measures are computational summaries of simulated one-dimensional policy-label arrangements. They do not establish biological aggregation, affinity, causality, intention, or attractors. Static random-label calibration is not a dynamic peak null."
+}
