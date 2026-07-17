@@ -98,15 +98,21 @@ def test_optimizer_and_matched_nulls_are_deterministic_exact_and_unique() -> Non
     first = optimal_policy_pattern(values, policies, ("determinism", 1))
     replay = optimal_policy_pattern(values, policies, ("determinism", 1))
     assert np.array_equal(first["binary"], replay["binary"])
-    patterns, audit = matched_optimum_patterns(values, first, "test-null-support", channels=8)
-    replay_patterns, replay_audit = matched_optimum_patterns(
+    physical, patterns, audit = matched_optimum_patterns(
         values, first, "test-null-support", channels=8
     )
+    replay_physical, replay_patterns, replay_audit = matched_optimum_patterns(
+        values, first, "test-null-support", channels=8
+    )
+    assert np.array_equal(physical, replay_physical)
     assert np.array_equal(patterns, replay_patterns)
     assert audit == replay_audit
     assert audit["uniquePatterns"] == 8
+    assert audit["demonstratedDistinctAssignments"] == 9
     assert audit["allEdgeMatched"]
-    assert all(_same_edges(row) == first["minimumSameEdges"] for row in patterns)
+    assert _same_edges(physical) == audit["supportQualifiedSameEdges"]
+    assert all(_same_edges(row) == audit["supportQualifiedSameEdges"] for row in patterns)
+    assert audit["supportQualifiedSameEdges"] >= first["minimumSameEdges"]
     values_array = np.asarray(values)
     for row in patterns:
         for value, count in first["policyOneCounts"].items():

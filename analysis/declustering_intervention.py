@@ -103,6 +103,7 @@ ARMS = (
 )
 GRID = np.linspace(0.0, 1.0, 101)
 NULL_CHANNELS = 32
+SUPPORT_BANK_DRAWS = 250_000
 BOOTSTRAP_DRAWS = 10_000
 
 
@@ -210,7 +211,7 @@ def _specification_markdown(contract_hash: str) -> str:
 | Research step ID | S10 |
 | Completion status | Design frozen before any S10 restoration outcome |
 | Artifacts written | `preregistration.json`, `freeze_record.json`, and this specification |
-| Validation result | Pre-outcome design passed: three repeated anchors, 75 paired sources, exposure-qualified peak checkpoints, exact within-value optimizer, five continuation arms, 32 matched label-null channels, and 75 unique-input feasibility audits |
+| Validation result | Pre-outcome amended design passed: three repeated anchors, 75 paired sources, exposure-qualified peak checkpoints, an exact lower-bound optimizer plus a 250,000-draw support-qualified bank, five continuation arms, 32 distinct matched label-null channels, and 75 unique-input feasibility audits |
 | Outcome classification | Pending S10 execution |
 | Caveats or blockers | Exact value-sequence preservation makes physical de-clustering structurally impossible for unique values; two repeated conditions use preterminal exposure-qualified peaks because their global peaks are terminal; position-local cursor transfer is sensitivity only |
 | Recommended next action | Execute the frozen S10 intervention and validation, apply operational-attractor terminology only if every gate passes, and stop before S11 |
@@ -222,10 +223,12 @@ Contract SHA-256: `{contract_hash}`.
 S10 moves unchanged policy-bearing identities only among positions holding the
 same value. The exact positional value sequence, both Sortedness definitions,
 policy counts within every value, and all immutable cell fields therefore stay
-fixed. The primary cursor map remains attached to identity. The physical target
-is the exact minimum same-policy edge count allowed by those constraints.
+fixed. The primary cursor map remains attached to identity. An exact solver
+records the unconstrained minimum; the physical target is the smallest edge-
+count bin in a fixed 250,000-draw within-value bank with demonstrated support
+for one physical plus 32 distinct matched assignments.
 
-The 32 matched nulls create the same immediate edge minimum and preserve the
+The 32 matched nulls create the same immediate edge count and preserve the
 same label-by-value counts, but alter only action-irrelevant analysis labels on
 the untouched continuation. Their recovery is a metric-geometry control, not a
 neutral physical process. Recovery is contemporaneous gap closure relative to
@@ -292,13 +295,99 @@ def assert_frozen(output: Path = OUTPUT_DIR) -> dict[str, Any]:
     record = json.loads((output / "freeze_record.json").read_text())
     if not record["frozenBeforeOutcomes"]:
         raise AssertionError("S10 was not frozen before outcomes")
-    if record["contractSha256"] != sha256_file(CONTRACT_PATH):
+    amendment_path = output / "freeze_amendment.json"
+    amendment = json.loads(amendment_path.read_text()) if amendment_path.exists() else None
+    expected_contract_hash = (
+        amendment["amendedContractSha256"] if amendment else record["contractSha256"]
+    )
+    expected_implementation_hash = (
+        amendment["amendedImplementationSha256"]
+        if amendment
+        else record["implementationSha256"]
+    )
+    if expected_contract_hash != sha256_file(CONTRACT_PATH):
         raise AssertionError("S10 contract changed after freeze")
-    if record["implementationSha256"] != sha256_file(Path(__file__).resolve()):
+    if expected_implementation_hash != sha256_file(Path(__file__).resolve()):
         raise AssertionError("S10 implementation changed after freeze")
     if S11_DIR.exists():
         raise AssertionError("S11 artifacts appeared during S10")
     return record
+
+
+def amend_freeze(output: Path = OUTPUT_DIR, cache: Path = CACHE_DIR) -> dict[str, Any]:
+    record = json.loads((output / "freeze_record.json").read_text())
+    if (output / "freeze_amendment.json").exists():
+        raise FileExistsError("S10 freeze amendment already exists")
+    checkpoint = cache / "declustering_continuations.jsonl"
+    written_records = 0
+    if checkpoint.exists():
+        with checkpoint.open() as handle:
+            written_records = sum(bool(line.strip()) for line in handle)
+    if written_records != 0:
+        raise AssertionError("cannot make pre-outcome amendment after results exist")
+    if S11_DIR.exists():
+        raise AssertionError("S11 artifacts exist before S10 amendment")
+    contract = json.loads(CONTRACT_PATH.read_text())
+    amendment = {
+        "schema": "e04.s10.freeze_amendment.v1",
+        "researchStepId": "S10",
+        "amendedAt": datetime.now(timezone.utc).isoformat(),
+        "frozenBeforeOutcomes": True,
+        "resultRecordsAtAmendment": written_records,
+        "reason": "The original exact-minimum/per-value matched-null constraint produced only one distinct matched alternative in a feasibility run, below the frozen 32-channel requirement.",
+        "scientificRulesChanged": [
+            "De-clustering magnitude changed from the unconstrained exact minimum to the strongest edge-count bin with demonstrated support for 33 distinct assignments."
+        ],
+        "scientificRulesUnchanged": [
+            "checkpoint selection",
+            "value, count, Sortedness, policy, identity, runtime-key, and cursor preservation",
+            "32 matched action-irrelevant channels",
+            "recovery estimands, uncertainty, gates, and claim boundaries",
+            "S11 stop boundary",
+        ],
+        "originalContractSha256": record["contractSha256"],
+        "originalImplementationSha256": record["implementationSha256"],
+        "amendedContractSha256": sha256_file(CONTRACT_PATH),
+        "amendedImplementationSha256": sha256_file(Path(__file__).resolve()),
+        "gitHead": _git_output("rev-parse", "HEAD"),
+        "s11Absent": not S11_DIR.exists(),
+    }
+    write_json(output / "preregistration.json", contract)
+    write_json(output / "freeze_amendment.json", amendment)
+    (output / "declustering_specification.md").write_text(
+        _specification_markdown(amendment["amendedContractSha256"]), encoding="utf-8"
+    )
+    amendment_report = """# S10 pre-outcome feasibility amendment
+
+## Top summary
+
+| Field | Result |
+| --- | --- |
+| Research step ID | S10 |
+| Completion status | Pre-outcome amendment complete; S10 execution not yet run |
+| Artifacts written | `freeze_amendment.json`, amended `preregistration.json`, amended `declustering_specification.md`, and this report |
+| Validation result | Passed: the failed run wrote 0 result records; the v2 design retains all preservation and decision rules while requiring demonstrated support for 33 distinct assignments |
+| Outcome classification | Pending S10 execution; no recovery outcome existed at amendment time |
+| Caveats or blockers | The support-qualified target can be weaker than the exact unconstrained minimum; this is required for a valid 32-channel matched comparison |
+| Recommended next action | Execute the amended frozen S10 corpus, validate support and preservation per scenario, and stop before S11 |
+
+The original design required the exact constrained de-clustering minimum and 32
+distinct matched assignments at that same minimum. A zero-result feasibility
+run found only one distinct matched alternative in a source scenario. The
+cache contained zero JSONL records, so no continuation or recovery outcome had
+been written or examined.
+
+The amended design first retains the exact MILP minimum as a lower-bound audit,
+then draws a fixed 250,000-assignment bank uniformly within each value stratum.
+It chooses the smallest edge-count bin with at least 33 distinct assignments,
+designates one assignment as physical, and uses 32 others as action-irrelevant
+matched labels. Checkpoints, all value/state/runtime/cursor preservation rules,
+estimands, bootstrap, terminology gates, and the S11 stop boundary are unchanged.
+"""
+    (output / "pre_outcome_feasibility_amendment.md").write_text(
+        amendment_report, encoding="utf-8"
+    )
+    return amendment
 
 
 def _same_edges(pattern: np.ndarray) -> int:
@@ -407,102 +496,87 @@ def optimal_policy_pattern(
     }
 
 
-def _random_optimum_milp(
-    values: Sequence[int], policy_one_counts: Mapping[int, int], transitions: int, address: Sequence[Any]
-) -> np.ndarray:
-    constraint, variables = _milp_constraints(values, policy_one_counts, transitions)
-    n = len(values)
-    rng = np.random.Generator(
-        np.random.PCG64DXSM(derive_seed("null_milp_tie", *address))
-    )
-    objective = np.zeros(variables, dtype=np.float64)
-    objective[:n] = rng.normal(size=n)
-    result = milp(
-        objective,
-        integrality=np.ones(variables, dtype=np.uint8),
-        bounds=Bounds(np.zeros(variables), np.ones(variables)),
-        constraints=constraint,
-        options={"presolve": True},
-    )
-    if not result.success or result.x is None:
-        raise RuntimeError(f"random optimum MILP failed: {result.message}")
-    return np.rint(result.x[:n]).astype(np.uint8)
-
-
 def matched_optimum_patterns(
     values: Sequence[int], optimum: Mapping[str, Any], scenario_id: str, channels: int = NULL_CHANNELS
-) -> tuple[np.ndarray, dict[str, Any]]:
-    target = np.asarray(optimum["binary"], dtype=np.uint8)
-    minimum_edges = int(optimum["minimumSameEdges"])
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Return one physical and ``channels`` label targets at the strongest supported edge count.
+
+    Each bank row is an independent uniform assignment conditional on the
+    exact policy-one count inside each value stratum.  The smallest edge-count
+    bin with at least one physical plus ``channels`` distinct rows is selected
+    without inspecting continuation outcomes.
+    """
+    if channels < 1:
+        raise ValueError("channels must be positive")
+    n = len(values)
     values_array = np.asarray(values, dtype=np.int64)
     rng = np.random.Generator(
-        np.random.PCG64DXSM(derive_seed("matched_null_chain", scenario_id))
+        np.random.PCG64DXSM(derive_seed("support_qualified_bank", scenario_id))
     )
-    groups = [
-        np.flatnonzero(values_array == value)
-        for value in np.unique(values_array)
-        if len(np.unique(target[values_array == value])) == 2
-    ]
-    current = target.copy()
-    seen = {target.tobytes()}
-    output: list[np.ndarray] = []
-    accepted = 0
-    attempts = 0
-    max_attempts = 250_000
-    while len(output) < channels and attempts < max_attempts and groups:
-        attempts += 1
-        group = groups[int(rng.integers(0, len(groups)))]
-        zeros = group[current[group] == 0]
-        ones = group[current[group] == 1]
-        if not len(zeros) or not len(ones):
+    bank = np.zeros((SUPPORT_BANK_DRAWS, n), dtype=np.uint8)
+    for value in np.unique(values_array):
+        positions = np.flatnonzero(values_array == value)
+        count = int(optimum["policyOneCounts"][int(value)])
+        if count == 0:
             continue
-        first = int(zeros[int(rng.integers(0, len(zeros)))])
-        second = int(ones[int(rng.integers(0, len(ones)))])
-        current[first], current[second] = current[second], current[first]
-        if _same_edges(current) != minimum_edges:
-            current[first], current[second] = current[second], current[first]
+        if count == len(positions):
+            bank[:, positions] = 1
             continue
-        accepted += 1
-        key = current.tobytes()
-        if key not in seen:
-            seen.add(key)
-            output.append(current.copy())
-    fallback_solves = 0
-    for channel in range(512):
-        if len(output) >= channels:
+        scores = rng.random((SUPPORT_BANK_DRAWS, len(positions)))
+        selected = np.argpartition(scores, count - 1, axis=1)[:, :count]
+        bank[np.arange(SUPPORT_BANK_DRAWS)[:, None], positions[selected]] = 1
+    edge_counts = np.sum(bank[:, :-1] == bank[:, 1:], axis=1)
+    required = channels + 1
+    selected_patterns: list[np.ndarray] | None = None
+    selected_edge_count: int | None = None
+    selected_sample_count = 0
+    for edge_count in range(int(optimum["minimumSameEdges"]), n):
+        indices = np.flatnonzero(edge_counts == edge_count)
+        if len(indices) < required:
+            continue
+        unique: list[np.ndarray] = []
+        seen: set[bytes] = set()
+        for index in indices:
+            candidate = bank[int(index)]
+            key = candidate.tobytes()
+            if key not in seen:
+                seen.add(key)
+                unique.append(candidate.copy())
+                if len(unique) == required:
+                    break
+        if len(unique) == required:
+            selected_patterns = unique
+            selected_edge_count = edge_count
+            selected_sample_count = len(indices)
             break
-        candidate = _random_optimum_milp(
-            values,
-            optimum["policyOneCounts"],
-            int(optimum["maximumTransitions"]),
-            (scenario_id, channel),
-        )
-        fallback_solves += 1
-        key = candidate.tobytes()
-        if key not in seen and _same_edges(candidate) == minimum_edges:
-            seen.add(key)
-            output.append(candidate)
-    if len(output) != channels:
+    if selected_patterns is None or selected_edge_count is None:
         raise RuntimeError(
-            f"matched-null optimum support insufficient: {len(output)}/{channels}"
+            f"support-qualified bank lacks {required} distinct assignments"
         )
-    matrix = np.stack(output)
+    physical = selected_patterns[0]
+    matrix = np.stack(selected_patterns[1:])
     hamming = []
     for first in range(channels):
         for second in range(first + 1, channels):
             hamming.append(float(np.mean(matrix[first] != matrix[second])))
     audit = {
+        "supportBankDraws": SUPPORT_BANK_DRAWS,
         "channels": channels,
+        "requiredDistinctAssignments": required,
+        "demonstratedDistinctAssignments": len(selected_patterns),
         "uniquePatterns": len({row.tobytes() for row in matrix}),
-        "chainAttempts": attempts,
-        "chainAccepted": accepted,
-        "fallbackMilpSolves": fallback_solves,
-        "minimumSameEdges": minimum_edges,
-        "allEdgeMatched": bool(all(_same_edges(row) == minimum_edges for row in matrix)),
+        "selectedBinSampleCount": selected_sample_count,
+        "exactMinimumSameEdges": int(optimum["minimumSameEdges"]),
+        "supportQualifiedSameEdges": selected_edge_count,
+        "distanceFromExactMinimum": selected_edge_count - int(optimum["minimumSameEdges"]),
+        "allEdgeMatched": bool(
+            _same_edges(physical) == selected_edge_count
+            and all(_same_edges(row) == selected_edge_count for row in matrix)
+        ),
         "minimumPairwiseHamming": min(hamming) if hamming else 0.0,
         "medianPairwiseHamming": float(np.median(hamming)) if hamming else 0.0,
     }
-    return matrix, audit
+    return physical, matrix, audit
 
 
 def realize_identity_shuffle(
@@ -804,9 +878,14 @@ def _worker(task: Mapping[str, Any], peak_progress: Mapping[str, float]) -> dict
     policy_sequence = [source.cell_map[cell_id].policy.value for cell_id in checkpoint.occupancy]
     policy_by_id = {cell.cell_id: cell.policy.value for cell in source.cells}
     optimum = optimal_policy_pattern(values, policy_sequence, (source.scenario_id, "physical"))
-    null_patterns, null_audit = matched_optimum_patterns(values, optimum, source.scenario_id)
+    physical_pattern, null_patterns, null_audit = matched_optimum_patterns(
+        values, optimum, source.scenario_id
+    )
+    physical_policy_pattern = tuple(
+        optimum["policyNames"][int(value)] for value in physical_pattern
+    )
     target_occupancy, realization_audit = realize_identity_shuffle(
-        source, checkpoint, optimum["pattern"]
+        source, checkpoint, physical_policy_pattern
     )
     null_labels = [
         _labels_from_pattern(source, checkpoint, pattern, optimum["policyNames"])
@@ -884,9 +963,9 @@ def _worker(task: Mapping[str, Any], peak_progress: Mapping[str, float]) -> dict
     pre_aggregation = float(sampled["no_switch"]["metric"][0])
     post_aggregation = float(sampled["decluster_identity_cursor"]["metric"][0])
     initial_drop = pre_aggregation - post_aggregation
-    expected_minimum = int(optimum["minimumSameEdges"]) / 100.0 - 0.49
-    if abs(post_aggregation - expected_minimum) > 1e-12:
-        raise AssertionError("physical intervention missed exact minimum")
+    expected_target = int(null_audit["supportQualifiedSameEdges"]) / 100.0 - 0.49
+    if abs(post_aggregation - expected_target) > 1e-12:
+        raise AssertionError("physical intervention missed support-qualified target")
     if not np.allclose(null_metrics[:, 0], post_aggregation, atol=0.0, rtol=0.0):
         raise AssertionError("matched label null magnitude mismatch")
 
@@ -978,16 +1057,23 @@ def _worker(task: Mapping[str, Any], peak_progress: Mapping[str, float]) -> dict
         "pre_corrected_aggregation": pre_aggregation,
         "post_corrected_aggregation": post_aggregation,
         "initial_drop": initial_drop,
-        "minimum_same_edges": int(optimum["minimumSameEdges"]),
+        "pre_same_edges": int(round((pre_aggregation + 0.49) * 100)),
+        "exact_minimum_same_edges": int(optimum["minimumSameEdges"]),
+        "support_qualified_same_edges": int(null_audit["supportQualifiedSameEdges"]),
         "maximum_transitions": int(optimum["maximumTransitions"]),
-        "exact_minimum_attained": abs(post_aggregation - expected_minimum) <= 1e-12,
-        "attainable_fraction_removed": 1.0 if initial_drop > 0 else 0.0,
+        "support_qualified_target_attained": abs(post_aggregation - expected_target) <= 1e-12,
+        "attainable_fraction_removed": (
+            (int(round((pre_aggregation + 0.49) * 100)) - int(null_audit["supportQualifiedSameEdges"]))
+            / (int(round((pre_aggregation + 0.49) * 100)) - int(optimum["minimumSameEdges"]))
+            if int(round((pre_aggregation + 0.49) * 100)) > int(optimum["minimumSameEdges"])
+            else 0.0
+        ),
         **{f"realization_{key}": value for key, value in realization_audit.items()},
         **{f"null_{key}": value for key, value in null_audit.items()},
         "all_null_initial_magnitude_matched": bool(
             np.allclose(null_metrics[:, 0], post_aggregation, atol=0.0, rtol=0.0)
         ),
-        "target_pattern_hash": hashlib.sha256(np.asarray(optimum["binary"], dtype=np.uint8).tobytes()).hexdigest(),
+        "target_pattern_hash": hashlib.sha256(physical_pattern.tobytes()).hexdigest(),
         "null_pattern_bank_hash": hashlib.sha256(null_patterns.tobytes()).hexdigest(),
     }
     source_row = {
@@ -1424,10 +1510,15 @@ def analyze(output: Path = OUTPUT_DIR, cache: Path = CACHE_DIR) -> dict[str, Any
         and scheduler.runtime_basis_equal.all()
     )
     optimizer_pass = bool(
-        interventions.exact_minimum_attained.all()
+        interventions.support_qualified_target_attained.all()
         and interventions.all_null_initial_magnitude_matched.all()
         and (interventions.null_uniquePatterns == NULL_CHANNELS).all()
+        and (interventions.null_demonstratedDistinctAssignments >= NULL_CHANNELS + 1).all()
         and interventions.null_allEdgeMatched.all()
+        and (
+            interventions.support_qualified_same_edges
+            >= interventions.exact_minimum_same_edges
+        ).all()
     )
     intervention_gate = bool(
         optimizer_pass
@@ -1808,6 +1899,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("freeze")
+    subparsers.add_parser("amend-freeze")
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("--workers", type=int, default=8)
     subparsers.add_parser("analyze")
@@ -1816,6 +1908,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "freeze":
         freeze_design()
+    elif args.command == "amend-freeze":
+        amend_freeze()
     elif args.command == "run":
         if not 1 <= args.workers <= 8:
             raise ValueError("workers must be in [1,8]")

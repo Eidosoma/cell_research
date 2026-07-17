@@ -1,8 +1,8 @@
 {
-  "schema": "e04.s10.declustering_contract.v1",
+  "schema": "e04.s10.declustering_contract.v2",
   "researchStepId": "S10",
   "title": "Perform a de-clustering intervention",
-  "frozenQuestion": "After physically removing as much policy adjacency as possible at a state-matched exposure-qualified aggregation peak while preserving the exact value sequence and policy-bearing identities, do native local dynamics reconstruct the lost aggregation faster and more extensively than action-irrelevant matched label shuffles?",
+  "frozenQuestion": "After applying the strongest policy de-clustering magnitude with prespecified support for one physical assignment and 32 distinct matched label assignments at a state-matched exposure-qualified aggregation peak, while preserving the exact value sequence and policy-bearing identities, do native local dynamics reconstruct the lost aggregation faster and more extensively than action-irrelevant matched label shuffles?",
   "scope": {
     "starts": "S10",
     "stopsBefore": "S11",
@@ -36,10 +36,10 @@
     "qualification": "Bubble+Selection and Insertion+Selection have terminal full-trajectory maxima; their S10 checkpoints are exposure-qualified preterminal peaks, not their global maxima."
   },
   "declusteringMagnitude": {
-    "objective": "Minimize same-executable-policy edges on the 99-edge open path, equivalently maximize adjacent policy transitions, subject to exact per-value policy counts at the checkpoint.",
-    "solver": "Exact binary mixed-integer linear program with transition indicators and equality constraints for each of the ten value strata. A second deterministic SHA-256-addressed linear objective selects one optimum without using continuation outcomes.",
+    "objective": "Find the smallest same-executable-policy edge count on the 99-edge open path that has prespecified demonstrated support for one physical assignment plus 32 distinct matched assignments, subject to exact per-value policy counts at the checkpoint.",
+    "solver": "First solve an exact binary mixed-integer program for the unconstrained minimum as an audit bound. Then draw 250,000 deterministic assignments uniformly within each value stratum and choose the smallest edge-count bin containing at least 33 distinct assignments. This support-qualified magnitude is fixed without continuation outcomes.",
     "identityRealization": "Keep an identity at its position whenever its policy already matches the optimal target. Reassign only mismatched identities among equal-value positions that require their unchanged policy, using deterministic SHA-256 ordering.",
-    "frozenMagnitude": "Use the exact attainable minimum in every scenario, not a post hoc percentile or hand-tuned drop. Record raw drop, fraction of attainable drop, identities moved, and total displacement.",
+    "frozenMagnitude": "Use the strongest support-qualified magnitude in every scenario, not a post hoc recovery-based choice. Deterministically designate one supported assignment as physical and the next 32 as matched labels. Record the exact unconstrained minimum, support-qualified edge count, raw drop, fraction of the exact attainable drop, identities moved, and total displacement.",
     "adequacyGate": "Median immediate corrected-adjacency drop must be at least 0.10 and at least 90% of scenarios must drop by at least 0.05."
   },
   "arms": [
@@ -70,15 +70,15 @@
     }
   ],
   "matchedNullShuffles": {
-    "definition": "Thirty-two deterministic action-irrelevant label assignments per scenario, carried by unchanged identities on the no-switch continuation.",
+    "definition": "Thirty-two deterministic action-irrelevant label assignments per scenario, carried by unchanged identities on the no-switch continuation and drawn from the same support-qualified edge-count bin as the physical target.",
     "constraints": [
       "exact global 50/50 label counts",
       "exact label counts within every value stratum equal to the executable-policy counts",
-      "the same checkpoint same-label edge count as the exact physical de-clustering optimum",
+      "the same checkpoint same-label edge count as the support-qualified physical de-clustering target",
       "no change to occupancy, values, executable policies, Selection cursors, counters, ledger, seed, or runtime key"
     ],
-    "generation": "Start from the exact optimum and use a SHA-256-addressed Markov chain that swaps opposite labels only within equal-value strata and accepts only arrangements retaining the optimum edge count. Exclude the physical target pattern and require 32 unique arrangements; use outcome-blind randomized exact-solver tie objectives only if the chain lacks support.",
-    "interpretation": "These are matched apparent de-clusterings with no action pathway. They control regression and geometry of the aggregation metric; they are not a claim of uniform sampling over all optimum arrangements."
+    "generation": "Use a SHA-256-addressed fixed bank of 250,000 assignments sampled uniformly and independently within each value stratum. Select the smallest edge-count bin with at least 33 distinct assignments, designate one as the physical target, and use 32 others as matched labels. The selection is outcome-blind and deterministic.",
+    "interpretation": "These are matched apparent de-clusterings with no action pathway. They control regression and geometry of the aggregation metric; they are not a claim of uniform sampling conditional on the selected edge-count bin."
   },
   "statePreservation": {
     "primaryPhysical": [
@@ -92,7 +92,7 @@
     ],
     "allowedPrimaryChanges": [
       "occupancy among equal-value identities",
-      "policy arrangement across positions induced only by moving unchanged identities"
+      "policy arrangement across positions induced only by moving unchanged identities to the support-qualified target"
     ],
     "sensitivityCursorException": "Only the explicitly specified Selection cursor reassignment differs from primary. Occupancy and every other preserved field must match the primary intervention.",
     "sham": "Every RunState field and every cell field must be exact.",
@@ -121,7 +121,7 @@
   "operationalAttractorCriteria": {
     "terminology": "Use the phrase operational aggregation attractor only if every validity, intervention, completion, restoration, timing, and matched-null-excess gate passes. Never imply biological adhesion, intention, or a state-space proof of a mathematical attractor.",
     "validity": "All 75 sources replay S07 exactly; all physical and null assignments satisfy their preservation contracts; no_switch equals sham and matched_label_replay transitions equal no_switch; runtime/scheduler coupling, complete accounting, S01-S09 byte immutability, and S11 absence pass.",
-    "intervention": "The de-clustering adequacy gate passes and every primary intervention attains the exact solver minimum.",
+    "intervention": "The de-clustering adequacy gate passes; every primary intervention attains its support-qualified target; every target has at least 33 demonstrated distinct assignments; and the exact solver minimum remains a validated lower bound.",
     "completion": "Primary de-clustered completion is at least 95% overall and at least 90% in each condition, with no invariant failures and no more than a five-percentage-point loss from sham.",
     "restoration": "The pooled primary recoveryExtent bootstrap lower bound exceeds 0.50; at least two of three condition point estimates exceed 0.50.",
     "timing": "At least 70% of primary scenarios attain 0.50 gap closure and the median time-to-half among those scenarios is at most 0.50 common activation exposure.",
@@ -134,8 +134,9 @@
     "S10 tests restoration only in repeated-value balanced pairwise mixtures, because exact value-sequence preservation makes unique-value de-clustering structurally impossible.",
     "The physical intervention moves policy-bearing identities but never changes an identity's value or executable policy.",
     "Identity-owned cursor transfer is the clean-room primary semantics. Position-local cursor transfer is an explicitly non-primary sensitivity and may impair completion, as S09 warned.",
-    "Matched label shuffles control an action-irrelevant metric perturbation; they do not represent a neutral physical process or uniform sampling over all optimum arrangements.",
+    "Matched label shuffles control an action-irrelevant metric perturbation; they do not represent a neutral physical process or uniform sampling conditional on the support-qualified edge-count bin.",
     "A positive recovery response is simulator-local intervention evidence. It does not prove a mathematical attractor, biological affinity, adhesion, cognition, or intention.",
-    "S10 does not separate arbitrary policy and value reassignment and does not start S11."
+    "S10 does not separate arbitrary policy and value reassignment and does not start S11.",
+    "The original pre-outcome exact-minimum matched-null design was amended after a zero-result feasibility run demonstrated only one matched alternative in a source scenario; no continuation record or recovery outcome existed when this v2 contract was frozen."
   ]
 }
