@@ -1,0 +1,141 @@
+{
+  "schema": "e04.s10.declustering_contract.v1",
+  "researchStepId": "S10",
+  "title": "Perform a de-clustering intervention",
+  "frozenQuestion": "After physically removing as much policy adjacency as possible at a state-matched exposure-qualified aggregation peak while preserving the exact value sequence and policy-bearing identities, do native local dynamics reconstruct the lost aggregation faster and more extensively than action-irrelevant matched label shuffles?",
+  "scope": {
+    "starts": "S10",
+    "stopsBefore": "S11",
+    "sourceRegime": "S07 native_control only",
+    "sourceConditions": "The three repeated_1_10_x10 balanced 50/50 pairwise absent-association S06/S09 anchors.",
+    "sourceConditionCount": 3,
+    "replicatesPerCondition": 25,
+    "sourceScenarioCount": 75,
+    "uniqueFeasibilityConditions": 3,
+    "uniqueFeasibilityScenarios": 75,
+    "matchedNullChannels": 32,
+    "gridPoints": 101,
+    "holdoutReplicateOrdinals": [5, 15, 25, 35, 45, 55, 65, 75, 85, 95, 105, 115, 125, 135, 145, 155, 165, 175, 185, 195, 205, 215, 225, 235, 245]
+  },
+  "feasibilityBoundary": {
+    "exactValueSequenceRule": "The ordered value at every position must be byte-identical before and after intervention.",
+    "repeatedInputs": "Identities may be permuted only among positions occupied by equal values. This can change policy positions while preserving every positional value.",
+    "uniqueInputs": "With one identity per value, exact positional-value preservation permits no nontrivial identity permutation. The 75 unique anchor scenarios receive a structural infeasibility audit and no restoration claim.",
+    "relationToS11": "S10 never reassigns policies or values across identities. Broader policy-versus-value shuffles remain reserved for S11."
+  },
+  "checkpoint": {
+    "definition": "For each repeated anchor, use the earliest 101-grid progress point attaining the maximum validated S06 condition-mean corrected policy adjacency among progress points at or below 0.75.",
+    "exposureCap": 0.75,
+    "reason": "S09 established that terminal peak checkpoints have no post-intervention exposure. The cap guarantees at least 25% of the validated native accepted-swap trajectory remains while retaining the highest upstream-only eligible aggregation checkpoint.",
+    "progressByCondition": {
+      "S03-REP-BUB-INS-P50-ABS": 0.16,
+      "S03-REP-BUB-SEL-P50-ABS": 0.36,
+      "S03-REP-INS-SEL-P50-ABS": 0.75
+    },
+    "targetRule": "Intervene immediately after accepted-swap count floor(progress times the scenario's validated S07 native final successful-swap count), before the next activation.",
+    "qualification": "Bubble+Selection and Insertion+Selection have terminal full-trajectory maxima; their S10 checkpoints are exposure-qualified preterminal peaks, not their global maxima."
+  },
+  "declusteringMagnitude": {
+    "objective": "Minimize same-executable-policy edges on the 99-edge open path, equivalently maximize adjacent policy transitions, subject to exact per-value policy counts at the checkpoint.",
+    "solver": "Exact binary mixed-integer linear program with transition indicators and equality constraints for each of the ten value strata. A second deterministic SHA-256-addressed linear objective selects one optimum without using continuation outcomes.",
+    "identityRealization": "Keep an identity at its position whenever its policy already matches the optimal target. Reassign only mismatched identities among equal-value positions that require their unchanged policy, using deterministic SHA-256 ordering.",
+    "frozenMagnitude": "Use the exact attainable minimum in every scenario, not a post hoc percentile or hand-tuned drop. Record raw drop, fraction of attainable drop, identities moved, and total displacement.",
+    "adequacyGate": "Median immediate corrected-adjacency drop must be at least 0.10 and at least 90% of scenarios must drop by at least 0.05."
+  },
+  "arms": [
+    {
+      "id": "no_switch",
+      "intervention": "None; continue the checkpoint state under native policies.",
+      "role": "untouched reference"
+    },
+    {
+      "id": "sham",
+      "intervention": "Rebuild an identical continuation object while preserving occupancy, cursor map, counters, ledger, seed, and source runtime key.",
+      "role": "object-rebuild and runtime-key sham"
+    },
+    {
+      "id": "decluster_identity_cursor",
+      "intervention": "Apply the exact within-value identity permutation and carry every Selection cursor with its owning identity.",
+      "role": "primary physical de-clustering arm"
+    },
+    {
+      "id": "decluster_position_cursor",
+      "intervention": "Apply the same identity permutation; at destinations previously occupied by Selection, transfer that position's cursor to the new Selection identity, reset newly Selection positions to the ascending boundary 0, and remove cursors from non-Selection identities.",
+      "role": "prespecified policy-state sensitivity"
+    },
+    {
+      "id": "matched_label_replay",
+      "intervention": "Do not move identities or alter executable policies; attach the first matched-null label arrangement to identities at the checkpoint and directly replay it.",
+      "role": "label-blind transition validation"
+    }
+  ],
+  "matchedNullShuffles": {
+    "definition": "Thirty-two deterministic action-irrelevant label assignments per scenario, carried by unchanged identities on the no-switch continuation.",
+    "constraints": [
+      "exact global 50/50 label counts",
+      "exact label counts within every value stratum equal to the executable-policy counts",
+      "the same checkpoint same-label edge count as the exact physical de-clustering optimum",
+      "no change to occupancy, values, executable policies, Selection cursors, counters, ledger, seed, or runtime key"
+    ],
+    "generation": "Start from the exact optimum and use a SHA-256-addressed Markov chain that swaps opposite labels only within equal-value strata and accepts only arrangements retaining the optimum edge count. Exclude the physical target pattern and require 32 unique arrangements; use outcome-blind randomized exact-solver tie objectives only if the chain lacks support.",
+    "interpretation": "These are matched apparent de-clusterings with no action pathway. They control regression and geometry of the aggregation metric; they are not a claim of uniform sampling over all optimum arrangements."
+  },
+  "statePreservation": {
+    "primaryPhysical": [
+      "exact positional value sequence",
+      "exact strict paper Sortedness and non-strict reference Sortedness",
+      "all cell IDs exactly once",
+      "immutable identity value, executable policy, direction, fault, and analysis label",
+      "global and per-value policy counts",
+      "identity-owned Selection cursor map exactly",
+      "activation count, stream counters, ledger, seed, max activations, and source scenario_id"
+    ],
+    "allowedPrimaryChanges": [
+      "occupancy among equal-value identities",
+      "policy arrangement across positions induced only by moving unchanged identities"
+    ],
+    "sensitivityCursorException": "Only the explicitly specified Selection cursor reassignment differs from primary. Occupancy and every other preserved field must match the primary intervention.",
+    "sham": "Every RunState field and every cell field must be exact.",
+    "matchedLabels": "Only Cell.analysis_label may differ; all transition-relevant fields must be exact."
+  },
+  "runtimeAndScheduler": {
+    "runtimeKey": "Every arm retains the source seed and source scenario_id. Modified scenarios are structurally validated under a content ID before restoring the S08/S09 runtime-key fixture.",
+    "eventClock": "Global activation_count continues without reset.",
+    "coupling": "All arms schedule the same actor identity and, because policies remain identity-fixed, query the same Bubble-side counter address at every common global event index until an arm terminates. Physical intervention changes actor position, not scheduled identity or random address.",
+    "comparisonClock": "Sample 101 common post-checkpoint activation-exposure points through the maximum paired terminal exposure. Carry completed, quiescent, or budget-terminated arms forward as absorbing states; retain accepted-swap progress only as a sensitivity descriptor."
+  },
+  "metricsAndEstimands": {
+    "aggregation": "Paper adjacency (same-policy edges divided by n=100) minus the exact 0.49 composition expectation.",
+    "initialDrop": "A_no(0) minus A_decluster(0).",
+    "gapClosureCurve": "1 - [A_no(t)-A_decluster(t)] / initialDrop. It is exactly zero immediately after intervention; one means the de-clustered arm has caught the contemporaneous untreated aggregation trajectory.",
+    "matchedNullGapClosure": "Replace A_decluster(t) with matched action-irrelevant label adjacency on the unchanged no-switch trajectory, using the same initialDrop denominator.",
+    "recoveryRate": "Gap closure at common activation progress 0.10 divided by 0.10.",
+    "recoveryExtent": "Maximum complete-curve gap closure.",
+    "recoveryTiming": "Earliest common activation progress attaining 0.50 gap closure; missing if never attained. Also report time of maximum recovery.",
+    "recoveryArea": "Piecewise-linear integral of positive gap closure.",
+    "nullExcessExtent": "Physical recoveryExtent minus maximum of the mean matched-null gap-closure curve.",
+    "nullExcessArea": "Physical recoveryArea minus positive area of the mean matched-null gap-closure curve.",
+    "uncertainty": "Ten-thousand deterministic paired bootstrap resamples within condition and stratified across conditions; percentile 95% intervals. Condition-level one-sided p-values are BH-adjusted within outcome.",
+    "primaryRule": "Identity-cursor physical intervention only. Position-cursor results are completion-sensitive diagnostics carrying forward S09's cursor caveat."
+  },
+  "operationalAttractorCriteria": {
+    "terminology": "Use the phrase operational aggregation attractor only if every validity, intervention, completion, restoration, timing, and matched-null-excess gate passes. Never imply biological adhesion, intention, or a state-space proof of a mathematical attractor.",
+    "validity": "All 75 sources replay S07 exactly; all physical and null assignments satisfy their preservation contracts; no_switch equals sham and matched_label_replay transitions equal no_switch; runtime/scheduler coupling, complete accounting, S01-S09 byte immutability, and S11 absence pass.",
+    "intervention": "The de-clustering adequacy gate passes and every primary intervention attains the exact solver minimum.",
+    "completion": "Primary de-clustered completion is at least 95% overall and at least 90% in each condition, with no invariant failures and no more than a five-percentage-point loss from sham.",
+    "restoration": "The pooled primary recoveryExtent bootstrap lower bound exceeds 0.50; at least two of three condition point estimates exceed 0.50.",
+    "timing": "At least 70% of primary scenarios attain 0.50 gap closure and the median time-to-half among those scenarios is at most 0.50 common activation exposure.",
+    "nullExcess": "Pooled bootstrap lower bounds exceed 0.20 for nullExcessExtent and zero for nullExcessArea; at least two of three conditions have positive point estimates for both.",
+    "supportive": "All operationalAttractorCriteria gates pass; apply the bounded phrase operational aggregation attractor.",
+    "null": "Validity and intervention pass but one or more restoration, timing, completion, or null-excess gates fail without a precise directional contradiction; do not apply the attractor label.",
+    "constrainingOrContradictory": "A preservation or validity gate fails, the intervention is infeasible, or the primary de-clustered trajectory is precisely less restorative than the matched null; do not apply the attractor label."
+  },
+  "claimBoundaries": [
+    "S10 tests restoration only in repeated-value balanced pairwise mixtures, because exact value-sequence preservation makes unique-value de-clustering structurally impossible.",
+    "The physical intervention moves policy-bearing identities but never changes an identity's value or executable policy.",
+    "Identity-owned cursor transfer is the clean-room primary semantics. Position-local cursor transfer is an explicitly non-primary sensitivity and may impair completion, as S09 warned.",
+    "Matched label shuffles control an action-irrelevant metric perturbation; they do not represent a neutral physical process or uniform sampling over all optimum arrangements.",
+    "A positive recovery response is simulator-local intervention evidence. It does not prove a mathematical attractor, biological affinity, adhesion, cognition, or intention.",
+    "S10 does not separate arbitrary policy and value reassignment and does not start S11."
+  ]
+}
