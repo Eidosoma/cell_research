@@ -1066,6 +1066,7 @@ def main() -> None:
         str(path.relative_to(output))
         for path in output.rglob("*")
         if path.is_file()
+        and path.name not in {"research_step_full_results.md", "artifact_manifest.json"}
     ]
     _write_report(output, panel, git_commit, prospective)
     _manifest(output, git_commit)
