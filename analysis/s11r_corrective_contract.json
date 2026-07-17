@@ -1,0 +1,108 @@
+{
+  "schema": "e04.s11r.corrective_contract.v1",
+  "researchStepId": "S11R",
+  "stepNumber": 11,
+  "title": "Correct positional-inversion matching and seek a completion-feasible value perturbation",
+  "frozenQuestion": "Can a support-qualified direct value-position reassignment be matched exactly on true positional inversion count and retain prespecified completion comparability in all six balanced repeated/unique policy-pair conditions, including every Selection condition, under unchanged native budgets and scheduler semantics?",
+  "scope": {
+    "preservesCompletedS11": true,
+    "stopsBefore": "S12",
+    "forbidsS12Execution": true,
+    "valueReassignmentIsPureMediation": false,
+    "claimBoundary": "Any qualifying contrast is specific to the frozen direct field-reassignment intervention. It is not a natural indirect effect, pure mediator intervention, or proof that value arrangement is the sole cause of aggregation."
+  },
+  "sourcePopulation": {
+    "conditions": [
+      "S03-REP-BUB-INS-P50-ABS",
+      "S03-REP-BUB-SEL-P50-ABS",
+      "S03-REP-INS-SEL-P50-ABS",
+      "S03-UNQ-BUB-INS-P50-ABS",
+      "S03-UNQ-BUB-SEL-P50-ABS",
+      "S03-UNQ-INS-SEL-P50-ABS"
+    ],
+    "calibrationScenariosPerCondition": 25,
+    "holdoutScenariosPerCondition": 25,
+    "selection": "Exclude S07 calibration ordinals congruent to 1 mod 10 and S07/S11 holdout ordinals congruent to 5 mod 10. Within each condition, SHA-256 rank the remaining 200 ordinals with the frozen S11R split address; allocate the first 25 to calibration, the next 25 to holdout, and the remaining 150 to reserve.",
+    "disjointFromS11Outcomes": true,
+    "holdoutSealedUntilCalibrationDecision": true
+  },
+  "checkpoint": {
+    "definition": "Earliest validated S06 aggregation maximum at or below 75% accepted-swap progress, carried forward from S11.",
+    "progressByCondition": {
+      "S03-REP-BUB-INS-P50-ABS": 0.16,
+      "S03-REP-BUB-SEL-P50-ABS": 0.36,
+      "S03-REP-INS-SEL-P50-ABS": 0.75,
+      "S03-UNQ-BUB-INS-P50-ABS": 0.19,
+      "S03-UNQ-BUB-SEL-P50-ABS": 0.33,
+      "S03-UNQ-INS-SEL-P50-ABS": 0.27
+    },
+    "targetAcceptedSwaps": "floor(progress * validated native final accepted swaps)",
+    "exactNativeReplayRequired": true
+  },
+  "matcher": {
+    "metric": "Count pairs i<j with value[i]>value[j]; equal values do not contribute.",
+    "candidateBankSize": 4096,
+    "minimumDistinctAssignmentsAtTarget": 16,
+    "primaryTarget": "Both selected assignments must have exactly the same true positional inversion count; intended distance is zero.",
+    "secondaryTarget": "Minimize absolute difference in total absolute value change among distinct assignments at the exact inversion target.",
+    "tertiaryTarget": "Maximize positional Hamming distance between assignments, then break ties by assignment hashes.",
+    "productionAssertion": "Every selected pair must attain true inversion-distance zero, exact requested changed-position count, a preserved global value multiset, no unchanged value on a selected position, and at least 16 distinct assignments in the selected exact target bin.",
+    "smallCaseValidation": "Exhaustively enumerate small unique and repeated-value arrangements and all candidate pairs used by the small-case fixtures; compare inversion counts and the matcher objective with independent brute force."
+  },
+  "candidateLadder": [
+    {"candidateId": "M02_MIN", "changedPositions": 2, "supportedPositiveTarget": "minimum"},
+    {"candidateId": "M02_MED", "changedPositions": 2, "supportedPositiveTarget": "median"},
+    {"candidateId": "M04_MED", "changedPositions": 4, "supportedPositiveTarget": "median"},
+    {"candidateId": "M06_MED", "changedPositions": 6, "supportedPositiveTarget": "median"},
+    {"candidateId": "M08_MED", "changedPositions": 8, "supportedPositiveTarget": "median"},
+    {"candidateId": "M12_MED", "changedPositions": 12, "supportedPositiveTarget": "median"},
+    {"candidateId": "M16_MED", "changedPositions": 16, "supportedPositiveTarget": "median"},
+    {"candidateId": "M24_MED", "changedPositions": 24, "supportedPositiveTarget": "median"}
+  ],
+  "calibration": {
+    "outcomeBlindRestriction": "Calibration reads assignment diagnostics and terminal/completion accounting only. Aggregation and Sortedness trajectories are neither retained nor analyzed.",
+    "arms": ["value_primary", "value_matched"],
+    "nativeReference": "The exactly replayed source is the no-switch/sham reference and must be complete in all selected scenarios.",
+    "perConditionArmMinimumComplete": 24,
+    "perConditionArmDenominator": 25,
+    "pooledArmMinimumComplete": 147,
+    "pooledArmDenominator": 150,
+    "maximumPrimaryMatchedCompletionDifferencePerCondition": 1,
+    "requiredInvariantErrors": 0,
+    "requiredPreservationFailures": 0,
+    "selectionRule": "Promote the last (strongest) candidate in the frozen ladder that passes every gate. If none passes, classify the intervention as completion-infeasible and do not execute holdout continuations."
+  },
+  "holdout": {
+    "executionRule": "Run only the single promoted calibration candidate.",
+    "arms": ["no_switch", "sham", "value_primary", "value_matched"],
+    "completionGate": "Repeat every calibration completion and validation threshold on the sealed holdout before estimating effects.",
+    "estimandsIfGatePasses": [
+      "paired value_primary minus no_switch composition-corrected adjacency curve and signed area",
+      "paired value_matched minus no_switch composition-corrected adjacency curve and signed area",
+      "paired reference-Sortedness curves as explicit task-progress diagnostics"
+    ],
+    "ifGateFails": "Document infeasibility and do not report a causal or component-effect estimate."
+  },
+  "preservation": {
+    "exact": [
+      "occupancy and identity order at intervention",
+      "identity set and bijection",
+      "policy, direction, fault, and analysis-label fields",
+      "global value multiset",
+      "activation count, stream counters, ledger, seed, scheduler, runtime key, and max_activations",
+      "Selection cursor map attached to the same identities"
+    ],
+    "changedByDesign": [
+      "value fields for exactly the requested identities",
+      "positional value arrangement",
+      "task progress and possibly policy-value association"
+    ],
+    "eventBudget": "Never increased, weakened, restarted, or conditionally extended.",
+    "schedulerCoupling": "Counter-addressed actor and policy-side streams remain identical because executable policies, seed, runtime key, and activation index are preserved."
+  },
+  "outcomeClassification": {
+    "supportive": "Calibration and holdout gates pass and yield a validated intervention-specific estimate.",
+    "constrainingContradictory": "No calibration candidate passes, or the promoted candidate fails holdout completion/validation.",
+    "null": "A validated feasible estimate is indistinguishable from zero with adequate precision."
+  }
+}
