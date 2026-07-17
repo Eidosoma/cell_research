@@ -1,0 +1,133 @@
+{
+  "schema": "e04.s13.conflict_phase_contract.v1",
+  "researchStepId": "S13",
+  "title": "Map conflicting-goal phase behavior",
+  "frozenBeforeNewOutcomes": true,
+  "frozenQuestion": "Across opposing-direction policy mixtures, which combinations of composition, relative activation, direction assignment, fault burden, initial disorder, and policy-value association produce fixed quiescence, dynamic equilibrium, oscillation, metastability, or active directional dominance?",
+  "scope": {
+    "starts": "S13",
+    "stopsBefore": "S14",
+    "architecture": "validated E01 cell-view reference semantics",
+    "n": 100,
+    "primaryActivationBudget": 200000,
+    "longActivationBudget": 1000000,
+    "activationGrid": "101 equally spaced activation-count checkpoints including zero and the budget",
+    "claimBoundary": "Regimes describe deterministic clean-room simulator behavior under frozen stochastic schedules. They do not identify a unique cause, biological goal, intention, or thermodynamic phase transition."
+  },
+  "factorial": {
+    "inputs": ["unique_1_100", "repeated_1_10_x10"],
+    "policyPairs": [
+      ["Bubble", "Insertion"],
+      ["Bubble", "Selection"],
+      ["Insertion", "Selection"]
+    ],
+    "directionAssignments": "Both opposing orientations for every canonical policy pair; six oriented pairs total.",
+    "firstPolicyCounts": [20, 35, 50, 65, 80],
+    "firstPolicyPerIdentityActivationMultipliers": [0.25, 0.5, 1.0, 2.0, 4.0],
+    "actorSelection": "At every activation, select policy 1 with probability r*n1/(r*n1+n2), then select uniformly within that policy; policy 2 has per-identity weight one. Counter-addressed SplitMix64 streams are common across paired factor cells.",
+    "faultMode": "stuck",
+    "exactFaultCounts": [0, 5, 10],
+    "faultPlacement": "Outcome-blind, exact, proportional largest-remainder allocation across policies and deterministic without-replacement selection within policy. Stuck identities neither act nor move, matching the validated E01 semantics.",
+    "initialStateProfiles": [
+      {
+        "name": "ascending_blocks_absent",
+        "disorder": "values sorted ascending, with deterministic within-block shuffling in ten-position blocks",
+        "policyValueAssociation": "absent"
+      },
+      {
+        "name": "random_absent",
+        "disorder": "paired E01 exploratory random occupancy",
+        "policyValueAssociation": "absent"
+      },
+      {
+        "name": "descending_blocks_absent",
+        "disorder": "values sorted descending, with deterministic within-block shuffling in ten-position blocks",
+        "policyValueAssociation": "absent"
+      },
+      {
+        "name": "random_positive",
+        "disorder": "paired E01 exploratory random occupancy",
+        "policyValueAssociation": "first policy assigned lower value ranks and second policy higher ranks"
+      },
+      {
+        "name": "random_negative",
+        "disorder": "paired E01 exploratory random occupancy",
+        "policyValueAssociation": "first policy assigned higher value ranks and second policy lower ranks"
+      }
+    ],
+    "structuralNote": "The three disorder levels form the absent-association core factorial. Strong positive and negative policy-value association are prespecified random-occupancy stress extensions, avoiding an unnecessary nine-cell disorder-by-association crossing while directly covering S12's failure region.",
+    "conditionCount": 4500,
+    "baseReplicatesPerCondition": 4,
+    "baseRunCount": 18000
+  },
+  "stateAndTransport": {
+    "stateVariables": [
+      "comparable-pair value order score in [-1,1]",
+      "composition-corrected paper-denominator policy adjacency",
+      "first-minus-second policy center-of-mass position",
+      "within-policy value-position correlations",
+      "local direction-specific goal satisfaction by policy",
+      "immutable policy-value Spearman rho and eta-squared",
+      "immutable direction-value Spearman rho"
+    ],
+    "windowVariables": [
+      "accepted-swap rate",
+      "fraction of identities moved",
+      "occupancy Hamming turnover",
+      "absolute and signed displacement flux by policy",
+      "cross-policy swap rate",
+      "center-cut crossing flux",
+      "actor activations by policy"
+    ],
+    "s12Constraint": "Complete-run four-number transport summaries are not treated as generally adequate. S13 uses explicit policy-value/state variables and activation-window-resolved flux. No S12 fit is reused as a causal or phase classifier."
+  },
+  "regimeDefinitions": {
+    "burnInFraction": 0.5,
+    "fixed_quiescence": "Exact no-admissible-change state at a checkpoint; zero subsequent state and turnover by construction. This classification has priority, while directional order is retained as an auxiliary state label.",
+    "active_dominance": "Not quiescent; median absolute value-order score over the last ten checkpoints is at least 0.70, the last-quarter range is at most 0.12, and the absolute full-horizon-scaled last-quarter slope is at most 0.10.",
+    "oscillation": "Not quiescent; sustained turnover in at least 70% of post-burn-in windows, detrended value-order or policy-position amplitude at least 0.20, dominant nonzero spectral power at least 0.35, an inferred period of 4-25 checkpoints, and at least three mean crossings.",
+    "metastability": "Not quiescent; after 20% progress, at least 15 consecutive checkpoints have value-order and policy-position spans at most 0.08 and median swap rate at most 0.001, followed by a state displacement at least 0.20 and renewed swap rate at least 0.002; longer-budget regime changes are separately reported as budget-instability, not silently relabeled.",
+    "dynamic_equilibrium": "Not quiescent and not dominance/oscillation/metastability; sustained turnover in at least 70% of post-burn-in windows, with last-quarter ranges at most 0.12 for value order and policy position and 0.10 for corrected adjacency, and absolute full-horizon-scaled slopes at most 0.10.",
+    "unresolved_transient": "Any budget-reaching trajectory that satisfies none of the frozen definitions. It is retained rather than forced into an equilibrium class.",
+    "sustainedTurnoverWindowRate": 0.0001,
+    "priority": ["fixed_quiescence", "active_dominance", "oscillation", "metastability", "dynamic_equilibrium", "unresolved_transient"]
+  },
+  "replicationAndBoundaryRules": {
+    "baseReplicateOrdinals": [0, 1, 2, 3],
+    "sequentialReplicateOrdinals": [4, 5, 6, 7, 8, 9, 10, 11],
+    "boundaryTrigger": "After all base runs, resample a condition to 12 replicates if its four run classes are not unanimous, or if its modal class differs from an adjacent composition or activation cell with every other factor fixed. The rule is applied simultaneously; outcomes from added replicates cannot alter eligibility.",
+    "postResamplingUncertainty": "Report multinomial class fractions, modal fraction, normalized entropy, and Wilson 95% interval for the modal fraction. Mark unresolved boundary uncertainty when modal fraction is below two thirds or its Wilson lower limit is below 0.40.",
+    "longBudgetSelection": "Always include the six paper-oriented, 50/50, activation-1, no-fault, random-absent input/pair anchors. Add outcome-blind-after-rule selections from primary results: within each oriented-pair x input x fault x state-profile stratum, choose at most one condition with highest class entropy among resampled adjacent-boundary cells, ties by condition ID. Cap at 186 total conditions by entropy then condition ID, while retaining all six anchors.",
+    "longBudgetReplicates": "Use every available primary replicate for each selected condition; rerun from the identical initial state and counter-addressed streams. The first 200,000 activations/checkpoints must replay exactly.",
+    "longBudgetStability": "Report run-level primary-versus-long regime agreement, quiescence/dominance direction agreement, endpoint drift, and condition modal agreement. A major regime is stable only when at least 80% of eligible runs retain class and condition modal agreement is at least 80%."
+  },
+  "uncertaintyEndpoints": {
+    "primary": [
+      "condition class probability vector",
+      "modal class and Wilson 95% interval",
+      "condition normalized regime entropy",
+      "value-order endpoint and last-quarter range",
+      "post-burn-in swap/flux persistence"
+    ],
+    "contrasts": "Composition and activation response surfaces are descriptive with Wilson intervals; no sharp critical point is claimed from the finite grid.",
+    "bootstrap": "Use 10000 deterministic condition-level bootstrap draws only for aggregate phase-prevalence and stability contrasts; discrete run-level class fractions retain Wilson intervals."
+  },
+  "adequacyCriteria": {
+    "supportive": "At least three prespecified substantive regimes (excluding unresolved) each occur in at least two independent oriented-policy/input strata, have at least one condition with modal fraction at least 0.80 after sequential sampling, and the major-regime long-budget stability rate is at least 0.80.",
+    "null": "Fewer than three substantive regimes are observed with adequate replicate and long-budget support, without a prior assumption being contradicted.",
+    "constrainingContradictory": "The evidence invalidates a planned regime distinction, shows widespread budget instability, or demonstrates that state-only plateaus labeled equilibrium by the paper lack sustained turnover/flux support.",
+    "paperLanguageAudit": "The paper's dynamic-equilibrium wording is supported only for matching paper-oriented anchor runs classified dynamic_equilibrium by both state and turnover/flux at primary and long budgets."
+  },
+  "validation": [
+    "all S01-S12 manifest-listed artifacts hash-identical before and after S13",
+    "exact factorial counts, exact policy/fault counts, and no S14 artifact directory",
+    "counter-addressed schedule deterministic prefix replay and actor-frequency calibration",
+    "fast phase kernel exact agreement with the ordinary validated transition engine on hand-built and randomly generated small cases",
+    "state metric fixtures for ascending, descending, blocked, moving-stable, oscillatory, and plateau-escape patterns",
+    "flux conservation: total absolute experienced displacement equals twice actor swap range and net displacement sums to zero",
+    "checkpoint occupancy remains a bijection and stuck identities never move",
+    "boundary eligibility recomputed independently and complete base/sequential accounting",
+    "long-budget first-200000 replay identity and selected-condition accounting",
+    "focused tests, deterministic run replay, artifact manifest validation, and S14 absence"
+  ]
+}
