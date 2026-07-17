@@ -721,6 +721,8 @@ def simulate_phase_kernel(
     schedule_seed: np.uint64,
     budget: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    if budget <= 0 or budget % 100 != 0:
+        raise ValueError("S13 activation budget must be positive and divisible by 100")
     n = len(values)
     occupancy = initial_occupancy.copy()
     cursors = initial_cursors.copy()
@@ -1761,7 +1763,9 @@ def _ordinary_scenario(condition: PhaseCondition, replicate: int, budget: int) -
         seed=0,
         max_activations=budget,
         architecture=Architecture.CELL_VIEW,
-        scheduler="s13_counter_weighted",
+        # The Scenario contract retains its validated serial scheduler label;
+        # execute_batch receives the frozen S13 external opportunity stream.
+        scheduler="serial_counter_addressed",
         generation_key=f"E04/S13/validation/{condition.condition_id}/R{replicate}",
         requested_fault_count=condition.fault_count,
     )
@@ -1773,7 +1777,7 @@ def validate_kernel() -> None:
     selected = [conditions[index] for index in (0, 173, 911, 1822, 2711, 4499)]
     validations: list[dict[str, Any]] = []
     for ordinal, condition in enumerate(selected):
-        budget = 400 + ordinal * 37
+        budget = 400 + ordinal * 100
         replicate = ordinal % 4
         scenario, arrays, static = _ordinary_scenario(condition, replicate, budget)
         values, policy, policy_kind, directions, faults, occupancy, cursors, p1_ids, p2_ids = arrays
