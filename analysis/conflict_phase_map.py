@@ -720,12 +720,15 @@ def simulate_phase_kernel(
     ratio: float,
     schedule_seed: np.uint64,
     budget: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     if budget <= 0 or budget % 100 != 0:
         raise ValueError("S13 activation budget must be positive and divisible by 100")
     n = len(values)
     occupancy = initial_occupancy.copy()
     cursors = initial_cursors.copy()
+    prefix_occupancy = occupancy.copy()
+    prefix_cursors = cursors.copy()
+    prefix_event = min(200_000, budget)
     positions = np.empty(n, dtype=np.int16)
     for pos in range(n):
         positions[occupancy[pos]] = pos
@@ -737,6 +740,8 @@ def simulate_phase_kernel(
     activations = np.zeros(2, dtype=np.int64)
     window_swaps = cross_swaps = center_crossings = 0
     cumulative_swaps = cumulative_memory = cumulative_stuck_rejections = 0
+    cumulative_actor_range = 0
+    cumulative_p1_activations = 0
     interval = budget // 100
     initial_quiescent = not _has_change(
         occupancy, positions, values, policy_kind, directions, faults, cursors
@@ -753,8 +758,8 @@ def simulate_phase_kernel(
                 policy, directions, moved, 0, abs_flux, signed_flux, 0, 0,
                 activations * 0, 0, 0, 0, True,
             )
-        terminal = np.asarray((1, 0, 0, 0, 0, 0), dtype=np.int64)
-        return out, occupancy, cursors, terminal
+        terminal = np.asarray((1, 0, 0, 0, 0, 0, 0, 0), dtype=np.int64)
+        return out, occupancy, cursors, terminal, prefix_occupancy, prefix_cursors
     threshold = ratio * len(p1_ids) / (ratio * len(p1_ids) + len(p2_ids))
     quiescent = False
     detected_activation = budget
@@ -770,6 +775,8 @@ def simulate_phase_kernel(
         else:
             actor_id = p2_ids[int(actor_draw % np.uint64(len(p2_ids)))]
         activations[group] += 1
+        if group == 0:
+            cumulative_p1_activations += 1
         actor_pos = positions[actor_id]
         kind = policy_kind[actor_id]
         direction = directions[actor_id]
@@ -839,12 +846,16 @@ def simulate_phase_kernel(
                 center_crossings += 2
             window_swaps += 1
             cumulative_swaps += 1
+            cumulative_actor_range += abs(delta)
         elif outcome == 2:
             cursors[actor_id] += 1 if direction == 1 else -1
             cumulative_memory += 1
         elif outcome == 3:
             cumulative_stuck_rejections += 1
         event += 1
+        if event == prefix_event:
+            prefix_occupancy[:] = occupancy
+            prefix_cursors[:] = cursors
         if event == next_row * interval:
             quiescent = not _has_change(
                 occupancy, positions, values, policy_kind, directions, faults, cursors
@@ -886,10 +897,17 @@ def simulate_phase_kernel(
             cumulative_memory,
             cumulative_stuck_rejections,
             event,
+            cumulative_actor_range,
+            cumulative_p1_activations,
         ),
         dtype=np.int64,
     )
-    return out, occupancy, cursors, terminal
+    if event < prefix_event:
+        # A detected quiescent state is absorbing, so its state at the prefix
+        # checkpoint equals the state at detection.
+        prefix_occupancy[:] = occupancy
+        prefix_cursors[:] = cursors
+    return out, occupancy, cursors, terminal, prefix_occupancy, prefix_cursors
 
 
 def _line_slope(series: np.ndarray) -> float:
@@ -1041,7 +1059,14 @@ def classify_trace(trace: np.ndarray, quiescent: bool) -> dict[str, Any]:
 def run_one(condition: PhaseCondition, replicate: int, budget: int, stage: str) -> tuple[dict[str, Any], pd.DataFrame]:
     static, arrays = materialize_arrays(condition, replicate)
     values, policy, policy_kind, directions, faults, occupancy, cursors, p1_ids, p2_ids = arrays
-    trace, final_occupancy, final_cursors, terminal = simulate_phase_kernel(
+    (
+        trace,
+        final_occupancy,
+        final_cursors,
+        terminal,
+        prefix_occupancy,
+        prefix_cursors,
+    ) = simulate_phase_kernel(
         values,
         policy,
         policy_kind,
@@ -1066,12 +1091,7 @@ def run_one(condition: PhaseCondition, replicate: int, budget: int, stage: str) 
     stuck_preserved = bool(np.array_equal(initial_positions[faults == 1], final_positions[faults == 1]))
     total_abs_flux = float(trace[:, 10:12].sum() * (budget // 100))
     total_signed_flux = float(trace[:, 12:14].sum() * (budget // 100))
-    expected_abs_flux = 2.0 * float(
-        # Bubble and Insertion ranges are one; Selection is represented in the
-        # experienced flux itself.  The exact identity below is independently
-        # checked using signed conservation and per-event validation fixtures.
-        total_abs_flux / 2.0
-    )
+    expected_abs_flux = 2.0 * int(terminal[6])
     summary = {
         "schema_version": STEP_SCHEMA,
         "research_step_id": "S13",
@@ -1085,21 +1105,26 @@ def run_one(condition: PhaseCondition, replicate: int, budget: int, stage: str) 
         "memory_updates": int(terminal[3]),
         "stuck_rejections": int(terminal[4]),
         "executed_activations": int(terminal[5]),
+        "accepted_actor_range": int(terminal[6]),
+        "first_policy_activations": int(terminal[7]),
         "final_occupancy_sha256": canonical_hash(final_occupancy.tolist()),
         "final_cursor_sha256": canonical_hash(final_cursors.tolist()),
+        "activation_200000_occupancy_sha256": canonical_hash(prefix_occupancy.tolist()),
+        "activation_200000_cursor_sha256": canonical_hash(prefix_cursors.tolist()),
         "occupancy_bijection": bool(
             np.array_equal(np.sort(final_occupancy), np.arange(len(final_occupancy)))
         ),
         "stuck_positions_preserved": stuck_preserved,
         "signed_flux_conservation_error": abs(total_signed_flux),
-        "absolute_flux_accounted": expected_abs_flux >= 0.0,
+        "absolute_flux_conservation_error": abs(total_abs_flux - expected_abs_flux),
+        "absolute_flux_accounted": abs(total_abs_flux - expected_abs_flux) <= 1e-9,
         "final_order_score": float(trace[-1, 0]),
         "final_corrected_adjacency": float(trace[-1, 1]),
         "final_policy_position_score": float(trace[-1, 2]),
         "postburn_median_swap_rate": float(np.median(trace[51:, 7])),
         "postburn_median_total_flux_rate": float(np.median(trace[51:, 10] + trace[51:, 11])),
-        "achieved_first_activation_share": float(
-            np.average(trace[1:, 16], weights=np.ones(100))
+        "achieved_first_activation_share": (
+            int(terminal[7]) / int(terminal[5]) if int(terminal[5]) else math.nan
         ),
         **classification,
     }
@@ -1638,6 +1663,80 @@ def _plot_flux(time_means: pd.DataFrame, phase: pd.DataFrame) -> None:
     plt.close(figure)
 
 
+def _factor_prevalence(phase: pd.DataFrame) -> pd.DataFrame:
+    factors = (
+        "input_profile",
+        "policy_pair",
+        "direction_assignment",
+        "first_count",
+        "activation_ratio",
+        "fault_count",
+        "state_profile",
+        "association_profile",
+        "disorder_profile",
+    )
+    rows: list[dict[str, Any]] = []
+    for factor in factors:
+        for level, group in phase.groupby(factor, dropna=False):
+            counts = group.modal_regime.value_counts()
+            rows.append(
+                {
+                    "factor": factor,
+                    "level": str(level),
+                    "conditions": len(group),
+                    **{
+                        f"fraction_{regime}": float(counts.get(regime, 0) / len(group))
+                        for regime in REGIMES
+                    },
+                    "mean_modal_fraction": float(group.modal_fraction.mean()),
+                    "boundary_uncertain_fraction": float(group.boundary_uncertain.mean()),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def _aggregate_uncertainty(
+    phase: pd.DataFrame, stability: pd.DataFrame, draws: int = 10_000
+) -> pd.DataFrame:
+    generator = np.random.Generator(
+        np.random.PCG64DXSM(derive_seed("aggregate_bootstrap", draws))
+    )
+    rows: list[dict[str, Any]] = []
+    for regime in REGIMES:
+        indicator = phase.modal_regime.eq(regime).to_numpy(float)
+        sampled = generator.binomial(
+            len(indicator), float(indicator.mean()), size=draws
+        ) / len(indicator)
+        rows.append(
+            {
+                "endpoint": "condition_modal_prevalence",
+                "regime": regime,
+                "n": len(indicator),
+                "estimate": float(indicator.mean()),
+                "ci_lower": float(np.quantile(sampled, 0.025)),
+                "ci_upper": float(np.quantile(sampled, 0.975)),
+                "draws": draws,
+            }
+        )
+    for regime, group in stability.groupby("regime_primary"):
+        indicator = group.regime_agreement.to_numpy(float)
+        sampled = generator.binomial(
+            len(indicator), float(indicator.mean()), size=draws
+        ) / len(indicator)
+        rows.append(
+            {
+                "endpoint": "long_budget_run_regime_agreement",
+                "regime": regime,
+                "n": len(indicator),
+                "estimate": float(indicator.mean()),
+                "ci_lower": float(np.quantile(sampled, 0.025)),
+                "ci_upper": float(np.quantile(sampled, 0.975)),
+                "draws": draws,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def analyze() -> None:
     base_runs = pd.read_parquet(CACHE / "base_runs.parquet")
     sequential_path = CACHE / "sequential_runs.parquet"
@@ -1645,15 +1744,30 @@ def analyze() -> None:
     primary = pd.concat([base_runs, sequential_runs], ignore_index=True)
     if primary.run_id.duplicated().any():
         raise ValueError("duplicate primary run IDs")
+    base_traces = pd.read_parquet(CACHE / "base_traces.parquet")
+    sequential_trace_path = CACHE / "sequential_traces.parquet"
+    sequential_traces = pd.read_parquet(sequential_trace_path) if sequential_trace_path.exists() else base_traces.iloc[0:0]
+    primary_traces = pd.concat([base_traces, sequential_traces], ignore_index=True)
+    # Earlier cached runs can be mechanically upgraded from their window
+    # ledger: every frozen checkpoint interval has equal length, and a
+    # quiescent detection occurs exactly at a checkpoint.  Exclude absorbing
+    # post-detection fill rows before averaging achieved activation share.
+    detection = primary[["run_id", "quiescence_detection_activation"]]
+    valid_activation = primary_traces.merge(detection, on="run_id", validate="many_to_one")
+    valid_activation = valid_activation[
+        valid_activation.checkpoint.gt(0)
+        & valid_activation.nominal_activation.le(
+            valid_activation.quiescence_detection_activation
+        )
+    ]
+    achieved = valid_activation.groupby("run_id").p1_activation_share.mean()
+    primary["achieved_first_activation_share"] = primary.run_id.map(achieved)
     phase = _condition_phase_map(primary)
     write_parquet(phase, OUTPUT / "conflict_phase_map.parquet")
     run_columns = [column for column in primary.columns if column not in {"schedule_seed"}]
     write_parquet(primary[run_columns].sort_values("run_id"), OUTPUT / "phase_run_summaries.parquet")
-    base_traces = pd.read_parquet(CACHE / "base_traces.parquet")
-    sequential_trace_path = CACHE / "sequential_traces.parquet"
-    sequential_traces = pd.read_parquet(sequential_trace_path) if sequential_trace_path.exists() else base_traces.iloc[0:0]
     time_means = _time_means(
-        pd.concat([base_traces, sequential_traces], ignore_index=True), primary
+        primary_traces, primary
     )
     write_parquet(time_means, OUTPUT / "time_resolved_transport.parquet")
     long_runs = pd.read_parquet(CACHE / "long_runs.parquet")
@@ -1675,29 +1789,47 @@ def analyze() -> None:
         condition_stability.long_modal
     )
     write_parquet(condition_stability, OUTPUT / "condition_stability.parquet")
-    long_traces = pd.read_parquet(CACHE / "long_traces.parquet")
+    factor_prevalence = _factor_prevalence(phase)
+    factor_prevalence.to_csv(OUTPUT / "factor_phase_prevalence.csv", index=False)
+    regime_diagnostics = primary.groupby("regime").agg(
+        runs=("run_id", "size"),
+        conditions=("condition_id", "nunique"),
+        quiescent_fraction=("terminal", lambda values: float(np.mean(values == "quiescent"))),
+        median_final_order=("final_order_score", "median"),
+        median_corrected_adjacency=("final_corrected_adjacency", "median"),
+        median_postburn_swap_rate=("postburn_median_swap_rate", "median"),
+        median_postburn_flux_rate=("postburn_median_total_flux_rate", "median"),
+        median_sustained_turnover_fraction=("sustained_turnover_fraction", "median"),
+    ).reset_index()
+    regime_diagnostics.to_csv(OUTPUT / "regime_diagnostics.csv", index=False)
+    transition = pd.crosstab(
+        stability.regime_primary,
+        stability.regime_long,
+        normalize="index",
+    ).reindex(index=REGIMES, columns=REGIMES, fill_value=0.0)
+    transition.reset_index().to_csv(OUTPUT / "long_regime_transitions.csv", index=False)
+    uncertainty = _aggregate_uncertainty(phase, stability)
+    uncertainty.to_csv(OUTPUT / "aggregate_uncertainty.csv", index=False)
     long_lookup = long_runs.set_index(["condition_id", "replicate"])
+    primary_lookup = primary.set_index(["condition_id", "replicate"])
     prefix_checks: list[dict[str, Any]] = []
-    # Long checkpoints 0,10,...,100 coincide with primary checkpoints 0,1,...,10.
-    base_lookup = pd.concat([base_traces, sequential_traces]).set_index(
-        ["condition_id", "replicate", "checkpoint"]
-    )
-    for (condition_id, replicate), _ in long_lookup.iterrows():
-        long_part = long_traces[
-            long_traces.condition_id.eq(condition_id)
-            & long_traces.replicate.eq(replicate)
-            & long_traces.checkpoint.isin(range(0, 21, 2))
-        ].sort_values("checkpoint")
-        primary_part = base_lookup.loc[
-            [(condition_id, replicate, point) for point in range(11)]
-        ].reset_index()
-        compared = long_part[list(TRACE_COLUMNS[:20])].to_numpy(float) - primary_part[list(TRACE_COLUMNS[:20])].to_numpy(float)
+    for (condition_id, replicate), long_row in long_lookup.iterrows():
+        primary_row = primary_lookup.loc[(condition_id, replicate)]
+        occupancy_match = (
+            long_row.activation_200000_occupancy_sha256
+            == primary_row.final_occupancy_sha256
+        )
+        cursor_match = (
+            long_row.activation_200000_cursor_sha256
+            == primary_row.final_cursor_sha256
+        )
         prefix_checks.append(
             {
                 "condition_id": condition_id,
                 "replicate": int(replicate),
-                "max_abs_metric_error": float(np.max(np.abs(compared))),
-                "passed": bool(np.max(np.abs(compared)) <= 1e-12),
+                "occupancy_hash_match": bool(occupancy_match),
+                "cursor_hash_match": bool(cursor_match),
+                "passed": bool(occupancy_match and cursor_match),
             }
         )
     prefix_frame = pd.DataFrame(prefix_checks)
@@ -1714,6 +1846,45 @@ def analyze() -> None:
             & anchor_stability.long_modal.eq("dynamic_equilibrium")
         ).sum()
     )
+    paper_anchor_table = phase[phase.condition_id.isin(anchors)].merge(
+        condition_stability, on="condition_id", how="left", validate="one_to_one"
+    )
+    paper_anchor_table.to_csv(OUTPUT / "paper_anchor_diagnostics.csv", index=False)
+    high_confidence = phase[phase.modal_fraction.ge(0.80)].copy()
+    high_confidence["oriented_input_stratum"] = (
+        high_confidence.direction_assignment + "|" + high_confidence.input_profile
+    )
+    regime_support: dict[str, Any] = {}
+    stable_by_regime = stability.groupby("regime_primary").regime_agreement.mean()
+    for regime in REGIMES[:-1]:
+        subset = high_confidence[high_confidence.modal_regime.eq(regime)]
+        stability_rate = float(stable_by_regime.get(regime, math.nan))
+        passed = (
+            len(subset) >= 1
+            and subset.oriented_input_stratum.nunique() >= 2
+            and math.isfinite(stability_rate)
+            and stability_rate >= 0.80
+        )
+        regime_support[regime] = {
+            "highConfidenceConditions": len(subset),
+            "orientedInputStrata": int(subset.oriented_input_stratum.nunique()),
+            "longRunStability": stability_rate,
+            "passed": bool(passed),
+        }
+    supported_count = sum(item["passed"] for item in regime_support.values())
+    outcome = "supportive" if supported_count >= 3 else "null"
+    adequacy = {
+        "schema": "e04.s13.adequacy_decision.v1",
+        "researchStepId": "S13",
+        "supportedSubstantiveRegimes": supported_count,
+        "minimumRequired": 3,
+        "regimeSupport": regime_support,
+        "paperDynamicEquilibriumStableAnchors": paper_dynamic,
+        "paperAnchorCount": len(anchors),
+        "paperGeneralDynamicEquilibriumLanguageSupported": paper_dynamic == len(anchors),
+        "outcomeClassification": outcome,
+    }
+    write_json(OUTPUT / "adequacy_decision.json", adequacy)
     summary = {
         "schema": "e04.s13.analysis_summary.v1",
         "researchStepId": "S13",
@@ -1732,6 +1903,8 @@ def analyze() -> None:
         "prefixReplayAllPassed": bool(prefix_frame.passed.all()),
         "paperAnchorDynamicEquilibriumStableCount": paper_dynamic,
         "paperAnchorCount": len(anchors),
+        "supportedSubstantiveRegimes": supported_count,
+        "outcomeClassification": outcome,
     }
     write_json(OUTPUT / "analysis_summary.json", summary)
 
@@ -1803,7 +1976,14 @@ def validate_kernel() -> None:
             return (ScheduledOpportunity(actor_id),)
 
         ordinary = ordinary_run(scenario, trace_mode="none", schedule_factory=scheduler)
-        fast_trace, fast_occupancy, fast_cursors, terminal = simulate_phase_kernel(
+        (
+            fast_trace,
+            fast_occupancy,
+            fast_cursors,
+            terminal,
+            _,
+            _,
+        ) = simulate_phase_kernel(
             values,
             policy,
             policy_kind,
@@ -1930,6 +2110,12 @@ def finalize() -> None:
         "condition_stability.parquet",
         "long_budget_prefix_replay.parquet",
         "analysis_summary.json",
+        "adequacy_decision.json",
+        "factor_phase_prevalence.csv",
+        "regime_diagnostics.csv",
+        "long_regime_transitions.csv",
+        "aggregate_uncertainty.csv",
+        "paper_anchor_diagnostics.csv",
         "conflict_phase_map.png",
         "conflict_phase_map.svg",
         "state_flux_diagnostics.png",
@@ -1966,7 +2152,12 @@ def finalize() -> None:
         "occupancyBijection": bool(pd.read_parquet(OUTPUT / "phase_run_summaries.parquet").occupancy_bijection.all()),
         "stuckPreservation": bool(pd.read_parquet(OUTPUT / "phase_run_summaries.parquet").stuck_positions_preserved.all()),
         "fluxConservation": bool(
-            pd.read_parquet(OUTPUT / "phase_run_summaries.parquet").signed_flux_conservation_error.le(1e-12).all()
+            (
+                pd.read_parquet(OUTPUT / "phase_run_summaries.parquet")
+                .signed_flux_conservation_error.le(1e-12)
+                & pd.read_parquet(OUTPUT / "phase_run_summaries.parquet")
+                .absolute_flux_conservation_error.le(1e-9)
+            ).all()
         ),
     }
     validation["allPassed"] = all(bool(value) for key, value in validation.items() if key not in {"schema", "researchStepId"})

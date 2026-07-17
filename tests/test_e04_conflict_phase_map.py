@@ -105,13 +105,14 @@ def test_kernel_determinism_conservation_and_stuck_positions() -> None:
     )
     for left, right in zip(result1, result2):
         assert np.array_equal(left, right)
-    trace, final_occupancy, _, _ = result1
+    trace, final_occupancy, _, _, _, _ = result1
     initial_occupancy = arrays[5]
     faults = arrays[4]
     initial_positions = np.argsort(initial_occupancy)
     final_positions = np.argsort(final_occupancy)
     assert np.array_equal(initial_positions[faults == 1], final_positions[faults == 1])
     assert abs(np.sum(trace[:, 12:14])) < 1e-12
+    assert abs(np.sum(trace[:, 10:12]) * 100 - 2 * result1[3][6]) < 1e-12
 
 
 def test_regime_classifier_fixtures() -> None:
