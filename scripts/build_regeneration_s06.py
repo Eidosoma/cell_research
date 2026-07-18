@@ -1463,7 +1463,7 @@ failures, substitutions, silent exclusions, or scope reduction.
 - `assisted_rescue.parquet` and `assisted_rescue_scenarios.parquet` retain all 1,920 runs; `paired_rescue_contrasts.parquet` retains 1,536 comparisons.
 - `primary_completion_tests.parquet`, `matching_sensitivity_tests.parquet`, `tradeoff_summary.parquet`, the PNG/SVG trade-off figure, and ten selected full traces preserve direct evidence.
 - Checkpoint, budget, repair-ledger, matching, schedule/cost, pairing, replay, stream, censor, sensitivity, accounting, input, environment, and artifact manifests preserve validation and provenance.
-- `execution_attempts.json` records all outcome-blind performance restarts before final aggregation.
+- `execution_attempts.json` records every outcome-blind rejected attempt before the accepted run.
 
 ## Caveats, blockers, failed assumptions, and limitations
 
@@ -1484,16 +1484,20 @@ failures, substitutions, silent exclusions, or scope reduction.
 - Count-changing S03 lesions remain outside the fixed-identity runner. Matching
   sensitivities reuse the same calibration bank and active outcomes and are not
   independent replications.
-- Three outcome-blind canonical attempts completed calibration and entered the
-  confirmatory panel before aggregation. The first was terminated because
+- Four outcome-blind canonical attempts preceded the accepted run. The first
+  three completed calibration and entered the confirmatory panel before
+  aggregation. The first was terminated because
   digest-only rows still serialized full JSON events; the second exposed an
   exact but redundant full inversion recount on every unchanged opportunity;
   the third exposed generic state-clone and terminal-rescan overhead on every
-  rejected/no-op summary opportunity. No outcome table was written or inspected
-  in any attempt. The full panel was rerun from the beginning after
+  rejected/no-op summary opportunity. A fourth full panel reached aggregate
+  validation but was rejected before artifact emission because
+  intervention-suppressed Selection memory updates were not classified in the
+  native rejection bucket. No outcome table was written or inspected in any
+  rejected attempt. The full panel was rerun from the beginning after
   fixture-validating the transition-equivalent serial summary projection across
-  every policy and arm; scientific semantics, accounting, budgets, and scope did
-  not change.
+  every policy and arm and correcting the ledger disposition label; rescue
+  semantics, accounting quantities, budgets, and scope did not change.
 - Failure to find a contrast in this panel would not prove active rescue is
   generally ineffective; any positive result is equally bounded to the frozen
   sizes, policies, timings, lesion anchor, costs, and success rule.
@@ -1697,6 +1701,19 @@ def write_outputs(
                 },
                 {
                     "attemptOrdinal": 4,
+                    "repositoryCommit": "cfbec86de0aa693e7125bfbf629a4e407e55f635",
+                    "calibrationJobsReturned": 192,
+                    "confirmatoryJobsReturned": 1728,
+                    "resultAggregationReached": True,
+                    "validationReached": True,
+                    "validationSuccess": False,
+                    "failedValidationGates": ["budgetConservationPass"],
+                    "artifactFilesWritten": 0,
+                    "outcomesInspected": False,
+                    "terminationReason": "intervention-suppressed Selection MemoryUpdate proposals lacked an explicit native rejection-bucket disposition, violating the inherited proposal-partition identity",
+                },
+                {
+                    "attemptOrdinal": 5,
                     "repositoryCommit": git_commit,
                     "calibrationJobsReturned": 192,
                     "confirmatoryJobsReturned": 1728,
@@ -1708,6 +1725,7 @@ def write_outputs(
             ],
             "semanticScopeChanged": False,
             "runtimeOptimization": "fixture-validated exact serial summary projection for non-full-trace rows, with state snapshots and terminal rescans only after native state changes and distance AUC recomputed only after accepted swaps",
+            "accountingCorrection": "intervention-suppressed Swap and MemoryUpdate proposals use explicit rejected_s06_* dispositions so the inherited native proposal partition remains exhaustive",
         },
     )
     (output / "execution_commands.log").write_text(
@@ -1717,7 +1735,7 @@ def write_outputs(
                 "python -m pytest -q tests/test_regeneration_tasks.py tests/test_regeneration_timing.py tests/test_regeneration_lesions.py tests/test_regeneration_dynamic_faults.py tests/test_regeneration_nudge_recovery.py tests/test_regeneration_assisted_rescue.py",
                 "ruff check src/regeneration/assisted_rescue.py tests/test_regeneration_assisted_rescue.py scripts/build_regeneration_s06.py src/regeneration/__init__.py",
                 f"OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/build_regeneration_s06.py --artifacts-dir {output} --workers {workers}",
-                "NOTE: three outcome-blind canonical attempts stopped before aggregation after calibration and partial confirmatory execution; execution_attempts.json records all transition-equivalent performance restarts.",
+                "NOTE: four outcome-blind attempts were rejected before artifact emission (three performance restarts and one ledger-validation failure); execution_attempts.json records all attempts and the unchanged scientific scope.",
             ]
         )
         + "\n",

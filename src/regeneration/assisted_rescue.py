@@ -434,9 +434,9 @@ class AssistedRescueController:
                     },
                 )
                 decision = (
-                    "s06_repair_success_pending"
+                    "rejected_s06_repair_success_pending"
                     if success
-                    else "s06_sham_repair_no_effect"
+                    else "rejected_s06_sham_repair_no_effect"
                 )
             else:
                 self.ledger["matchedCostEvents"] += 1
@@ -451,7 +451,7 @@ class AssistedRescueController:
                         "assignedDuration": self.contract.assigned_duration,
                     },
                 )
-                decision = "s06_matched_cost_recovery_pending"
+                decision = "rejected_s06_matched_cost_recovery_pending"
             return ValidationDecision(decision, False)
 
         if not validation.eligible_for_commit or not self.frozen:

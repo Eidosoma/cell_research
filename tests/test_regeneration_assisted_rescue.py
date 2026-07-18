@@ -144,7 +144,7 @@ def test_active_local_neighbor_spends_one_action_and_recovers_next_opportunity()
     scenario, _, controller = _controller(RescueArm.ACTIVE)
     proposal = _proposal(scenario, 2, ProposalKind.NO_OP)
     decision = _offer(controller, scenario, proposal, 10, eligible=False)
-    assert decision.decision == "s06_repair_success_pending"
+    assert decision.decision == "rejected_s06_repair_success_pending"
     assert controller.recovery_event == 11
     assert not controller.frozen
     ledger = controller.process_ledger()
@@ -207,7 +207,7 @@ def test_spontaneous_and_matched_cost_controls_share_duration_but_not_cost() -> 
         _offer(matched, scenario, noop, event_index, eligible=False)
         assert matched.frozen
     decision = _offer(matched, scenario, noop, 12, eligible=False)
-    assert decision.decision == "s06_matched_cost_recovery_pending"
+    assert decision.decision == "rejected_s06_matched_cost_recovery_pending"
     assert matched.recovery_event == 13
     ledger = matched.process_ledger()
     assert ledger["matchedCostEvents"] == 1
@@ -326,6 +326,7 @@ def test_digest_summary_path_matches_full_transition_state_and_ledgers(
     assert digest.process_audit_digest == full.process_audit_digest
     assert digest.process_transitions == full.process_transitions
     assert digest.opportunity_validation == full.opportunity_validation
+    assert all(digest.opportunity_validation.values()), digest.opportunity_validation
     for key in full.summary:
         if key not in {"traceMode", "retainedEventCount"}:
             assert digest.summary[key] == full.summary[key]
