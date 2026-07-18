@@ -234,7 +234,7 @@ def main() -> None:
         # The long-running S13 trajectories were launched from the frozen S12
         # handoff commit; later commits contain only the S13 implementation and
         # validation/reporting corrections applied to the sealed result tables.
-        "sourceCommitAtExecution": "89b9482d174f6a8ee0732a6682e0855bc7401b11",
+        "sourceCommitAtExecution": "89b9482d1d94b7233c7fe066b6c775e2b96609a7",
         "implementationCommit": git_output("rev-parse", "HEAD"),
         "workingTreeDirtyAtExecution": True,
         "executionCommand": "PYTHONPATH=. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 E05_S13_WORKERS=8 python scripts/build_regeneration_s13.py",
