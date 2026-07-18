@@ -14,6 +14,10 @@ import shutil
 import subprocess
 from typing import Any, Iterable, Mapping
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from reference_simulator.model import canonical_json_bytes
@@ -380,6 +384,73 @@ def s13_policy_profiles(main: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["portfolioId", "taskKind", "taskId", "arm"]).reset_index(drop=True)
 
 
+def build_release_figures(
+    package: Path,
+    policy_profiles: pd.DataFrame,
+    threshold_curves: pd.DataFrame,
+) -> list[Path]:
+    output = package / "figures"
+    output.mkdir(parents=True, exist_ok=True)
+    core = policy_profiles[
+        policy_profiles["portfolioId"].isin(CORE_S13_PORTFOLIOS)
+        & (
+            (policy_profiles["taskKind"] == "injury")
+            | (
+                (policy_profiles["taskKind"] == "target_change")
+                & (policy_profiles["arm"] == "changed_aware")
+            )
+        )
+    ].copy()
+    core["taskLabel"] = core["taskId"].replace(
+        {
+            "segment_reversal_central_v1": "Reversal",
+            "local_scramble_sattolo_v1": "Local scramble",
+            "adjacent_pair_swap_total_order_v1": "Adjacent target",
+            "quartile_rotation_2_0_3_1_v1": "Quartile target",
+        }
+    )
+    order = ["Reversal", "Local scramble", "Adjacent target", "Quartile target"]
+    portfolios = ["pure_bubble", "pure_insertion", "chimera_bubble_insertion"]
+    pivot = core.pivot(index="taskLabel", columns="portfolioId", values="successRate").reindex(order)
+    ax = pivot[portfolios].plot.bar(figsize=(9, 4.8), ylim=(0, 1.05), rot=0)
+    ax.set_ylabel("Full-population success rate")
+    ax.set_xlabel("")
+    ax.set_title("S14 core native/composition comparators")
+    ax.legend(["Pure Bubble", "Pure Insertion", "Bubble–Insertion"], loc="lower right")
+    ax.grid(axis="y", alpha=0.25)
+    plt.tight_layout()
+    core_png = output / "core_comparator_profiles.png"
+    core_svg = output / "core_comparator_profiles.svg"
+    plt.savefig(core_png, dpi=180)
+    plt.savefig(core_svg)
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for portfolio, group in threshold_curves.groupby("portfolioId"):
+        ordered = group.sort_values("faultFraction")
+        ax.plot(
+            ordered["faultFraction"],
+            ordered["successRate"],
+            marker="o",
+            label=portfolio.replace("_", " "),
+        )
+    ax.axhline(0.5, color="black", linestyle="--", linewidth=1)
+    ax.set_xlim(-0.01, 0.21)
+    ax.set_ylim(-0.03, 1.03)
+    ax.set_xlabel("Permanent stuck-identity fraction")
+    ax.set_ylabel("Full-population recovery success")
+    ax.set_title("Evaluated S13 critical-fault panel (global stop after 0.2)")
+    ax.grid(alpha=0.25)
+    ax.legend(fontsize=7, ncol=2)
+    plt.tight_layout()
+    threshold_png = output / "critical_fault_thresholds.png"
+    threshold_svg = output / "critical_fault_thresholds.svg"
+    plt.savefig(threshold_png, dpi=180)
+    plt.savefig(threshold_svg)
+    plt.close(fig)
+    return [core_png, core_svg, threshold_png, threshold_svg]
+
+
 def top_summary_markdown(title: str, artifact_description: str, recommended: str) -> str:
     return f"""# {title}
 
@@ -655,6 +726,7 @@ def build(artifact_root: Path) -> dict[str, Any]:
     boundary = policy_boundary(s12_pairs)
     policy_profiles = s13_policy_profiles(s13_main)
     profiles = competency_profiles()
+    threshold_curves = pd.read_parquet(S13 / "threshold_curves.parquet")
 
     tables: dict[str, pd.DataFrame] = {
         "scenarios/scenario_index.parquet": scenario_index,
@@ -670,6 +742,7 @@ def build(artifact_root: Path) -> dict[str, Any]:
         "baselines/s12_policy_family_boundary.parquet": boundary,
         "baselines/s13_policy_competency_profiles.parquet": policy_profiles,
         "baselines/s13_critical_thresholds.parquet": pd.read_parquet(S13 / "critical_thresholds.parquet"),
+        "baselines/s13_threshold_curves.parquet": threshold_curves,
         "extended/s12_failure_runs.parquet": s12_failures,
         "extended/s12_failure_catalog.parquet": s12_failure_catalog,
         "extended/s12_subgroup_precision.parquet": s12_subgroups,
@@ -906,6 +979,7 @@ def build(artifact_root: Path) -> dict[str, Any]:
     write_json(step / "claim_boundary_review.json", claim_validation)
 
     build_markdown_files(package, report_inputs)
+    generated_figures = build_release_figures(package, policy_profiles, threshold_curves)
     claims = claim_rows()
     claims.to_parquet(report_inputs / "claim_to_evidence_matrix.parquet", index=False, compression="zstd")
     evidence_index = []
@@ -933,6 +1007,7 @@ def build(artifact_root: Path) -> dict[str, Any]:
             "S12 unseen is split-relative; the strict transfer rule is null and 40 subgroups are precision-inconclusive.",
             "S13 Bubble-Insertion supplies no success/Pareto advantage; Selection-containing portfolios and descending formation terminals remain failures.",
             "S13 reversal severity is exact, but Sattolo and immutable-fault-map comparisons are scenario-paired and RNG-unpaired.",
+            "The S13 report names two PNG figures that were absent from the collectible S13 directory; S14 regenerated release figures from the validated S13 Parquet tables and labels them as S14 outputs.",
             "The critical permanent-fault boundary is coarse: the successful baseline family passes at zero and fails by 0.1.",
             "Count-changing lesions use separate target/order and identity-cardinality metrics outside the fixed-identity runner.",
         ],
@@ -941,8 +1016,7 @@ def build(artifact_root: Path) -> dict[str, Any]:
     figures = [
         S12 / "transfer_effects.png",
         S12 / "transfer_effects.svg",
-        S13 / "composition_pareto.png",
-        S13 / "critical_fault_thresholds.png",
+        *generated_figures,
     ]
     figure_table_index = {
         "schemaVersion": "e05.s14.figure-table-index.v1",
