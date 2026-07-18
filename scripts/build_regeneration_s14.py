@@ -560,7 +560,7 @@ JSON schemas and Parquet column contracts were checked, every package checksum w
 
 ## Lay summary
 
-The release keeps one dependable baseline—Bubble—and two useful speed/cost comparators—Insertion and a fixed Bubble–Insertion mixture—in the main panel. It does not hide systems that fail: Selection-containing mixtures, starting-pattern failures, uncertain transfer subgroups, and tests stopped by the preregistered threshold rule remain in a separate failure panel. A newly executed baseline case exactly matched the earlier stored result.
+The release keeps one dependable baseline—Bubble—and two useful speed/cost comparators—Insertion and a fixed Bubble–Insertion mixture—in the main panel. It does not hide systems that fail: Selection-containing mixtures, starting-pattern failures, uncertain transfer subgroups, and tests stopped by the prespecified threshold rule remain in a separate failure panel. A newly executed baseline case exactly matched the earlier stored result.
 
 The benchmark measures only a transparent line-sorting simulation. It does not show biological regeneration, natural memory, physical pressure or energy, general intelligence, or real-world transfer.
 """
