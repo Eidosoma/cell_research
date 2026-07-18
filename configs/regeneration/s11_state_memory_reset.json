@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "e05.s11.state-memory-reset-spec.v1",
+  "researchStepId": "S11",
+  "benchmarkVersion": "E05-structural-internal-memory-reset-v1",
+  "frozenAtUtc": "2026-07-18T12:59:19Z",
+  "frozenBeforeConfirmatoryExecution": true,
+  "frozenQuestion": "At the observable S10 second-injury boundary, are full-population repeated-injury outcomes changed by the current arrangement, retained native policy state, retained movement-dependent fatigue, or their interactions?",
+  "inherits": {
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "repeatedInjurySpecSchemaVersion": "e05.s10.repeated-injury-spec.v1",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "informationPermission": "policy_native_local",
+    "target": "direction-aware strict unequal inversion distance",
+    "phaseRecoveryBudget": "100*n^2 charged opportunities per injury episode",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "postRecoveryStabilization": "S01 charged two-opportunities-per-identity certificate capped at 20*n",
+    "spacing": "rest_20n_v1",
+    "sequenceAssignment": "reuse exact S10 blocked assignment without reranking",
+    "eligibleControllers": "native Bubble/Insertion/Selection plus S04 fatigue only; S07 memory, S08 plasticity, and S09 target-aware state are absent"
+  },
+  "population": {
+    "checkpointCount": 384,
+    "estimandPopulation": "all 384 exact S02 checkpoints with their exact S10 sequence assignments",
+    "sequenceCounts": {
+      "repeat_segment_reversal_v1": 192,
+      "repeat_block_transposition_v1": 192
+    },
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "survivorOnlyAnalysis": "prohibited",
+    "resetBoundaryObservability": "a reset is observable only after episode-1 completion, exact S01 stabilization, 20*n target-stable rest, and the matched second lesion; every earlier terminal remains a full-population competing terminal in every assigned arm"
+  },
+  "injuryContract": {
+    "firstAndSecondInjury": "repeat the exact S10 assigned segment reversal or equal-block transposition operator",
+    "firstInjuryFixture": "must match the inherited S03 operator fixture exactly",
+    "secondInjuryBoundary": "exact original target occupancy after stabilization and 20*n target-stable rest",
+    "preResetPairing": "all ten arms must have the exact same post-second-lesion occupancy, native state, fatigue state, global event index, stream counters, and ledgers before any reset",
+    "severityPooling": "operator-stratified; no scalar cross-operator severity equivalence"
+  },
+  "statePartitions": {
+    "arrangement": {
+      "fields": ["occupancy identity sequence"],
+      "preserved": "retain the exact post-second-lesion occupancy",
+      "reset": "replace occupancy with a deterministic non-identical identity-conserving permutation having exactly the same direction-aware strict unequal inversion distance to the unchanged target",
+      "matching": "exact target distance, identity set, value multiset, cell count, target correspondence, and operator stratum",
+      "stream": "state_reset_distance_matched_scramble_s11_v1",
+      "streamOwnership": "construction-only counter-addressed stream; never enters runtime stream counters"
+    },
+    "nativeState": {
+      "fields": ["per-identity Selection cursors"],
+      "preserved": "retain post-history Selection cursors",
+      "reset": "restore each Selection cursor exactly to the source S02 checkpoint snapshot",
+      "excludedExecutionState": ["global event index", "runtime stream counters", "native cost ledger"],
+      "excludedExecutionStateRule": "always preserve; these fields provide chronology, random-address continuity, and accounting rather than a resettable cell-memory treatment"
+    },
+    "engineeredState": {
+      "fields": [],
+      "semantics": "explicit empty partition because S07 was null, S08 modes were not validated and some were harmful, and S09 target-aware state is inapplicable to the unchanged target",
+      "reset": "empty-to-empty audited no-op; no engineered state is silently promoted into S11"
+    },
+    "fatigue": {
+      "fields": ["per-identity fatigue load", "per-identity residual cooldown"],
+      "preserved": "retain the endogenous S04 state at the post-second-lesion reset boundary",
+      "reset": "restore the exact source-episode baseline: zero load for every identity and no residual cooldown",
+      "classification": "endogenous mediator kept separate from native policy state"
+    },
+    "alwaysPreserved": [
+      "scenario ID and RNG root",
+      "identity-to-cell/value/policy/direction correspondence",
+      "global event index",
+      "runtime stream counters",
+      "native and S04 process ledgers and audit history",
+      "phase budget and target"
+    ]
+  },
+  "arms": [
+    {"armId": "factorial_a0_n0_f0", "arrangementReset": false, "nativeStateReset": false, "fatigueReset": false, "role": "both-preserved reference"},
+    {"armId": "factorial_a0_n0_f1", "arrangementReset": false, "nativeStateReset": false, "fatigueReset": true, "role": "fatigue-only reset"},
+    {"armId": "factorial_a0_n1_f0", "arrangementReset": false, "nativeStateReset": true, "fatigueReset": false, "role": "native-state-only reset"},
+    {"armId": "factorial_a0_n1_f1", "arrangementReset": false, "nativeStateReset": true, "fatigueReset": true, "role": "arrangement preserved and internal composite reset"},
+    {"armId": "factorial_a1_n0_f0", "arrangementReset": true, "nativeStateReset": false, "fatigueReset": false, "role": "arrangement reset and internal state preserved"},
+    {"armId": "factorial_a1_n0_f1", "arrangementReset": true, "nativeStateReset": false, "fatigueReset": true, "role": "arrangement and fatigue reset"},
+    {"armId": "factorial_a1_n1_f0", "arrangementReset": true, "nativeStateReset": true, "fatigueReset": false, "role": "arrangement and native state reset"},
+    {"armId": "factorial_a1_n1_f1", "arrangementReset": true, "nativeStateReset": true, "fatigueReset": true, "role": "both arrangement and internal composite reset"},
+    {"armId": "sham_arrangement_roundtrip", "arrangementReset": false, "nativeStateReset": false, "fatigueReset": false, "role": "serialize and restore identical occupancy without consuming an opportunity or draw"},
+    {"armId": "sham_internal_roundtrip", "arrangementReset": false, "nativeStateReset": false, "fatigueReset": false, "role": "serialize and restore identical native, empty engineered, and fatigue partitions without consuming an opportunity or draw"}
+  ],
+  "resetGateway": {
+    "timing": "instantaneous immediately after the matched second lesion and before the first recovery opportunity",
+    "opportunityCost": 0,
+    "runtimeDrawCost": 0,
+    "nativeLedgerCost": 0,
+    "processLedgerCost": 0,
+    "supplementalAudit": "record pre/post hash for every partition plus intended reads/writes and exact unchanged hashes for all protected state",
+    "shamRule": "shams execute the same serialization boundary but write identical values and must be exactly behaviorally equivalent to factorial_a0_n0_f0"
+  },
+  "scrambleFeasibility": {
+    "algorithm": "counter-addressed constrained Lehmer-code sampling with exact inversion sum",
+    "attemptCap": 64,
+    "required": "candidate differs from the post-lesion occupancy and has exact target distance",
+    "infeasibleRule": "record reset_infeasible_unique_distance_class and retain the assigned case; do not substitute a different distance, operator, time, or case",
+    "expectedMainPanel": "all observable post-lesion reversal/transposition states have non-extreme target distance and are expected to be feasible"
+  },
+  "estimands": {
+    "primaryPopulation": "all assigned cases within each injury sequence, including competing terminals with joint success false and restricted episode-2 time fixed to the phase budget",
+    "primaryOutcomes": [
+      "full-population joint sequence success",
+      "full-population restricted episode-2 opportunity time"
+    ],
+    "factorialEffects": [
+      "arrangement main effect",
+      "native-state main effect",
+      "fatigue main effect",
+      "arrangement-by-native interaction",
+      "arrangement-by-fatigue interaction",
+      "native-by-fatigue interaction",
+      "arrangement-by-native-by-fatigue interaction"
+    ],
+    "compositeInteraction": "difference-in-differences over the four corners crossing arrangement preserve/reset with internal composite preserve/reset (native and fatigue jointly)",
+    "orientation": "reset minus preserved; negative restricted-time differences are beneficial and positive success differences are beneficial",
+    "conditionalAnalysis": "reset-boundary-observed and episode-2-only summaries are supplementary and explicitly post-treatment selected",
+    "s10Anchor": "factorial_a0_n0_f0 must exactly reproduce S10 prior_injury_retained_fatigue at rest_20n_v1 on shared fields"
+  },
+  "multiplicity": {
+    "alpha": 0.05,
+    "successTest": "two-sided exact sign/binomial test on nonzero per-case factorial contrasts",
+    "timeTest": "two-sided exact sign/binomial test on nonzero per-case restricted-time factorial contrasts",
+    "method": "separate Holm adjustment over 14 prespecified sequence-by-factorial effects for success and restricted time",
+    "shamDecision": "exact equality gate rather than a null-hypothesis test"
+  },
+  "validationPanel": {
+    "plannedCaseCount": 384,
+    "plannedSequenceCount": 2,
+    "plannedFactorialArmCount": 8,
+    "plannedShamArmCount": 2,
+    "plannedArmCount": 10,
+    "plannedRunCount": 3840,
+    "plannedReplayCount": 3840,
+    "plannedResetAuditCount": 3840,
+    "plannedFactorialCaseContrastCount": 2688,
+    "plannedFactorialEffectCount": 14,
+    "plannedShamPairCount": 768,
+    "plannedSelectedTraceGroupCount": 16
+  },
+  "outcomeRule": {
+    "supportive": "at least one multiplicity-adjusted factorial state contribution is detected with exact sham equivalence and all validation gates passing",
+    "null": "no adjusted factorial contribution is detected and all validation gates pass",
+    "constraining": "a reset invalidates the S10 operational learning anchor, a sham changes behavior, or another prespecified validation/interpretation boundary materially narrows the claim"
+  },
+  "claimBoundary": "Structural memory, internal memory, fatigue, experience, hysteresis, and learning are operational simulator terms. Reset effects identify engineered interventions at the observable second-injury boundary only; they do not prove biological storage, learning, causal mediation, or explain first-stage eligibility differences that occur before the reset boundary."
+}
