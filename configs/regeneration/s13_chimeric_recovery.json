@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "e05.s13.chimeric-recovery-spec.v1",
+  "researchStepId": "S13",
+  "benchmarkVersion": "E05-chimeric-recovery-v1",
+  "frozenAtUtc": "2026-07-18T00:00:00Z",
+  "implementationStateAtFreeze": "contract frozen before S13 fixture or confirmatory outcome access",
+  "frozenQuestion": "Do exact outcome-blind mixtures of the three native policy families change post-completion injury recovery or gradient-permitted target adaptation relative to the equally weighted outcomes of their pure component portfolios, and at what permanent stuck-identity fraction does recovery become unsupported?",
+  "priorEvidenceConstraints": {
+    "s05": "Contact-conditioned recovery timing alone was null against matched spontaneous recovery.",
+    "s06": "Active local rescue did not outperform recovery-time, opportunity, or energy matched controls and is excluded.",
+    "s07": "Bounded local memory was null against timing, opportunity, and energy matched controls and is excluded.",
+    "s08": "Plastic modes produced harms and are excluded as validated adaptation.",
+    "s12": "Bubble and Insertion completed held-out target changes under the frozen gradient controller while Selection did not; compositions may not be chosen or tuned around that observed boundary.",
+    "compositionContext": "E01 S13 validated all seven same-direction exact pure/pairwise/three-way portfolios as executable and found composition-conditioned aggregation nulls; E01 opposed-direction event-budget results are not imported."
+  },
+  "inherits": {
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "transferSpecSchemaVersion": "e05.s12.transfer-spec.v1",
+    "architecture": "distributed_local",
+    "scheduler": "uniform_random_activation",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "nativeInformationPermission": "policy_native_local",
+    "developmentOpportunities": "100*n^2",
+    "postInterventionOpportunities": "100*n^2",
+    "postHitProbeOpportunities": "20*n",
+    "stabilization": "S01 absorbing certificate plus at least two uniform opportunities per identity within 20*n",
+    "checkpointState": "occupancy, identity-owned Selection cursors, global activation count, semantic stream counters, native ledger, state hash",
+    "pairing": "shared checkpoint and stream prefix within each arm pair; cross-portfolio and immutable-fault-map comparisons are base-draw-paired but scenario-ID RNG-unpaired"
+  },
+  "portfolios": [
+    {"portfolioId": "pure_bubble", "policies": ["Bubble"], "compositionRule": "all identities Bubble", "role": "homogeneous"},
+    {"portfolioId": "pure_insertion", "policies": ["Insertion"], "compositionRule": "all identities Insertion", "role": "homogeneous"},
+    {"portfolioId": "pure_selection", "policies": ["Selection"], "compositionRule": "all identities Selection", "role": "homogeneous"},
+    {"portfolioId": "chimera_bubble_insertion", "policies": ["Bubble", "Insertion"], "compositionRule": "exact 50/50", "role": "chimeric"},
+    {"portfolioId": "chimera_bubble_selection", "policies": ["Bubble", "Selection"], "compositionRule": "exact 50/50", "role": "chimeric"},
+    {"portfolioId": "chimera_insertion_selection", "policies": ["Insertion", "Selection"], "compositionRule": "exact 50/50", "role": "chimeric"},
+    {"portfolioId": "chimera_three_way", "policies": ["Bubble", "Insertion", "Selection"], "compositionRule": "floor(n/3) each with remainder rotating by base replicate and placement map", "role": "chimeric"}
+  ],
+  "assignment": {
+    "profile": "counter-addressed exact composition rank v1",
+    "identityInput": "cell identity only; no value, position, state, proposal, target, injury, or outcome input",
+    "confirmatoryPlacementMap": 0,
+    "sensitivityPlacementMap": 1,
+    "sensitivityScope": "main injury, target-change, and intact-stability panel only; not the threshold grid",
+    "outcomeBlind": true,
+    "noCompositionSelection": true
+  },
+  "panel": {
+    "sizes": [32, 80],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 8,
+    "mainLesions": ["segment_reversal_central_v1", "local_scramble_sattolo_v1"],
+    "lesionLocation": "central",
+    "targetChanges": ["adjacent_pair_swap_total_order_v1", "quartile_rotation_2_0_3_1_v1"],
+    "goalArms": ["changed_aware", "changed_nonadaptive"],
+    "intactStabilityArms": ["stability_aware", "stability_nonadaptive"],
+    "plannedPrimarySources": 224,
+    "plannedSensitivitySources": 128,
+    "plannedSourceCount": 352,
+    "plannedMainRuns": 2816,
+    "plannedMainExactReplays": 2816
+  },
+  "criticalFaultThreshold": {
+    "task": "central segment reversal with exact nested post-completion permanent stuck identities",
+    "faultSemantics": "the immutable E02 stuck rule: a stuck identity cannot act or be moved; fault state is not recovery-enabled",
+    "fractionsInOrder": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+    "countRule": "round-half-up(fraction*n), exact without replacement",
+    "placementRule": "counter-addressed nested identity ranks independent of portfolio, policy, value, position, injury, target, and outcomes",
+    "population": "placement map 0 only; all seven portfolios, both sizes, both directions, eight replicates",
+    "plannedPotentialRunsIncludingReusedZero": 2016,
+    "plannedPotentialNewRuns": 1792,
+    "plannedPotentialNewExactReplays": 1792,
+    "sequentialRule": "evaluate fractions in listed order; fraction 0 reuses the main central-reversal run; after each positive fraction stop the entire threshold family only when every portfolio has Wilson 95% upper success bound below 0.5 at two consecutive evaluated fractions",
+    "stoppingIsGlobal": true,
+    "unrunHandling": "retain every unexecuted potential row as not_run_prespecified_global_threshold_stop; never silently exclude",
+    "criticalDefinition": "largest evaluated fraction whose Wilson 95% lower success bound is at least 0.5; interval to the first higher evaluated fraction whose upper bound is below 0.5; otherwise boundary-censored/inconclusive",
+    "monotonicityAudit": "report every success-rate increase greater than 0.10 between adjacent evaluated fractions"
+  },
+  "estimands": {
+    "population": "all assigned base draws, including checkpoint-formation failures, quiescent terminals, event-budget censors, and target-change censors",
+    "primaryCompositionContrast": "for each chimeric portfolio and task, chimeric success minus the equally weighted success of its pure component portfolios in the same base-draw block",
+    "primaryTasks": ["segment_reversal_central_v1", "local_scramble_sattolo_v1", "adjacent_pair_swap_total_order_v1 aware arm", "quartile_rotation_2_0_3_1_v1 aware arm"],
+    "secondary": ["restricted time", "normalized error AUC", "overshoot", "final error", "native opportunities", "observation reads", "comparisons", "swaps", "memory updates", "target-record reads", "controller computations", "abstract energy", "portfolio complexity", "irreversible-terminal incidence"],
+    "policyFamilyReporting": "report every pure policy separately and every mixture by exact component set; no pooled chimeric effect may replace family-specific effects",
+    "controllerContrast": "within each composition and target, aware minus nonadaptive success with shared checkpoint and scenario RNG prefix",
+    "placementSensitivity": "repeat main panel under exact map 1 and compare direction/sign with map 0; do not use it to select a composition",
+    "criticalFaultFraction": "portfolio-specific rule in criticalFaultThreshold"
+  },
+  "costs": {
+    "nativeLedger": ["activations", "observationReads", "valueComparisons", "proposals", "noOps", "rejections", "memoryUpdates", "acceptedSwaps", "conflictLosses", "displacedCells"],
+    "targetController": ["signalQueries", "targetRecordReads", "controllerComputations", "abstractEnergyUnits"],
+    "portfolioComplexity": ["policyFamilyCount", "Shannon entropy in bits", "exact assignment description length in bits"],
+    "noScalarUniversalCost": true,
+    "paretoAxes": ["success probability maximize", "restricted time minimize", "normalized error AUC minimize", "abstract energy minimize", "portfolio complexity minimize"]
+  },
+  "inference": {
+    "primaryMultiplicityFamilySize": 16,
+    "primaryIntervals": "base-draw block bootstrap 95% percentile intervals with 10000 counter-addressed resamples",
+    "primaryTests": "two-sided paired sign tests on nonzero block contrasts, Holm adjusted across 16 frozen chimeric-by-task contrasts",
+    "secondaryMultiplicity": "Holm within separately labeled controller-effect and restricted-time families; all other endpoints descriptive with 95% intervals",
+    "successCriterion": "at least one Holm-adjusted primary success benefit with positive 95% bootstrap interval, no Holm-adjusted primary harm, and no intact-stability harm",
+    "outcomeClassification": "supportive if successCriterion holds; constraining/contradictory if a Holm-adjusted primary harm, intact-stability harm, composition/checkpoint validation failure, or boundary violation occurs; null otherwise"
+  },
+  "terminalHandling": {
+    "sourceCheckpointFailure": "competing terminal; retain all assigned downstream rows as not executable, success false, restricted time budget+1",
+    "complete": "success event",
+    "quiescent": "operational irreversible competing terminal",
+    "invariantError": "competing terminal and validation failure",
+    "phaseEventBudget": "right censor; success false; restricted time budget+1",
+    "targetQuiescent": "operational irreversible competing terminal",
+    "targetBudget": "right censor",
+    "hazardSummary": "discrete cause-specific hazards and cumulative incidence in normalized opportunity-time quartiles; no biological irreversibility claim"
+  },
+  "validation": {
+    "required": [
+      "specification validation before outcome access",
+      "exact composition counts and policy-assignment hashes",
+      "assignment input-surface audit",
+      "shared base-draw and intervention pairing",
+      "S01 checkpoint-state, phase-budget, target, and stabilization contracts",
+      "lesion identity and severity equivalence",
+      "nested exact stuck-identity sets and E02 fault semantics",
+      "target feasibility and signal permissions",
+      "deterministic exact replay for every executed trajectory",
+      "native and target cost-ledger identities",
+      "censor and competing-terminal retention",
+      "sequential threshold stopping and unrun-row accounting",
+      "planned-versus-executed complete accounting"
+    ]
+  },
+  "claimBoundary": "S13 estimates engineered simulator composition effects under the frozen local algorithms, injuries, stuck-fault rule, and gradient target-code interface. It does not establish biological chimerism, natural collective memory, learning, or universal robustness."
+}
