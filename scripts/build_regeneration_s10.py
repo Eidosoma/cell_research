@@ -769,7 +769,7 @@ improvement versus naïve exposure plus retained adjusted improvement after
 
 ```text
 PYTHONHASHSEED=0 python -m pytest -q tests/test_regeneration_repeated_injuries.py
-PYTHONHASHSEED=0 python scripts/build_regeneration_s10.py --output /artifacts/research_steps/S10 --workers {workers}
+PYTHONHASHSEED=0 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 python scripts/build_regeneration_s10.py --output /artifacts/research_steps/S10 --workers {workers}
 PYTHONHASHSEED=0 python -m pytest -q tests/test_regeneration_*.py
 ruff check src/regeneration/repeated_injuries.py scripts/build_regeneration_s10.py tests/test_regeneration_repeated_injuries.py
 python scripts/build_regeneration_s10.py --validate-only --output /artifacts/research_steps/S10
