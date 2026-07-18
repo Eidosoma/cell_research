@@ -223,7 +223,7 @@ def main() -> None:
         path
         for path in OUTPUT.rglob("*")
         if path.is_file()
-        and path.name not in {"provenance_manifest.json", "research_step_full_results.md", "status.json"}
+        and path.name not in {"provenance_manifest.json", "status.json"}
     )
     manifest = {
         "schemaVersion": "e05.s13.provenance-manifest.v1",
@@ -232,6 +232,7 @@ def main() -> None:
         "repository": str(REPOSITORY),
         "branch": git_output("branch", "--show-current"),
         "sourceCommitAtExecution": git_output("rev-parse", "HEAD"),
+        "implementationCommit": git_output("rev-parse", "HEAD"),
         "workingTreeDirtyAtExecution": True,
         "executionCommand": "PYTHONPATH=. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 E05_S13_WORKERS=8 python scripts/build_regeneration_s13.py",
         "finalizationCommand": "PYTHONPATH=. python scripts/finalize_regeneration_s13.py",
