@@ -1,0 +1,247 @@
+{
+  "schemaVersion": "e05.s07.local-memory-spec.v1",
+  "researchStepId": "S07",
+  "benchmarkVersion": "E05-minimal-local-memory-v1",
+  "frozenAtUtc": "2026-07-18T07:02:02Z",
+  "implementationStateAtFreeze": "Design and immutable configuration only; no S07 controller, fixture, calibration, confirmatory, matching, or sensitivity trajectory existed.",
+  "frozenQuestion": "Do strictly local bounded failed-move, blocked-direction, recent-neighbor, or time-since-local-progress states change repeated-block behavior and improve final-target completion beyond an outcome-blind recovery-time/opportunity/energy-matched memoryless schedule?",
+  "s06Handoff": "S06 active rescue did not outperform either recovery-time-matched spontaneous recovery or matched recovery-time/opportunity/energy controls; S07 therefore treats timing/opportunity matching as the primary information-bearing-state test and does not claim benefit from passive, sham, or permanent-freeze contrasts alone.",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpec": "/artifacts/research_steps/S04/dynamic_fault_package/dynamic_fault_spec.json",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "nudgeSpec": "/artifacts/research_steps/S05/nudge_recovery_package/nudge_recovery_spec.json",
+    "nudgeSpecSchemaVersion": "e05.s05.nudge-recovery-spec.v1",
+    "rescueSpec": "/artifacts/research_steps/S06/assisted_rescue_package/assisted_rescue_spec.json",
+    "rescueSpecSchemaVersion": "e05.s06.assisted-rescue-spec.v1",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "nativeInformationPermission": "policy_native_local",
+    "nativeLegalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "runtimeAnchorLesion": "segment_reversal_central_v1",
+    "runtimeScenarioBoundary": "original_s01_scenario_id_runtime_overlay",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, native stream counters, native ledger, and a fresh S07 private-memory/runtime overlay",
+    "target": "direction-aware strict unequal inversion distance",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "localObservation": {
+    "controllerInput": "Only the scheduled actor's immutable identity, its current position, the already-constructed native proposal, the native mechanical validation disposition, whether that actor is immediately adjacent to the selected runtime-frozen identity, and the selected identity's relative side. The actor may later observe whether its own final native proposal changed local state.",
+    "forbiddenInputs": [
+      "global event index or elapsed global opportunities as a memory signal",
+      "target distance, progress fraction, completion threshold, or injury timing label",
+      "global occupancy, other actors' private state, native or intervention ledger totals",
+      "future draws, confirmatory outcomes, donor outcomes during active execution",
+      "selected identity value, policy, cursor, or nonlocal identity information"
+    ],
+    "currentAdjacencyGateway": "The S06 one-bit adjacent-frozen gateway is retained and augmented only by a left/right relative-side bit. It supplies no value, target, global, or future information.",
+    "evaluationOrder": "Read prior private state and current local adjacency before the current opportunity's outcome; if ready, replace the one already-built native proposal; otherwise mechanically process it, then update only the scheduled actor's state from its own local outcome.",
+    "runtimeStreams": []
+  },
+  "memoryComponents": [
+    {
+      "componentId": "failed_move_counter_cap3_v1",
+      "storageBitsPerIdentity": 2,
+      "stateDomain": "integer 0..3",
+      "freshState": 0,
+      "update": "After an actor's mechanically eligible native Swap is blocked solely because its target is the selected runtime-frozen identity, increment with saturation at 3. Reset to 0 after that actor's accepted native Swap or MemoryUpdate. Other outcomes leave it unchanged.",
+      "readyRule": "At the start of a later opportunity, count equals 3 and the same actor is currently adjacent to the selected frozen identity.",
+      "interpretation": "bounded repeated failed-move evidence"
+    },
+    {
+      "componentId": "blocked_direction_mask_v1",
+      "storageBitsPerIdentity": 2,
+      "stateDomain": "two-bit mask over left and right",
+      "freshState": 0,
+      "update": "After an actor's mechanically eligible native Swap is blocked solely by the selected frozen target, set the bit for the target's relative side. Reset both bits after that actor's accepted native Swap or MemoryUpdate. Other outcomes leave the mask unchanged.",
+      "readyRule": "At the start of a later opportunity, the bit matching the currently adjacent selected frozen identity's relative side is set.",
+      "interpretation": "bounded remembered blocked direction"
+    },
+    {
+      "componentId": "recent_neighbor_state_ttl3_v1",
+      "storageBitsPerIdentity": 4,
+      "stateDomain": "valid bit, left/right side bit, and two-bit age 0..3",
+      "freshState": "invalid, side=left canonical, age=0",
+      "update": "After any scheduled opportunity while the actor is adjacent to the selected frozen identity, store that relative side with valid=true and age=0. On a later own opportunity without such adjacency, increment age to 3; if already 3, clear valid. Reset to fresh after an accepted native Swap or MemoryUpdate.",
+      "readyRule": "At the start of a later opportunity, stored state is valid, stored side equals the current adjacent side, and age is at most 3. The current encounter cannot make itself ready.",
+      "interpretation": "bounded recent local-neighbor encounter without neighbor identity or value"
+    },
+    {
+      "componentId": "time_since_local_progress_cap7_v1",
+      "storageBitsPerIdentity": 3,
+      "stateDomain": "integer 0..7",
+      "freshState": 0,
+      "update": "After each activation of that actor, reset to 0 if its native Swap or MemoryUpdate was accepted; otherwise increment with saturation at 7. Only that actor's own charged opportunities advance the counter.",
+      "readyRule": "At the start of a later opportunity, count equals 7 and the actor is currently adjacent to the selected frozen identity.",
+      "interpretation": "bounded actor-local no-progress opportunity clock, never the global event clock"
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "failed_move_counter_only_v1",
+      "enabledComponents": ["failed_move_counter_cap3_v1"],
+      "combinationRule": "the enabled component is ready",
+      "storageBitsPerIdentity": 2
+    },
+    {
+      "variantId": "blocked_direction_only_v1",
+      "enabledComponents": ["blocked_direction_mask_v1"],
+      "combinationRule": "the enabled component is ready",
+      "storageBitsPerIdentity": 2
+    },
+    {
+      "variantId": "recent_neighbor_only_v1",
+      "enabledComponents": ["recent_neighbor_state_ttl3_v1"],
+      "combinationRule": "the enabled component is ready",
+      "storageBitsPerIdentity": 4
+    },
+    {
+      "variantId": "time_since_local_progress_only_v1",
+      "enabledComponents": ["time_since_local_progress_cap7_v1"],
+      "combinationRule": "the enabled component is ready",
+      "storageBitsPerIdentity": 3
+    },
+    {
+      "variantId": "all_components_union_v1",
+      "enabledComponents": [
+        "failed_move_counter_cap3_v1",
+        "blocked_direction_mask_v1",
+        "recent_neighbor_state_ttl3_v1",
+        "time_since_local_progress_cap7_v1"
+      ],
+      "combinationRule": "logical OR of enabled prior-state ready signals; the lexically first ready component is retained only as the audit reason",
+      "storageBitsPerIdentity": 11
+    }
+  ],
+  "repairAction": {
+    "proposalId": "memory_gated_local_repair_once_v1",
+    "eligibility": "A normal non-selected scheduled actor is immediately adjacent to the selected runtime-frozen identity, has a prior-state ready signal under its variant, and collective/per-helper budgets remain.",
+    "nativeReplacement": "Exactly one already-constructed native NoOp, Swap, or MemoryUpdate is suppressed. No second proposal, retry, replacement actor, free opportunity, or same-opportunity state-trigger is created.",
+    "successRule": "Deterministic recovery after the triggering opportunity, effective on the next charged opportunity.",
+    "attemptLimit": 1,
+    "actionCostPerProposal": 1,
+    "energyCostPerProposal": 1,
+    "collectiveActionBudget": 1,
+    "collectiveEnergyBudget": 1,
+    "perHelperEnergyBudget": 1,
+    "energyInterpretation": "abstract intervention-accounting unit, not physical energy"
+  },
+  "resetSemantics": {
+    "phaseStart": "Every S07 arm starts with fresh component state after exact checkpoint reconstruction and the S03 reversal anchor; pre-injury structure and history do not preload memory.",
+    "explicitReset": "Clear every enabled component to its canonical fresh value without changing native occupancy, Selection cursors, activation count, stream counters, native ledger, selected identity, fault/recovery state, budgets, or target; reset consumes no runtime draw and is not a charged opportunity.",
+    "localProgressReset": "Accepted native Swap or MemoryUpdate resets every enabled component for that actor before any subsequent opportunity.",
+    "taskBoundary": "A new task phase creates a fresh S07 overlay; no S07 state carries across checkpoints or runs.",
+    "mainPanelUse": "Only fresh-at-phase-start state is used; explicit mid-phase reset is a structural-confounding validation fixture, not an outcome arm."
+  },
+  "controls": [
+    {
+      "arm": "memoryless_permanent_freeze",
+      "semantics": "No S07 state and no repair. The selected identity remains frozen; all censor and terminal cases remain."
+    },
+    {
+      "arm": "memoryless_immediate_neighbor_repair_s06_reference",
+      "semantics": "The validated S06 stream-free one-bit local rule repairs on the first eligible adjacent scheduled actor with the same one-action/one-energy/native-opportunity cost. This is a descriptive lower-delay benchmark, not the primary test of information-bearing memory."
+    },
+    {
+      "arm": "memoryless_matched_time_opportunity_energy",
+      "semantics": "For each variant and matching choice, recover at its calibration-assigned duration or retain an unrecovered sentinel; suppress exactly one native proposal and spend one action/energy unit at a finite assigned boundary. The arm has no S07 private state."
+    }
+  ],
+  "matching": {
+    "calibrationReplicates": [0, 1],
+    "confirmatoryReplicates": [2, 3],
+    "choices": [
+      "empirical_bijection_n_policy_v1",
+      "empirical_bijection_n_v1",
+      "empirical_bijection_pooled_v1"
+    ],
+    "primaryChoice": "empirical_bijection_n_policy_v1",
+    "sensitivityChoices": ["empirical_bijection_n_v1", "empirical_bijection_pooled_v1"],
+    "assignment": "Separate counter-addressed deterministic donor-recipient bijections within variant and declared stratum.",
+    "donorPackage": "Active-memory recovery duration plus explicit recovery censor, repair-action count, and abstract energy spent.",
+    "censoring": "Unrecovered calibration cases remain sentinels; they are never dropped, substituted, or imputed and schedule neither control recovery nor cost.",
+    "outcomeConditioningProhibited": "No confirmatory completion, distance, recovery, terminal, helper history, or trade-off outcome enters matching.",
+    "runtimeDraws": "None; assignments are construction-only and frozen before confirmatory control execution.",
+    "stream": "local_memory_control_assignment_s07_v1"
+  },
+  "structuralConfoundingAudit": {
+    "baselinePairing": "All confirmatory arms for a case share the exact S02 checkpoint, S03 reversal occupancy/hash, selected identity, clock, native stream counters, native ledger, target, and budget.",
+    "freshStateRule": "No main-panel memory state is reconstructed from pre-injury structural history.",
+    "resetFixture": "For every checkpoint-by-variant pair, mutate a legal bounded private state, apply explicit reset, and require native state/checkpoint hashes to remain unchanged while the private state returns exactly to fresh.",
+    "interpretation": "Paired baseline structure and reset fixtures audit baseline confounding but do not identify a structure-independent biological memory mechanism; post-intervention structural divergence remains a mediator and later full arrangement-by-memory reset tests remain S11."
+  },
+  "complexityCosts": {
+    "storage": "Declared bits per identity and n-scaled total bits for every variant.",
+    "runtimeLedger": [
+      "component reads",
+      "component writes",
+      "saturating increments",
+      "state resets",
+      "readiness comparisons",
+      "repair action and abstract energy",
+      "suppressed native proposal kind and eligibility"
+    ],
+    "opportunityRule": "Memory bookkeeping occurs within the one already-charged actor opportunity and never creates a native proposal candidate; all active and scheduled-control repairs suppress exactly one native proposal.",
+    "tradeoffMetrics": [
+      "completion and paired completion risk difference",
+      "phase activation count, final distance, and distance AUC",
+      "recovery incidence/duration with censor retention",
+      "repeated freeze-target blocks before recovery",
+      "component reads/writes/saturations/resets and bits stored",
+      "suppressed native opportunities and forgone eligible changes",
+      "abstract action and energy units"
+    ]
+  },
+  "successCriteria": {
+    "primaryEndpoint": "Confirmatory final-target completion with every terminal and unrecovered case retained.",
+    "primaryContrasts": "Each of the five active variants versus its memoryless matched-time/opportunity/energy control under empirical_bijection_n_policy_v1.",
+    "test": "Two-sided exact McNemar test on paired completion discordance.",
+    "multiplicity": "Holm correction across the five primary variant contrasts at family-wise alpha 0.05.",
+    "uncertainty": "Paired mean-difference 95% t intervals; no recovered-only, completed-only, or outcome-selected cohort.",
+    "supportive": "All validation gates pass and at least one active variant has a positive paired completion difference with Holm-adjusted p <= 0.05 versus its primary matched schedule, with no Holm-significant active harm.",
+    "null": "All validation gates pass and no active variant has a Holm-significant completion advantage or harm versus its primary matched schedule.",
+    "constrainingContradictory": "A required semantic, bound, reset, information, opportunity, matching, replay, censor, pairing, or accounting gate fails, or an active variant has Holm-significant completion harm versus its primary matched schedule.",
+    "passiveReferenceBoundary": "Advantages over permanent freezing or differences from the S06 immediate rule are descriptive and cannot by themselves support an information-bearing-memory claim."
+  },
+  "validationPanel": {
+    "plannedCheckpointCount": 384,
+    "sourceConstruction": "All validated S02 checkpoints followed by the validated S03 segment_reversal_central_v1 anchor.",
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "variantCount": 5,
+    "plannedCalibrationActiveRuns": 960,
+    "plannedConfirmatoryActiveRuns": 960,
+    "plannedConfirmatoryMatchedControlRuns": 2880,
+    "plannedConfirmatorySharedMemorylessRuns": 192,
+    "plannedConfirmatoryImmediateReferenceRuns": 192,
+    "plannedRunCount": 5184,
+    "plannedPairwiseContrasts": 4800,
+    "plannedControlAssignments": 2880,
+    "exactReplay": "Every planned run.",
+    "selectedFullTraceRuns": 10,
+    "workers": 8
+  },
+  "claimBoundary": "S07 tests finite engineered private state and an engineered local repair gateway in a transparent simulator. State bits, memory operations, repair, action costs, energy, and recovery are operational computational constructs, not biological memory, helping, force, physical energy, or wet-lab evidence."
+}
