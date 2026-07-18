@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "e05.s09.target-change-spec.v1",
+  "researchStepId": "S09",
+  "benchmarkVersion": "E05-collective-target-change-v1",
+  "frozenAtUtc": "2026-07-18T10:00:57Z",
+  "implementationStateAtFreeze": "Design and immutable configuration only; no S09 runtime, fixture, target-change, stability, inference, or replay trajectory existed.",
+  "frozenQuestion": "Can native Algotypes adapt to independently specified feasible collective-target changes when target information is absent, locally propagated, gradient-like, or globally broadcast, after separating target-aware behavior from signal timing, information exposure, opportunity, and cost effects?",
+  "priorEvidenceConstraints": {
+    "s07": "No bounded local-memory variant improved completion over recovery-time/opportunity/energy-matched controls; S09 does not claim target adaptation from elapsed-time scheduling or memory alone.",
+    "s08": "No policy-plasticity variant improved matched-sham recovery; four harmed recovery and two harmed intact stability. S09 carries forward none of S08's Algotype-switch, radius-expansion, alternate-target, or exploratory modes as validated adaptation.",
+    "controllerBoundary": "S09 independently changes only the comparison value attached to records already authorized by the native Algotype. Policy identity, native observation topology, scheduled side/cursor, legal primitives, target identity validation, and the original scenario/RNG root remain unchanged."
+  },
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpec": "/artifacts/research_steps/S04/dynamic_fault_package/dynamic_fault_spec.json",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "nudgeSpec": "/artifacts/research_steps/S05/nudge_recovery_package/nudge_recovery_spec.json",
+    "nudgeSpecSchemaVersion": "e05.s05.nudge-recovery-spec.v1",
+    "rescueSpec": "/artifacts/research_steps/S06/assisted_rescue_package/assisted_rescue_spec.json",
+    "rescueSpecSchemaVersion": "e05.s06.assisted-rescue-spec.v1",
+    "memorySpec": "/artifacts/research_steps/S07/memory_variants/local_memory_spec.json",
+    "memorySpecSchemaVersion": "e05.s07.local-memory-spec.v1",
+    "plasticitySpec": "/artifacts/research_steps/S08/plasticity_package/policy_plasticity_spec.json",
+    "plasticitySpecSchemaVersion": "e05.s08.policy-plasticity-spec.v1",
+    "checkpointState": "exact S02 occupancy, Selection cursors, activation/global event clock, native stream counters, and native ledger; S09 starts with fresh target-signal state",
+    "targetChangeLesion": "none; target change is an instantaneous objective intervention on the exact S02 checkpoint, before any S03 lesion",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "adaptationBudget": "100*n^2 charged opportunities after target change",
+    "postAdaptationProbeBudget": "20*n charged opportunities after first new-target achievement",
+    "noChangeStabilityBudget": "20*n charged opportunities from the exact stabilized post-completion checkpoint",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "nativeInformationPermission": "policy_native_local",
+    "nativeLegalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "runtimeScenarioBoundary": "original_s01_scenario_id_external_target_overlay"
+  },
+  "targetChanges": [
+    {
+      "targetChangeId": "reverse_total_order_v1",
+      "family": "reversed_total_order",
+      "identitySemantics": "identity and cell count conserving",
+      "correspondence": "If oldRank is the identity's zero-based position in the original direction-specific target, new target code is n-1-oldRank; every identity has one exact target position.",
+      "targetMetric": "strict unequal inversion count of new target codes in ascending code order",
+      "feasibility": "Every unique identity-to-code mapping has exactly one feasible target permutation."
+    },
+    {
+      "targetChangeId": "binary_precedence_partial_order_v1",
+      "family": "partial_order",
+      "identitySemantics": "identity and cell count conserving",
+      "correspondence": "new target code is oldRank modulo 2; all code-0 identities must precede all code-1 identities, while identities within a code class are incomparable and may appear in any order",
+      "targetMetric": "cross-class strict inversion count only; within-class pairs contribute zero",
+      "feasibility": "The feasible set contains every permutation with the code-0 block before the code-1 block."
+    },
+    {
+      "targetChangeId": "cyclic_tertile_value_classes_v1",
+      "family": "new_value_classes",
+      "identitySemantics": "identity and cell count conserving; original unique values receive one of three new ordinal class labels",
+      "correspondence": "oldRank is divided into contiguous tertiles floor(3*oldRank/n); class order is cyclically changed from 0,1,2 to 1,2,0, encoded as new target codes 2,0,1 respectively; identities within a new class are target-equivalent",
+      "targetMetric": "strict unequal inversion count of the three new class codes; within-class pairs contribute zero",
+      "feasibility": "The feasible set contains every permutation with class-1 identities, then class-2 identities, then class-0 identities."
+    }
+  ],
+  "targetCorrespondenceContract": {
+    "oldTargetCode": "zero-based identity rank in the original direction-specific unique-value target",
+    "newTargetCode": "nonnegative scalar code whose ascending weak order defines the new target; equal codes are target-equivalent",
+    "policyCode": "newTargetCode for originally ascending scenarios and -newTargetCode for originally descending scenarios, so the actor's immutable native direction and preserved Selection cursor remain valid",
+    "noChangeCode": "oldTargetCode with the same direction-preserving policy-code transform",
+    "maximumDistance": "number of identity pairs with unequal target codes",
+    "completion": "new target distance equals zero",
+    "prohibitions": "No identity, value, policy, direction, cursor, count, occupancy, RNG root, or native checkpoint field is changed when the external target changes."
+  },
+  "changeTiming": {
+    "conditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ],
+    "rule": "Use every exact S02 checkpoint and its unchanged global event index. The target and signal overlay change instantaneously before the next charged opportunity.",
+    "pairing": "Target-aware and matched nonadaptive arms use the identical checkpoint, target definition, target-change event index, signal permission, scenario ID, native seed, budget, and pre-change native state.",
+    "unreachable": "Retain any inherited S02 trigger-unreached case without substitution. The validated S02 main panel has none."
+  },
+  "signalPermissions": [
+    {
+      "signalId": "none_negative_control_v1",
+      "availability": "No new target token, code, field, map, or target-change flag is ever exposed.",
+      "controllerRule": "The target-aware arm must emit the native proposal byte-for-byte and is therefore a negative control.",
+      "allowedInputs": [],
+      "signalCost": "zero"
+    },
+    {
+      "signalId": "local_boundary_relay_v1",
+      "availability": "A target-profile token begins at both boundary positions at change elapsed opportunity 0 and expands inward by at most one position per charged opportunity. A scheduled actor may use target codes only for records on its native authorized observation surface when its current position is inside that light cone.",
+      "controllerRule": "Before local arrival emit native behavior; after arrival apply the frozen target-code transform only to already authorized records.",
+      "allowedInputs": ["current-position target-profile token after valid light-cone arrival", "target code for actor and already authorized native observation records"],
+      "signalCost": "one local-field query per opportunity, one delivery unit when available, one unit per transformed authorized record, and one controller-compute unit when a shadow candidate is built"
+    },
+    {
+      "signalId": "gradient_target_code_v1",
+      "availability": "Immediately after target change, every authorized actor/record observation may carry only its scalar target-order code; no target identifier or full mapping is exposed.",
+      "controllerRule": "Apply the frozen code transform only to records already exposed by the native Algotype.",
+      "allowedInputs": ["scalar target code for actor and already authorized native observation records"],
+      "signalCost": "one field query plus one unit per transformed authorized record and one controller-compute unit per shadow candidate"
+    },
+    {
+      "signalId": "global_target_broadcast_v1",
+      "availability": "At target change, an immutable target-profile identifier and full identity-to-target-code mapping are broadcast to all identities. Current occupancy, progress, distance, completion, clocks, and outcomes are absent.",
+      "controllerRule": "Although the map is globally available, candidate construction still uses only the actor and records on the native Algotype observation surface.",
+      "allowedInputs": ["immutable target profile", "identity-to-target-code mapping"],
+      "signalCost": "n broadcast payload/energy units at change, one lookup per transformed authorized record, and one controller-compute unit per shadow candidate"
+    }
+  ],
+  "forbiddenControllerInputs": [
+    "current global occupancy or any non-native observation record",
+    "old-target or new-target distance, progress, completion, or adaptation time",
+    "global event index or elapsed opportunities as a policy-visible value",
+    "timing-condition label, replicate, arm, future draw, future state, terminal result, or confirmatory outcome",
+    "other identities' policies, directions, cursors, ledgers, private state, or fault labels outside the native observation surface"
+  ],
+  "controllerConditions": [
+    {
+      "arm": "changed_target_aware",
+      "objective": "new target",
+      "semantics": "Build the native proposal and, only when the declared signal permits, one shadow target-code candidate over the same native observation surface. Emit exactly the candidate as the sole final proposal; otherwise emit native."
+    },
+    {
+      "arm": "changed_nonadaptive_matched",
+      "objective": "new target",
+      "semantics": "Receive the same signal, construct and meter the same shadow target-code candidate, but emit exactly the native proposal as the sole final proposal."
+    },
+    {
+      "arm": "no_change_target_aware_stability",
+      "objective": "original target",
+      "semantics": "Use the same signal permission and target-code controller with the original target code during the post-completion stability probe."
+    },
+    {
+      "arm": "no_change_nonadaptive_matched_stability",
+      "objective": "original target",
+      "semantics": "Receive and meter the same original-target signal/candidate but emit native behavior during the paired post-completion stability probe."
+    }
+  ],
+  "controllerAndCostContract": {
+    "proposalSurface": "Exactly one final NoOp, Swap, or MemoryUpdate per charged opportunity; no retry, replacement actor, second final proposal, uncharged opportunity, action failure, or S08 mode exists.",
+    "nativeCost": "Both controller arms first build the ordinary native proposal. The final proposal retains the native observation-read/comparison counts; all added target-signal and shadow-candidate work is charged only in the explicit S09 process ledger.",
+    "shadowMatching": "Target-aware and nonadaptive matched arms use the identical signal gateway, target-code mapping, candidate construction, information exposure, and per-event process charges. Only which already-constructed proposal becomes final differs.",
+    "actionCost": "one ordinary charged native action opportunity; target change and signal state create no extra proposal opportunity",
+    "energyInterpretation": "signal, communication, lookup, and compute energy are abstract transparent accounting units without physical or biological units",
+    "quiescence": "After the local relay is fully propagated, a run may stop as controller_quiescent only after every immutable actor context (both Bubble sides, one context otherwise) has been observed without any accepted state change since the most recent change. No target-failure row is excluded.",
+    "runtimeStreams": []
+  },
+  "controlsAndPairing": {
+    "primaryControl": "changed_nonadaptive_matched receives the same target change, signal timing/permission, candidate computation, and costs but continues native behavior",
+    "noChangeControl": "post-completion original-target target-aware versus nonadaptive probes use the same signal/cost surface for target-family-specific stability harm",
+    "noSignalBoundary": "none_negative_control_v1 must be exact target-aware/nonadaptive behavioral equivalence; any difference is leakage or implementation failure",
+    "nativeRng": "retain original executable S01 scenario ID and base counter-addressed actor/Bubble addresses; exact shared prefix is claimed only while address, consumption, and state paths match",
+    "s09Streams": "none; target definitions and signal propagation are deterministic, and worker order enters no address",
+    "noOutcomeSelection": "All three target changes, four signals, eight S02 timings, both controller conditions, primary contrasts, metrics, and multiplicity families are frozen before any S09 trajectory."
+  },
+  "metrics": {
+    "primaryEndpoint": "new-target completion within the phase-local 100*n^2 adaptation budget, retaining every controller-quiescent and phase-budget failure",
+    "oldVersusNewError": ["old-target and new-target raw/normalized distance at change", "final old-target and new-target distance", "old-target and new-target distance AUC", "first opportunity at which new-target error is below old-target error"],
+    "adaptationTime": "charged opportunities from target change to first new-target distance zero; failures retain an explicit censor and restricted time budget+1",
+    "overshoot": "after first new-target achievement, continue exactly 20*n opportunities and record any departure, maximum post-hit distance, post-hit distance AUC, and final retention; non-achievers retain overshootCensored=true",
+    "failure": "new target not reached, with controller_quiescent or phase_event_budget stop reason retained",
+    "stability": "in paired no-change post-completion probes, any original-target departure, maximum distance, distance AUC, final retention, and false target-aware behavior",
+    "cost": "native ledger plus S09 signal queries/deliveries/payload units, transformed-record reads, shadow comparisons, controller computations, emitted target-aware proposals, broadcast units, and abstract energy"
+  },
+  "successCriteria": {
+    "primaryContrasts": "For each of 3 target changes x 4 signal permissions, changed_target_aware versus changed_nonadaptive_matched on final new-target completion across all 384 paired checkpoints.",
+    "stabilityContrasts": "For each target family x signal permission, no_change_target_aware_stability versus no_change_nonadaptive_matched_stability on any original-target departure across all 48 post-completion checkpoints.",
+    "test": "two-sided exact McNemar tests on paired binary outcomes with paired risk-difference 95% t intervals",
+    "multiplicity": "Holm correction separately across 12 adaptation-completion contrasts and 12 no-change stability-harm contrasts at family-wise alpha 0.05",
+    "supportive": "All validation gates pass; none_negative_control_v1 is exact behavioral equivalence; and at least one local, gradient-like, or global signal has a positive Holm-significant completion difference without Holm-significant no-change stability harm for the same target/signal condition.",
+    "null": "All validation gates pass, no informative signal has a Holm-significant benefit or harm, no stability harm is significant, and the no-signal controls are exact.",
+    "constrainingContradictory": "Any validation/identifiability gate fails, the no-signal behavioral equivalence fails, any target-aware condition has Holm-significant completion or stability harm, or no frozen target is feasible.",
+    "censorRule": "No completed-only, adapted-only, stable-only, signaled-only, or outcome-selected cohort; all target failures and overshoot censors remain."
+  },
+  "validationPanel": {
+    "sourceBlockCount": 48,
+    "changedCheckpointCount": 384,
+    "stabilityCheckpointCount": 48,
+    "targetChangeCount": 3,
+    "signalPermissionCount": 4,
+    "changedControllerArmCount": 2,
+    "stabilityControllerArmCount": 2,
+    "plannedChangedRuns": 9216,
+    "plannedNoChangeStabilityRuns": 1152,
+    "plannedRunCount": 10368,
+    "plannedExactReplayCount": 10368,
+    "plannedTotalTrajectoryExecutions": 20736,
+    "plannedPrimaryAdaptationPairs": 4608,
+    "plannedPrimaryStabilityPairs": 576,
+    "plannedPairwiseContrasts": 5184,
+    "selectedTraceRuns": 24,
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "exactReplay": "every planned run",
+    "workers": 8
+  },
+  "claimBoundary": "S09 tests prespecified engineered target semantics, signal permissions, and target-code controllers in a transparent one-dimensional simulator. Target change, local relay, gradients, global broadcast, adaptation, stability, communication, and energy are operational computational constructs, not biological goal inference, learning, morphogenesis, physical energy, wet-lab evidence, or a claim beyond the frozen panel."
+}
