@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "e05.s08.policy-plasticity-spec.v1",
+  "researchStepId": "S08",
+  "benchmarkVersion": "E05-policy-plasticity-v1",
+  "frozenAtUtc": "2026-07-18T08:48:10Z",
+  "implementationStateAtFreeze": "Design and immutable configuration only; no S08 runtime controller, fixture, injury-panel, stability-panel, inference, or replay trajectory existed.",
+  "frozenQuestion": "Do prespecified failure-triggered reversible or irreversible changes in Algotype, sensing radius, local target selection, or exploration improve completion beyond an outcome-blind recovery-time/information/opportunity/cost-matched nonplastic controller, and what intact-pattern instability or efficiency harms do they cause?",
+  "s07Handoff": "S07 found no completion advantage for any bounded local-memory variant versus recovery-time/opportunity/energy-matched controls. S08 therefore fixes the same case-specific recovery schedule in active, sham, and reference arms and treats active-versus-matched-sham behavior as primary; recovery-only or permanent-freeze comparisons cannot support a plasticity claim.",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpec": "/artifacts/research_steps/S04/dynamic_fault_package/dynamic_fault_spec.json",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "nudgeSpec": "/artifacts/research_steps/S05/nudge_recovery_package/nudge_recovery_spec.json",
+    "nudgeSpecSchemaVersion": "e05.s05.nudge-recovery-spec.v1",
+    "rescueSpec": "/artifacts/research_steps/S06/assisted_rescue_package/assisted_rescue_spec.json",
+    "rescueSpecSchemaVersion": "e05.s06.assisted-rescue-spec.v1",
+    "memorySpec": "/artifacts/research_steps/S07/memory_variants/local_memory_spec.json",
+    "memorySpecSchemaVersion": "e05.s07.local-memory-spec.v1",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "stabilityProbeBudget": "20*n charged opportunities from the exact stabilized post-completion checkpoint, with completion deliberately non-absorbing only inside this safety probe",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "nativeInformationPermission": "policy_native_local",
+    "nativeLegalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "runtimeAnchorLesion": "segment_reversal_central_v1",
+    "runtimeScenarioBoundary": "original_s01_scenario_id_runtime_overlay",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, native stream counters, native ledger, and fresh S08 failure/plasticity state",
+    "target": "unchanged direction-aware strict unequal inversion distance",
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "timingConditions": ["initialization", "progress_25", "event_25", "progress_50", "event_50", "progress_75", "event_75", "post_completion"]
+  },
+  "failureTrigger": {
+    "triggerId": "actor_local_no_progress_cap3_first_signal_v1",
+    "state": "a saturating 2-bit counter 0..3 for every immutable actor identity",
+    "update": "after each own charged opportunity before any transition, reset to zero only after that actor's accepted Swap or MemoryUpdate; otherwise increment with saturation at three",
+    "readyRule": "at the start of a later own opportunity the prior counter equals three",
+    "ordering": "the current opportunity cannot make itself ready; the first serial ready actor consumes the one collective transition cycle and all other actors remain native",
+    "locality": "the state sees only actor identity and whether that actor's own final proposal changed state; it receives no selected-fault bit, occupancy, target, distance, progress, timing label, global event clock, other actor state, ledger total, future draw, or outcome",
+    "rationale": "the same injury-agnostic local rule can trigger during damaged recovery or intact stabilized behavior, making both benefit and false-activation harm observable"
+  },
+  "durability": {
+    "reversible": "transition suppresses one native proposal; the new mode governs exactly eight subsequent charged opportunities of the triggering actor; reversion suppresses that actor's next native proposal, costs one action/energy unit, restores the original mode for the following opportunity, and cannot retrigger",
+    "irreversible": "transition suppresses one native proposal and the new mode persists until terminal or phase-budget censoring; it cannot retrigger",
+    "transitionBoundary": "the mode becomes active only after the transition opportunity and is therefore usable on the triggering actor's next opportunity",
+    "reversionBoundary": "reversion becomes effective after its suppressing opportunity",
+    "cycleBudget": "one collective transition cycle per run; reversible cycles contain one activation and one reversion, irreversible cycles one activation"
+  },
+  "mechanisms": [
+    {
+      "mechanismId": "algotype_switch",
+      "activeRule": "switch only the triggering actor's proposal Algotype by the frozen mapping Bubble to Insertion, Insertion to Bubble, Selection to Bubble; the alternate Algotype uses its ordinary native information rule, with deterministic left/right alternation from the actor-local mode counter when a newly selected Bubble side is required",
+      "targetPermission": "the immutable actor direction and unchanged target order only; no target identity, global target state, progress, or completion signal",
+      "sensingPermission": "the declared alternate native Algotype capability; any broader prefix exposure is explicitly metered and exposed identically to sham",
+      "complexityTagBits": 2
+    },
+    {
+      "mechanismId": "sensing_radius_expansion",
+      "activeRule": "expand only the triggering actor's geometric observation from its native decision surface to the bounded positions at offsets -2,-1,+1,+2; if a strict two-hop directional violation exists, propose one adjacent step toward the lexically first left-then-right violation, otherwise NoOp",
+      "targetPermission": "the actor's immutable direction plus values/fault modes within radius two; no target identity, global occupancy, distance, progress, or completion",
+      "sensingPermission": "radius exactly two, never larger",
+      "complexityTagBits": 0
+    },
+    {
+      "mechanismId": "alternate_target_selection",
+      "activeRule": "choose exactly one bounded adjacent alternative without constructing a native candidate: Bubble uses the side opposite its already scheduled side; Insertion uses right instead of its native left; Selection uses the adjacent side opposite the current cursor direction; swap only for a strict directional inversion, otherwise NoOp",
+      "targetPermission": "one actor record, its own Bubble side or Selection cursor where native, and one adjacent value/fault record; no nonlocal identity or target score",
+      "sensingPermission": "radius exactly one",
+      "complexityTagBits": 0
+    },
+    {
+      "mechanismId": "exploratory_mode",
+      "activeRule": "alternate left/right using the triggering actor's bounded mode-opportunity parity and propose one mechanically legal adjacent Swap regardless of value ordering; boundary or non-normal neighbor yields NoOp",
+      "targetPermission": "no target value comparison and no task-score input; exploration can therefore improve or damage the unchanged target",
+      "sensingPermission": "one adjacent position/fault record at radius one",
+      "complexityTagBits": 1
+    }
+  ],
+  "variants": [
+    {"variantId": "algotype_switch_reversible_v1", "mechanismId": "algotype_switch", "durability": "reversible"},
+    {"variantId": "algotype_switch_irreversible_v1", "mechanismId": "algotype_switch", "durability": "irreversible"},
+    {"variantId": "sensing_radius_expansion_reversible_v1", "mechanismId": "sensing_radius_expansion", "durability": "reversible"},
+    {"variantId": "sensing_radius_expansion_irreversible_v1", "mechanismId": "sensing_radius_expansion", "durability": "irreversible"},
+    {"variantId": "alternate_target_reversible_v1", "mechanismId": "alternate_target_selection", "durability": "reversible"},
+    {"variantId": "alternate_target_irreversible_v1", "mechanismId": "alternate_target_selection", "durability": "irreversible"},
+    {"variantId": "exploratory_mode_reversible_v1", "mechanismId": "exploratory_mode", "durability": "reversible"},
+    {"variantId": "exploratory_mode_irreversible_v1", "mechanismId": "exploratory_mode", "durability": "irreversible"}
+  ],
+  "componentAblation": "The eight active variants are prespecified one-component interventions: each isolates one of four behavior components at each of two durability levels on the same paired panel. No learned or outcome-selected union is fit.",
+  "controls": [
+    {
+      "arm": "matched_nonplastic_sham",
+      "semantics": "run the identical local trigger, transition/reversion state machine, information exposure, fixed sensing/compute charges, native-opportunity suppression, and action/energy costs, but retain the actor's native proposal rule throughout"
+    },
+    {
+      "arm": "nonplastic_recovery_only_reference",
+      "semantics": "use the same prior-S07 recovery schedule and its one suppressed proposal/action/energy cost, but instantiate no S08 trigger, mode, added sensing, transition, or reversion; descriptive opportunity-cost reference only"
+    }
+  ],
+  "recoveryScheduleControl": {
+    "source": "/artifacts/research_steps/S07/local_memory.parquet",
+    "donorArm": "active_local_memory",
+    "donorVariant": "all_components_union_v1",
+    "assignment": "exact same-case duration indexed only by S01 pairing block and S02 timing condition; all 384 donors recovered in S07",
+    "outcomeBlindness": "S07 was complete before S08 was specified; no S08 outcome can enter the schedule",
+    "runtimeSemantics": "at the assigned duration, suppress one native proposal, spend one action and one abstract energy unit, then unfreeze the selected identity for the next charged opportunity",
+    "collisionPrecedence": "a scheduled recovery event has priority over an otherwise-ready S08 transition on the same opportunity; the prior trigger state remains available for a later opportunity",
+    "claimBoundary": "active-versus-sham is primary because both receive identical recovery scheduling; reference contrasts cannot establish plasticity"
+  },
+  "costs": {
+    "recovery": "one suppressed native proposal, one action unit, and one abstract energy unit in every injury arm",
+    "transition": "one suppressed native proposal, one action unit, and one abstract energy unit",
+    "reversion": "one suppressed native proposal, one action unit, and one abstract energy unit for reversible variants only",
+    "modeOpportunity": "one final proposal only; charge one abstract compute-energy unit plus the mechanism's declared adaptive sensing reads and sensing-energy units in both active and matched-sham arms",
+    "sensing": "meter every adaptive actor/neighbor/prefix record exposed to the plastic or sham gateway; radius expansion is capped at four non-self positions",
+    "storage": "two failure-counter bits per identity plus mode-active/ever-transitioned bits, a triggering-identity tag of ceil(log2(n)) bits, a four-bit reversible duration counter when applicable, and the declared mechanism tag/parity bits",
+    "energyInterpretation": "all energy is an abstract transparent accounting unit without physical or biological units"
+  },
+  "pairingAndStreams": {
+    "root": "retain the original executable S01 scenario ID and exact S02/S03 checkpoint/anchor state",
+    "activeShamPrefix": "exact through the transition opportunity because trigger state and proposals are identical; after behavior changes, base counter-addressed marginals remain scenario-rooted and coupling is claimed only where address and consumption remain equal",
+    "runtimeStreams": [],
+    "modeSideChoice": "bounded actor-local mode-opportunity parity; no new RNG stream",
+    "workerOrderInfluence": "none",
+    "prohibitions": "no dummy runtime draw, global-progress read, outcome-conditioned transition, replacement actor, retry, second final proposal, or scenario reconstruction"
+  },
+  "intactStability": {
+    "source": "all 48 exact S02 stabilized post_completion checkpoints before the S03 lesion anchor",
+    "probe": "resume exact native state and run exactly 20*n charged uniform opportunities even though occupancy starts complete; this non-absorbing extension is used only to measure whether a false local-failure trigger destabilizes the already certified target",
+    "arms": "active and matched sham for every variant plus one shared native nonplastic reference",
+    "outcomes": ["any target departure", "final target retained", "maximum strict-inversion distance", "strict-inversion distance AUC", "false transition incidence", "action, energy, sensing, and suppressed-opportunity costs"],
+    "claimBoundary": "the stability probe is an engineered safety test, not a new development or recovery task and not biological homeostasis"
+  },
+  "successCriteria": {
+    "primaryRecoveryEndpoint": "final-target completion in confirmatory replicates 2-3, retaining every quiescent, event-budget, transition-censored, reversion-censored, and recovery-censored case",
+    "primaryRecoveryContrasts": "each of eight active variants versus its exact matched_nonplastic_sham on the injury panel",
+    "primaryStabilityEndpoint": "any target departure during the 20*n intact probe across all 48 post-completion blocks",
+    "primaryStabilityContrasts": "each active variant versus its matched_nonplastic_sham",
+    "test": "two-sided exact McNemar tests on paired binary outcomes",
+    "multiplicity": "Holm correction separately across eight recovery contrasts and eight stability-harm contrasts at family-wise alpha 0.05",
+    "uncertainty": "paired risk-difference 95% t intervals plus complete paired continuous trade-off summaries; no recovered-only, completed-only, transitioned-only, or outcome-selected cohort",
+    "supportive": "all validation gates pass and at least one variant has a positive Holm-significant recovery-completion difference with no Holm-significant stability harm for that variant",
+    "null": "all validation gates pass and no variant has Holm-significant recovery benefit, recovery harm, or intact-stability harm",
+    "constrainingContradictory": "a validation/identifiability gate fails, any variant has Holm-significant recovery harm, or any variant has Holm-significant intact-stability harm"
+  },
+  "validationPanel": {
+    "injuryCheckpointCount": 384,
+    "confirmatoryInjuryCheckpointCount": 192,
+    "stabilityCheckpointCount": 48,
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "variantCount": 8,
+    "plannedInjuryActiveRuns": 3072,
+    "plannedInjuryMatchedShamRuns": 3072,
+    "plannedInjurySharedReferenceRuns": 384,
+    "plannedStabilityActiveRuns": 384,
+    "plannedStabilityMatchedShamRuns": 384,
+    "plannedStabilitySharedReferenceRuns": 48,
+    "plannedRunCount": 7344,
+    "plannedPrimaryRecoveryPairs": 1536,
+    "plannedPrimaryStabilityPairs": 384,
+    "exactReplay": "every planned run",
+    "selectedTransitionTraceRuns": 16,
+    "workers": 8
+  },
+  "claimBoundary": "S08 tests hand-designed failure-triggered controller changes inside a transparent simulator. Plasticity, adaptation, sensing expansion, exploration, action costs, energy, recovery, and stability are engineered computational constructs, not evolved behavior, biological plasticity, physical energy, wet-lab evidence, or a claim outside the frozen panel."
+}
