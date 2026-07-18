@@ -965,8 +965,8 @@ def build(artifact_root: Path) -> dict[str, Any]:
     claim_validation = {
         "schemaVersion": "e05.s14.claim-boundary-review.v1",
         "researchStepId": "S14",
-        "allPassed": all(value is True for key, value in claim_checks.items() if not key.endswith("ClaimMade"))
-        and all(value is False for key, value in claim_checks.items() if key.endswith("ClaimMade")),
+        "allPassed": all(bool(value) for key, value in claim_checks.items() if not key.endswith("ClaimMade"))
+        and all(not bool(value) for key, value in claim_checks.items() if key.endswith("ClaimMade")),
         "checks": claim_checks,
         "claimBoundary": specification["claimBoundary"],
     }
