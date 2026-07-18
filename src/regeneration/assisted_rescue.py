@@ -658,11 +658,19 @@ def run_assisted_rescue_phase(
     retained: list[Mapping[str, Any]] = []
     digest = bytes.fromhex(EMPTY_DIGEST)
     distance_auc = 0
+    # Distance depends only on occupancy.  Most permanent-freeze opportunities
+    # are rejected/no-op transitions, so retain the exact opportunity-clock AUC
+    # while avoiding an O(n^2) inversion recount when no swap was accepted.
+    values = occupancy_values(scenario, state.occupancy)
+    current_distance = strict_unequal_inversions(
+        values, scenario.cells[0].direction
+    )
     state.terminal = evaluate_terminal(scenario, state)
     while (
         state.terminal is None
         and state.activation_count - start_event < recovery_budget
     ):
+        accepted_swaps_before = state.ledger["acceptedSwaps"]
         events, encoded = execute_batch(
             scenario,
             state,
@@ -675,10 +683,12 @@ def run_assisted_rescue_phase(
         for item in encoded:
             digest = hashlib.sha256(digest + item).digest()
         retained.extend(events)
-        values = occupancy_values(scenario, state.occupancy)
-        distance_auc += strict_unequal_inversions(
-            values, scenario.cells[0].direction
-        )
+        if state.ledger["acceptedSwaps"] != accepted_swaps_before:
+            values = occupancy_values(scenario, state.occupancy)
+            current_distance = strict_unequal_inversions(
+                values, scenario.cells[0].direction
+            )
+        distance_auc += current_distance
     if state.terminal is None:
         state.terminal = "phase_event_budget"
     phase_activations = state.activation_count - start_event
