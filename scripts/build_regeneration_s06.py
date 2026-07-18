@@ -1449,7 +1449,8 @@ All 1,920 result objects, final states, intervention audits, ledgers, hashes,
 and transitions replayed byte-for-byte within their declared trace mode. Ten
 full-trace rows additionally replayed every native event byte. A fixture proved
 that the summary path and full-event authority produce identical state, ledger,
-intervention, terminal, distance, and cost results. The repair channel owned no
+intervention, terminal, distance, and cost results across every native policy
+and rescue/control arm. The repair channel owned no
 runtime random stream; the construction-only assignment stream never entered a
 trajectory; worker order entered no address. Planned, executed, replayed,
 traced, censored, terminal, and contrast counts reconciled with zero runtime
@@ -1462,7 +1463,7 @@ failures, substitutions, silent exclusions, or scope reduction.
 - `assisted_rescue.parquet` and `assisted_rescue_scenarios.parquet` retain all 1,920 runs; `paired_rescue_contrasts.parquet` retains 1,536 comparisons.
 - `primary_completion_tests.parquet`, `matching_sensitivity_tests.parquet`, `tradeoff_summary.parquet`, the PNG/SVG trade-off figure, and ten selected full traces preserve direct evidence.
 - Checkpoint, budget, repair-ledger, matching, schedule/cost, pairing, replay, stream, censor, sensitivity, accounting, input, environment, and artifact manifests preserve validation and provenance.
-- `execution_attempts.json` records both outcome-blind performance restarts before final aggregation.
+- `execution_attempts.json` records all outcome-blind performance restarts before final aggregation.
 
 ## Caveats, blockers, failed assumptions, and limitations
 
@@ -1483,14 +1484,16 @@ failures, substitutions, silent exclusions, or scope reduction.
 - Count-changing S03 lesions remain outside the fixed-identity runner. Matching
   sensitivities reuse the same calibration bank and active outcomes and are not
   independent replications.
-- Two outcome-blind canonical attempts completed calibration and returned 300
-  confirmatory jobs before aggregation. The first was terminated because
+- Three outcome-blind canonical attempts completed calibration and entered the
+  confirmatory panel before aggregation. The first was terminated because
   digest-only rows still serialized full JSON events; the second exposed an
-  exact but redundant full inversion recount on every unchanged opportunity.
-  No outcome table was written or inspected in either attempt. The full panel
-  was rerun from the beginning after fixture-validating both the simulator's
-  transition-equivalent summary path and cached opportunity-clock distance AUC;
-  scientific semantics, accounting, budgets, and scope did not change.
+  exact but redundant full inversion recount on every unchanged opportunity;
+  the third exposed generic state-clone and terminal-rescan overhead on every
+  rejected/no-op summary opportunity. No outcome table was written or inspected
+  in any attempt. The full panel was rerun from the beginning after
+  fixture-validating the transition-equivalent serial summary projection across
+  every policy and arm; scientific semantics, accounting, budgets, and scope did
+  not change.
 - Failure to find a contrast in this panel would not prove active rescue is
   generally ineffective; any positive result is equally bounded to the frozen
   sizes, policies, timings, lesion anchor, costs, and success rule.
@@ -1684,6 +1687,16 @@ def write_outputs(
                 },
                 {
                     "attemptOrdinal": 3,
+                    "repositoryCommit": "4d9f0752d69ef7e19426c22814623189b48bdd97",
+                    "calibrationJobsReturned": 192,
+                    "confirmatoryJobsReturnedBeforeTermination": 100,
+                    "resultAggregationReached": False,
+                    "artifactFilesWritten": 0,
+                    "outcomesInspected": False,
+                    "terminationReason": "generic summary execution still cloned the complete state and rescanned terminal conditions on every rejected or no-op opportunity",
+                },
+                {
+                    "attemptOrdinal": 4,
                     "repositoryCommit": git_commit,
                     "calibrationJobsReturned": 192,
                     "confirmatoryJobsReturned": 1728,
@@ -1694,7 +1707,7 @@ def write_outputs(
                 },
             ],
             "semanticScopeChanged": False,
-            "runtimeOptimization": "fixture-validated transition-equivalent summary execution for non-full-trace rows plus exact cached distance AUC recomputed only after accepted swaps",
+            "runtimeOptimization": "fixture-validated exact serial summary projection for non-full-trace rows, with state snapshots and terminal rescans only after native state changes and distance AUC recomputed only after accepted swaps",
         },
     )
     (output / "execution_commands.log").write_text(
@@ -1704,7 +1717,7 @@ def write_outputs(
                 "python -m pytest -q tests/test_regeneration_tasks.py tests/test_regeneration_timing.py tests/test_regeneration_lesions.py tests/test_regeneration_dynamic_faults.py tests/test_regeneration_nudge_recovery.py tests/test_regeneration_assisted_rescue.py",
                 "ruff check src/regeneration/assisted_rescue.py tests/test_regeneration_assisted_rescue.py scripts/build_regeneration_s06.py src/regeneration/__init__.py",
                 f"OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/build_regeneration_s06.py --artifacts-dir {output} --workers {workers}",
-                "NOTE: two outcome-blind canonical attempts stopped before aggregation after 192 calibration and 300 confirmatory jobs; execution_attempts.json records the summary-path and cached-AUC restarts.",
+                "NOTE: three outcome-blind canonical attempts stopped before aggregation after calibration and partial confirmatory execution; execution_attempts.json records all transition-equivalent performance restarts.",
             ]
         )
         + "\n",

@@ -24,6 +24,7 @@ from causal_simulator.architectures import (
 from reference_simulator.engine import EMPTY_DIGEST, evaluate_terminal, execute_batch
 from reference_simulator.model import (
     FaultMode,
+    Policy,
     Proposal,
     ProposalKind,
     RunState,
@@ -32,8 +33,18 @@ from reference_simulator.model import (
     sha256_json,
     state_hash,
 )
-from reference_simulator.scheduler import ScheduledOpportunity, scheduled_actor
-from reference_simulator.transition_primitives import ValidationDecision, ledger_identity
+from reference_simulator.scheduler import (
+    ScheduledOpportunity,
+    scheduled_actor,
+    scheduled_side,
+)
+from reference_simulator.transition_primitives import (
+    ValidationDecision,
+    commit_proposal,
+    cost_delta,
+    ledger_identity,
+    validate_proposal,
+)
 
 from .tasks import Checkpoint, occupancy_values, strict_unequal_inversions
 
@@ -617,6 +628,64 @@ def _delta(final: Mapping[str, int], initial: Mapping[str, int]) -> dict[str, in
     return {key: int(final.get(key, 0)) - int(initial.get(key, 0)) for key in final}
 
 
+def _execute_summary_opportunity(
+    scenario: Scenario,
+    state: RunState,
+    router: ArchitectureProposalRouter,
+    controller: AssistedRescueController,
+) -> None:
+    """Exact serial S06 transition projection without trace/snapshot overhead.
+
+    This path preserves the authoritative proposal router, mechanical
+    validation, cost rules, controller ordering, and counter-addressed scheduler.
+    A snapshot is only needed when an accepted native state change is committed.
+    Terminal state can change after such a commit or at the event-budget boundary;
+    a rejected/no-op opportunity changes neither occupancy nor Selection memory.
+    Full-event execution remains the validation authority.
+    """
+
+    if scenario.batch_width != 1 or state.terminal is not None:
+        raise ValueError("S06 summary projection requires one live serial opportunity")
+    event_index = state.activation_count
+    actor_id, _, actor_consumed = scheduled_actor(
+        scenario, event_index, include_draws=False
+    )
+    state.stream_counters["actor_activation"] = (
+        state.stream_counters.get("actor_activation", 0) + actor_consumed
+    )
+    actor = scenario.cell_map[actor_id]
+    side = None
+    if actor.policy == Policy.BUBBLE and actor.fault == FaultMode.NORMAL:
+        side, _ = scheduled_side(scenario, event_index)
+        state.stream_counters["bubble_side"] = (
+            state.stream_counters.get("bubble_side", 0) + 1
+        )
+    proposal = router.proposal_for(scenario, state, actor_id, side=side)
+    proposal, consumption = controller.prepare(proposal, event_index)
+    for stream, count in consumption:
+        state.stream_counters[stream] = state.stream_counters.get(stream, 0) + count
+    validation = validate_proposal(scenario, state, proposal)
+    validation = controller.outcome(proposal, validation, event_index)
+    decision = "accepted" if validation.eligible_for_commit else validation.decision
+    delta = cost_delta(state.ledger, proposal, decision)
+    changed = False
+    if validation.eligible_for_commit:
+        snapshot = state.clone()
+        changed = commit_proposal(state, snapshot, proposal, decision)
+    for key, value in delta.items():
+        state.ledger[key] += value
+    state.activation_count += 1
+    if changed or state.activation_count >= scenario.max_activations:
+        state.terminal = evaluate_terminal(scenario, state)
+    controller.after_batch(
+        scenario,
+        state,
+        (proposal,),
+        {proposal.ordinal: decision},
+        event_index,
+    )
+
+
 def run_assisted_rescue_phase(
     scenario: Scenario,
     checkpoint: Checkpoint,
@@ -671,15 +740,19 @@ def run_assisted_rescue_phase(
         and state.activation_count - start_event < recovery_budget
     ):
         accepted_swaps_before = state.ledger["acceptedSwaps"]
-        events, encoded = execute_batch(
-            scenario,
-            state,
-            retain_events=trace_mode == "full",
-            emit_event_records=trace_mode == "full",
-            proposal_factory=router.proposal_for,
-            schedule_factory=_uniform_schedule(scenario),
-            execution_interceptor=controller,
-        )
+        if trace_mode == "full":
+            events, encoded = execute_batch(
+                scenario,
+                state,
+                retain_events=True,
+                emit_event_records=True,
+                proposal_factory=router.proposal_for,
+                schedule_factory=_uniform_schedule(scenario),
+                execution_interceptor=controller,
+            )
+        else:
+            _execute_summary_opportunity(scenario, state, router, controller)
+            events, encoded = (), ()
         for item in encoded:
             digest = hashlib.sha256(digest + item).digest()
         retained.extend(events)

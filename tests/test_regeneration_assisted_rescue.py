@@ -272,8 +272,23 @@ def test_assisted_phase_budget_ledger_and_exact_replay() -> None:
     )
 
 
-def test_digest_summary_path_matches_full_transition_state_and_ledgers() -> None:
-    scenario = _scenario(policy=Policy.BUBBLE, seed=37)
+@pytest.mark.parametrize("policy", [Policy.BUBBLE, Policy.INSERTION, Policy.SELECTION])
+@pytest.mark.parametrize(
+    ("arm", "assigned_duration"),
+    [
+        (RescueArm.ACTIVE, None),
+        (RescueArm.PASSIVE, None),
+        (RescueArm.SHAM, None),
+        (RescueArm.SPONTANEOUS, 3),
+        (RescueArm.SPONTANEOUS, None),
+        (RescueArm.MATCHED_COST, 3),
+        (RescueArm.MATCHED_COST, None),
+    ],
+)
+def test_digest_summary_path_matches_full_transition_state_and_ledgers(
+    policy: Policy, arm: RescueArm, assigned_duration: int | None
+) -> None:
+    scenario = _scenario(policy=policy, seed=37)
     checkpoint = initial_checkpoint(scenario)
     anchor = apply_lesion(
         "segment_reversal_central_v1",
@@ -287,7 +302,7 @@ def test_digest_summary_path_matches_full_transition_state_and_ledgers() -> None
         "post_anchor_occupancy": anchor.post_state.occupancy,
         "anchor_lesion_state_hash": anchor.post_state.state_hash,
         "selected_identity": selected,
-        "contract": AssistedRescueContract(RescueArm.PASSIVE),
+        "contract": AssistedRescueContract(arm, assigned_duration=assigned_duration),
         "recovery_budget": 80,
     }
     full = run_assisted_rescue_phase(
