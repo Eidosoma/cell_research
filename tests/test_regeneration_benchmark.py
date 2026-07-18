@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from scripts.build_regeneration_s14 import core_comparator_figure_data
 from src.regeneration.benchmark import (
     CORE_S13_PORTFOLIOS,
     run_fresh_core_smoke,
@@ -77,3 +78,46 @@ def test_fresh_core_smoke_replays_exactly() -> None:
     assert result["stabilizationReplayPass"] is True
     assert result["recoveryReplayPass"] is True
     assert result["allRuntimeValidationPass"] is True
+
+
+def test_core_comparator_figure_uses_explicit_validated_arms() -> None:
+    portfolios = ["pure_bubble", "pure_insertion", "chimera_bubble_insertion"]
+    tasks = [
+        ("injury", "segment_reversal_central_v1", "native_recovery", 1.0),
+        ("injury", "local_scramble_sattolo_v1", "native_recovery", 1.0),
+        ("target_change", "adjacent_pair_swap_total_order_v1", "changed_target_aware", 1.0),
+        ("target_change", "adjacent_pair_swap_total_order_v1", "changed_nonadaptive_matched", 0.0),
+        ("target_change", "quartile_rotation_2_0_3_1_v1", "changed_target_aware", 1.0),
+        ("target_change", "quartile_rotation_2_0_3_1_v1", "changed_nonadaptive_matched", 0.0),
+    ]
+    rows = [
+        {
+            "portfolioId": portfolio,
+            "taskKind": task_kind,
+            "taskId": task_id,
+            "arm": arm,
+            "successRate": success_rate,
+        }
+        for portfolio in portfolios
+        for task_kind, task_id, arm, success_rate in tasks
+    ]
+    # A legacy alias must not silently stand in for the validated target-aware arm.
+    rows.append(
+        {
+            "portfolioId": "pure_bubble",
+            "taskKind": "target_change",
+            "taskId": "adjacent_pair_swap_total_order_v1",
+            "arm": "changed_aware",
+            "successRate": 0.5,
+        }
+    )
+    selected = core_comparator_figure_data(pd.DataFrame(rows))
+    assert len(selected) == 18
+    assert set(selected["arm"]) == {
+        "native_recovery",
+        "changed_target_aware",
+        "changed_nonadaptive_matched",
+    }
+    target = selected[selected["taskKind"] == "target_change"]
+    assert target[target["arm"] == "changed_target_aware"]["successRate"].eq(1.0).all()
+    assert target[target["arm"] == "changed_nonadaptive_matched"]["successRate"].eq(0.0).all()

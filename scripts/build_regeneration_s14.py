@@ -384,6 +384,39 @@ def s13_policy_profiles(main: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["portfolioId", "taskKind", "taskId", "arm"]).reset_index(drop=True)
 
 
+CORE_COMPARATOR_FIGURE_SERIES = (
+    ("Reversal\nnative recovery", "injury", "segment_reversal_central_v1", "native_recovery"),
+    ("Local scramble\nnative recovery", "injury", "local_scramble_sattolo_v1", "native_recovery"),
+    ("Adjacent target\ntarget-aware", "target_change", "adjacent_pair_swap_total_order_v1", "changed_target_aware"),
+    ("Adjacent target\nmatched nonadaptive", "target_change", "adjacent_pair_swap_total_order_v1", "changed_nonadaptive_matched"),
+    ("Quartile target\ntarget-aware", "target_change", "quartile_rotation_2_0_3_1_v1", "changed_target_aware"),
+    ("Quartile target\nmatched nonadaptive", "target_change", "quartile_rotation_2_0_3_1_v1", "changed_nonadaptive_matched"),
+)
+
+
+def core_comparator_figure_data(policy_profiles: pd.DataFrame) -> pd.DataFrame:
+    """Select the exact, explicitly labeled S13 arms shown in the S14 core plot."""
+
+    rows: list[pd.DataFrame] = []
+    for display_label, task_kind, task_id, arm in CORE_COMPARATOR_FIGURE_SERIES:
+        selected = policy_profiles[
+            policy_profiles["portfolioId"].isin(CORE_S13_PORTFOLIOS)
+            & (policy_profiles["taskKind"] == task_kind)
+            & (policy_profiles["taskId"] == task_id)
+            & (policy_profiles["arm"] == arm)
+        ].copy()
+        if selected["portfolioId"].duplicated().any():
+            raise AssertionError(f"duplicate core comparator rows for {display_label}")
+        missing = set(CORE_S13_PORTFOLIOS) - set(selected["portfolioId"])
+        if missing:
+            raise AssertionError(
+                f"missing core comparator rows for {display_label}: {sorted(missing)}"
+            )
+        selected["displayLabel"] = display_label
+        rows.append(selected)
+    return pd.concat(rows, ignore_index=True)
+
+
 def build_release_figures(
     package: Path,
     policy_profiles: pd.DataFrame,
@@ -391,32 +424,16 @@ def build_release_figures(
 ) -> list[Path]:
     output = package / "figures"
     output.mkdir(parents=True, exist_ok=True)
-    core = policy_profiles[
-        policy_profiles["portfolioId"].isin(CORE_S13_PORTFOLIOS)
-        & (
-            (policy_profiles["taskKind"] == "injury")
-            | (
-                (policy_profiles["taskKind"] == "target_change")
-                & (policy_profiles["arm"] == "changed_aware")
-            )
-        )
-    ].copy()
-    core["taskLabel"] = core["taskId"].replace(
-        {
-            "segment_reversal_central_v1": "Reversal",
-            "local_scramble_sattolo_v1": "Local scramble",
-            "adjacent_pair_swap_total_order_v1": "Adjacent target",
-            "quartile_rotation_2_0_3_1_v1": "Quartile target",
-        }
-    )
-    order = ["Reversal", "Local scramble", "Adjacent target", "Quartile target"]
+    core = core_comparator_figure_data(policy_profiles)
+    order = [item[0] for item in CORE_COMPARATOR_FIGURE_SERIES]
     portfolios = ["pure_bubble", "pure_insertion", "chimera_bubble_insertion"]
-    pivot = core.pivot(index="taskLabel", columns="portfolioId", values="successRate").reindex(order)
-    ax = pivot[portfolios].plot.bar(figsize=(9, 4.8), ylim=(0, 1.05), rot=0)
+    pivot = core.pivot(index="displayLabel", columns="portfolioId", values="successRate").reindex(order)
+    ax = pivot[portfolios].plot.bar(figsize=(13, 5.2), ylim=(0, 1.05), rot=0)
     ax.set_ylabel("Full-population success rate")
     ax.set_xlabel("")
-    ax.set_title("S14 core native/composition comparators")
+    ax.set_title("S14 core comparator profiles with explicit intervention arms")
     ax.legend(["Pure Bubble", "Pure Insertion", "Bubble–Insertion"], loc="lower right")
+    ax.tick_params(axis="x", labelsize=8)
     ax.grid(axis="y", alpha=0.25)
     plt.tight_layout()
     core_png = output / "core_comparator_profiles.png"
