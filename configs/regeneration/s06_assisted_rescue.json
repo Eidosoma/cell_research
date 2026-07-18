@@ -1,0 +1,167 @@
+{
+  "schemaVersion": "e05.s06.assisted-rescue-spec.v1",
+  "researchStepId": "S06",
+  "benchmarkVersion": "E05-neighbor-assisted-rescue-v1",
+  "frozenAtUtc": "2026-07-18T04:33:31Z",
+  "implementationStateAtFreeze": "Design and immutable configuration only; no S06 runtime controller, fixture, calibration, confirmatory, or sensitivity run existed.",
+  "frozenQuestion": "Does a minimal, explicitly costed local neighbor repair proposal improve operational recovery relative to passive freezing and an identically costed sham, and are its outcomes distinguishable from calibration-duration-matched spontaneous recovery or recovery with matched opportunity and energy costs?",
+  "s05Interpretation": "S05's robust null constrains contact-conditioned recovery timing alone; it is not evidence against the distinct S06 active intervention, which diverts an action and spends an explicit abstract energy unit.",
+  "inherits": {
+    "taskSpec": "/artifacts/research_steps/S01/task_spec.json",
+    "timingSpec": "/artifacts/research_steps/S02/timing_spec.json",
+    "lesionSpec": "/artifacts/research_steps/S03/lesion_library/lesion_spec.json",
+    "dynamicSpec": "/artifacts/research_steps/S04/dynamic_fault_package/dynamic_fault_spec.json",
+    "nudgeSpec": "/artifacts/research_steps/S05/nudge_recovery_package/nudge_recovery_spec.json",
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "nudgeSpecSchemaVersion": "e05.s05.nudge-recovery-spec.v1",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, native stream counters, native ledger, and a fresh S06 runtime overlay",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentBudget": "100*n^2 charged opportunities",
+    "recoveryBudget": "100*n^2 charged opportunities after intervention",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "nativeInformationPermission": "policy_native_local",
+    "nativeLegalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "target": "direction-aware strict unequal inversion distance",
+    "runtimeAnchorLesion": "segment_reversal_central_v1",
+    "runtimeScenarioBoundary": "original_s01_scenario_id_runtime_overlay",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "runtimeOverlay": {
+    "scenarioMutation": "none",
+    "rootScenarioId": "retain the original executable S01 scenario ID",
+    "selectedFault": "the selected identity is completely mobility-blocked until recovery and remains normal in native policy-visible observations",
+    "placement": "construct and mechanically validate the native proposal first; then the separate local repair channel may replace that same charged opportunity before commit",
+    "recoveryBoundary": "the repair proposal opportunity has no occupancy or native-memory effect; successful recovery takes effect for the next charged opportunity",
+    "claimBoundary": "engineered runtime intervention only; no static-stuck scenario reconstruction, biological repair claim, or changed RNG root"
+  },
+  "repairProposal": {
+    "proposalId": "local_adjacent_repair_once_v1",
+    "helperEligibility": "the uniformly scheduled actor is a normal non-selected identity immediately adjacent to the selected identity while it is frozen",
+    "localInformation": "a separate intervention gateway exposes only actor identity/position and the Boolean fact that the selected frozen identity is immediately adjacent; it exposes no values, policies, target progress, global occupancy, ledger totals, future draws, or outcomes",
+    "nativeReplacement": "exactly one already-constructed native NoOp, Swap, or MemoryUpdate is suppressed; no second proposal, retry, replacement actor, or free opportunity is created",
+    "successRuleActive": "deterministic success when helper eligibility and both local and collective budgets hold",
+    "successRuleSham": "the identical eligible proposal and costs are recorded, but recovery deterministically does not occur",
+    "attemptLimit": 1,
+    "recoveryTiming": "after the triggering batch, effective on the next charged opportunity",
+    "runtimeStreams": []
+  },
+  "costsAndBudgets": {
+    "actionCostPerProposal": 1,
+    "energyCostPerProposal": 1,
+    "energyInterpretation": "abstract intervention-accounting unit, not physical energy",
+    "collectiveRepairActionBudget": 1,
+    "collectiveEnergyBudget": 1,
+    "perHelperEnergyBudget": 1,
+    "budgetConservation": "spent plus remaining equals initial for collective actions, collective energy, and every helper; no negative balance and no uncharged successful proposal",
+    "nativeOpportunityCost": "one ordinary native proposal is suppressed at every repair or matched-cost event"
+  },
+  "controls": [
+    {
+      "arm": "passive_permanent_freeze",
+      "semantics": "the selected identity remains runtime-frozen for the phase; no repair channel, spontaneous recovery, dummy stream, or intervention cost"
+    },
+    {
+      "arm": "spontaneous_time_matched",
+      "semantics": "recover at an outcome-blind calibration-assigned active-rescue duration or remain unrecovered for a sentinel; do not suppress a native opportunity or charge energy"
+    },
+    {
+      "arm": "sham_local_repair",
+      "semantics": "use the same local eligibility, one-attempt budget, native-opportunity suppression, and energy charge as active rescue, but the proposal has no recovery effect"
+    },
+    {
+      "arm": "matched_time_opportunity_energy",
+      "semantics": "at the calibration-assigned active-rescue duration, suppress one charged native opportunity, spend one abstract energy unit, and recover after that opportunity; unrecovered donor sentinels schedule neither recovery nor cost"
+    }
+  ],
+  "matching": {
+    "calibrationReplicates": [0, 1],
+    "confirmatoryReplicates": [2, 3],
+    "splitFrozenBeforeRuns": true,
+    "donorPackage": "calibration active-rescue recovery duration plus explicit recovery censor, repair-action count, and energy spent",
+    "assignment": "counter-addressed deterministic bijection between calibration donors and confirmatory recipients within each declared stratum",
+    "stream": "assisted_rescue_control_assignment_s06_v1",
+    "runtimeDraws": "none; assigned schedules and cost packages are frozen before control trajectories",
+    "choices": [
+      "empirical_bijection_n_policy_v1",
+      "empirical_bijection_n_v1",
+      "empirical_bijection_pooled_v1"
+    ],
+    "primaryChoice": "empirical_bijection_n_policy_v1",
+    "sensitivityChoices": ["empirical_bijection_n_v1", "empirical_bijection_pooled_v1"],
+    "censoring": "unrecovered calibration cases remain sentinels and are never dropped, substituted, or imputed",
+    "outcomeConditioningProhibited": "assignment strata, ranks, durations, and costs do not use confirmatory completion, distance, recovery, terminal, or trade-off outcomes"
+  },
+  "pairingContract": {
+    "preProcess": "all arms share the exact S02 checkpoint, S03 reversal anchor occupancy/hash, selected identity, global clock, native stream counters, ledger, target, and phase budget",
+    "baseRuntimeRoot": "same original executable scenario ID and seed",
+    "baseStreamStatus": "shared prefix until intervention, state-path, or terminal divergence",
+    "repairChannel": "endogenous and stream-free; worker order never enters eligibility or matching",
+    "matchingStream": "construction-only isolated stream with no dummy runtime draws",
+    "staticReconstructionContrast": "not executed; reconstructed stuck scenario remains RNG-unpaired"
+  },
+  "tradeoffMetrics": [
+    "completion and paired completion risk difference",
+    "phase activation count",
+    "final strict unequal inversion distance",
+    "post-opportunity strict-inversion distance area under the curve",
+    "recovery incidence and duration with censor retention",
+    "repair proposals, successes, shams, and schedule events",
+    "native opportunities suppressed and forgone native proposal kind/eligibility",
+    "abstract energy spent and remaining",
+    "completion benefit per mean energy unit as a descriptive aggregate"
+  ],
+  "validationPanel": {
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "timingConditionsPerBlock": 8,
+    "plannedCheckpointCount": 384,
+    "calibrationCheckpointCount": 192,
+    "confirmatoryCheckpointCount": 192,
+    "plannedCalibrationActiveRuns": 192,
+    "plannedConfirmatoryActiveRuns": 192,
+    "plannedConfirmatoryPassiveRuns": 192,
+    "plannedConfirmatoryShamRuns": 192,
+    "plannedConfirmatorySpontaneousRuns": 576,
+    "plannedConfirmatoryMatchedCostRuns": 576,
+    "plannedRunCount": 1920,
+    "plannedPairwiseContrasts": 1536,
+    "exactReplay": "every planned run",
+    "selectedFullTraceRuns": 10,
+    "sourceConstruction": "exact reconstruction of all validated S02 checkpoints followed by the validated S03 central segment reversal anchor"
+  },
+  "successCriteria": {
+    "primaryContrasts": [
+      "active_assisted_rescue versus passive_permanent_freeze",
+      "active_assisted_rescue versus sham_local_repair",
+      "active_assisted_rescue versus spontaneous_time_matched under the primary matching choice",
+      "active_assisted_rescue versus matched_time_opportunity_energy under the primary matching choice"
+    ],
+    "primaryEndpoint": "confirmatory final-target completion with every terminal and unrecovered case retained",
+    "test": "two-sided exact McNemar test on discordant pairs",
+    "multiplicity": "Holm correction across the four primary contrasts at family-wise alpha 0.05",
+    "supportive": "all validation gates pass, active rescue has a positive completion difference from the sham, and the active-versus-sham Holm-adjusted p value is at most 0.05, with no Holm-significant active harm",
+    "null": "all validation gates pass and no active-rescue completion advantage is Holm-significant",
+    "constrainingContradictory": "a required semantic, budget, ledger, matching, replay, pairing, censor, or accounting gate fails, or active rescue has a Holm-significant completion harm",
+    "uncertainty": "paired mean-difference 95% t intervals and exact McNemar inference; no survivor-only analysis",
+    "censorRule": "retain every non-recovery, quiescent, and phase-budget case; do not form a recovered-only or completed-only cohort"
+  },
+  "claimBoundary": "S06 tests an engineered local intervention inside the transparent simulator. Repair proposals, action costs, energy, rescue, and trade-offs are operational constructs, not biological mechanisms, physical energy, or wet-lab evidence."
+}

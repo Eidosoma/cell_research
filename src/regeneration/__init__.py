@@ -64,6 +64,20 @@ from .nudge_recovery import (
     run_nudge_phase,
     validate_nudge_spec,
 )
+from .assisted_rescue import (
+    ASSISTED_RUN_SCHEMA_VERSION,
+    ASSISTED_SPEC_SCHEMA,
+    CONTROL_ASSIGNMENT_STREAM,
+    AssistedRescueContract,
+    AssistedRescueController,
+    AssistedRescueRun,
+    MatchingChoice as RescueMatchingChoice,
+    RescueArm,
+    assisted_case_id,
+    exact_replay_assisted_rescue,
+    run_assisted_rescue_phase,
+    validate_assisted_spec,
+)
 
 __all__ = [
     "BASELINE_SCENARIO_SCHEMA",
@@ -120,4 +134,16 @@ __all__ = [
     "nudge_case_id",
     "run_nudge_phase",
     "validate_nudge_spec",
+    "ASSISTED_RUN_SCHEMA_VERSION",
+    "ASSISTED_SPEC_SCHEMA",
+    "CONTROL_ASSIGNMENT_STREAM",
+    "AssistedRescueContract",
+    "AssistedRescueController",
+    "AssistedRescueRun",
+    "RescueMatchingChoice",
+    "RescueArm",
+    "assisted_case_id",
+    "exact_replay_assisted_rescue",
+    "run_assisted_rescue_phase",
+    "validate_assisted_spec",
 ]
