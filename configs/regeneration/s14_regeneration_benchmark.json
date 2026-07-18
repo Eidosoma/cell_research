@@ -1,0 +1,252 @@
+{
+  "schemaVersion": "e05.s14.regeneration-benchmark-spec.v1",
+  "researchStepId": "S14",
+  "benchmarkVersion": "E05-regeneration-benchmark-v1",
+  "frozenAtUtc": "2026-07-18T19:54:19Z",
+  "implementationStateAtFreeze": "S01-S13 evidence was complete and known; no S14 package, scenario partition, competency profile, smoke trajectory, reproduction comparison, report input, or validation output existed.",
+  "frozenQuestion": "Can the validated E05 tasks and evidence be released as a reusable benchmark that keeps robustness, repair, memory, plasticity/adaptation, and transfer distinct, preserves failures and censors, and reproduces its successful baseline end to end without outcome-driven composition selection?",
+  "suiteAndCompetencyContract": {
+    "benchmarkSuites": [
+      "formation_timing_and_lesions",
+      "dynamic_repair_and_controls",
+      "state_history_and_adaptation",
+      "transfer_and_composition"
+    ],
+    "competencyAxes": [
+      "robustness",
+      "repair",
+      "memory",
+      "plasticity_and_target_adaptation",
+      "transfer"
+    ],
+    "aggregateScorePermitted": false,
+    "interpretation": "The four suites organize reusable tasks. Five evidence axes remain separate because memory and plasticity/adaptation have different interventions, controls, and failure boundaries. No scalar total competency or regeneration score is defined."
+  },
+  "coreExtendedSplit": {
+    "assignmentFrozenBeforePackaging": true,
+    "membershipInputs": [
+      "source research step",
+      "task family and task identifier",
+      "policy or exact portfolio identifier",
+      "placement map",
+      "S12 immutable split and axis",
+      "predeclared scenario identifier"
+    ],
+    "prohibitedMembershipInputs": [
+      "success",
+      "stop reason",
+      "completion or recovery time",
+      "distance or error",
+      "cost",
+      "p value or interval",
+      "failure or censor status",
+      "S14 smoke or reproduction outcome"
+    ],
+    "core": {
+      "s13Portfolios": [
+        "pure_bubble",
+        "pure_insertion",
+        "chimera_bubble_insertion"
+      ],
+      "s13PlacementMaps": [0],
+      "s13Tasks": [
+        "segment_reversal_central_v1",
+        "local_scramble_sattolo_v1",
+        "adjacent_pair_swap_total_order_v1",
+        "quartile_rotation_2_0_3_1_v1",
+        "intact_stability"
+      ],
+      "s13Roles": {
+        "pure_bubble": "successful core baseline",
+        "pure_insertion": "kinetic and native-cost comparator",
+        "chimera_bubble_insertion": "exact composition kinetic/complexity comparator; not a validated improvement"
+      },
+      "s12Content": "all 2496 immutable matched pairs, preserving the active-repair matched-control null, gradient target-code contrasts, split-relative transfer estimands, and policy-family-specific Bubble/Insertion-versus-Selection boundary",
+      "priorTaskContracts": "S01-S11 specifications, metric definitions, controls, and claim boundaries are normative referenced dependencies, not pooled outcome scores"
+    },
+    "extended": {
+      "s13Portfolios": [
+        "pure_selection",
+        "chimera_bubble_selection",
+        "chimera_insertion_selection",
+        "chimera_three_way"
+      ],
+      "s13AdditionalSensitivity": "all placement-map-1 chimeric rows, including Bubble-Insertion, remain an explicit sensitivity panel",
+      "s13SourceTerminals": "all descending Insertion-Selection and three-way formation terminals and their assigned downstream logical rows",
+      "s13Threshold": "all 2016 potential assignments, including evaluated/reused/source-terminal rows and every not_run_prespecified_global_threshold_stop row",
+      "s12FailureDetail": "all changed-task failure/censor runs, the complete failure catalog, and every subgroup precision row including inconclusive strata",
+      "selectionRule": "failure-panel status is descriptive release organization only; no extended row may be used to tune or select a core composition"
+    },
+    "noCompositionSearch": "No composition, assignment map, target, injury, threshold, or baseline is tuned, promoted, or removed using S13 outcomes."
+  },
+  "immutableInputs": [
+    {
+      "role": "S12 transfer specification",
+      "path": "/artifacts/research_steps/S12/transfer_package/transfer_spec.json",
+      "sha256": "458be463e7d659434d284ff32969fb29610ed6e1dc90d981a3fc8fb6aee260d5"
+    },
+    {
+      "role": "S12 immutable split",
+      "path": "/artifacts/research_steps/S12/split_manifest.parquet",
+      "sha256": "57db5f25e5b556828fba103eb2cb83efe3f951702da8f2ff3db93a443f03f4d6"
+    },
+    {
+      "role": "S12 full run evidence",
+      "path": "/artifacts/research_steps/S12/transfer_results.parquet",
+      "sha256": "adbf38efec96b814562c47b35cd28e3f2f1cf1398858cb362ff8986f697120fe"
+    },
+    {
+      "role": "S12 paired estimands",
+      "path": "/artifacts/research_steps/S12/paired_transfer_contrasts.parquet",
+      "sha256": "4cbfcc480c0854544818ff829202d517cad900780b3c0bd545c39fbb7759358c"
+    },
+    {
+      "role": "S13 composition specification",
+      "path": "/artifacts/research_steps/S13/s13_specification.json",
+      "sha256": "30786797dc872bc0cde7f8014cb7ee46587b3ffe1998861e3c462e3ba0a1576a"
+    },
+    {
+      "role": "S13 source checkpoints and formation terminals",
+      "path": "/artifacts/research_steps/S13/source_checkpoints.parquet",
+      "sha256": "388e6c32590fb0d0559b3aeeb5ef3f2ac48e6a732d7b10c9326c5f8b4357fb75"
+    },
+    {
+      "role": "S13 logical outcomes",
+      "path": "/artifacts/research_steps/S13/chimeric_recovery.parquet",
+      "sha256": "2104dbd3a92bde362919691243bf6e91368527507a3c9acc0a8d4044ce198f7e"
+    },
+    {
+      "role": "S13 complete threshold assignments",
+      "path": "/artifacts/research_steps/S13/threshold_assignments.parquet",
+      "sha256": "4f069740377236922642884144cbd4d22fee2a443e76365cba125097b3cb6cd8"
+    },
+    {
+      "role": "validated E01 same-direction composition context",
+      "path": "/previous-artifacts/E01/research_steps/S13/chimeric_results.parquet",
+      "sha256": "2dbb256b1df386d4db242b233bb3f5d1949253463aa0b5bc70c5e3a3346c2c3b"
+    },
+    {
+      "role": "validated E02 causal extension release",
+      "path": "/previous-artifacts/E02/release/causal_simulator_extension/release_manifest.json",
+      "sha256": "1e269f1b387d8c56e3147421cc98543bebc1b9b4984f7a1acc88a2993c75f7d2"
+    }
+  ],
+  "taskRelease": {
+    "normativeSteps": ["S01", "S02", "S03", "S04", "S05", "S06", "S07", "S08", "S09", "S10", "S11", "S12", "S13"],
+    "sourceExtensions": [
+      "src/regeneration/tasks.py",
+      "src/regeneration/timing.py",
+      "src/regeneration/lesions.py",
+      "src/regeneration/dynamic_faults.py",
+      "src/regeneration/nudge_recovery.py",
+      "src/regeneration/assisted_rescue.py",
+      "src/regeneration/local_memory.py",
+      "src/regeneration/policy_plasticity.py",
+      "src/regeneration/target_change.py",
+      "src/regeneration/repeated_injuries.py",
+      "src/regeneration/state_memory_reset.py",
+      "src/regeneration/transfer.py",
+      "src/regeneration/chimeric.py",
+      "src/regeneration/benchmark.py"
+    ],
+    "repositoryOnly": true,
+    "artifactSourceArchiveProhibited": true
+  },
+  "e07UsageSplit": {
+    "splitId": "e05.s14.e07-usage-split.v1",
+    "assignmentInputs": [
+      "existing S12 split label",
+      "S13 replicate ordinal"
+    ],
+    "outcomeInputsProhibited": true,
+    "s12": {
+      "developmentContext": "the 240 existing calibration pairs",
+      "protectedConfirmation": "all 2256 existing holdout pairs across every held-out axis"
+    },
+    "s13": {
+      "developmentContext": "replicate ordinals 0-3",
+      "protectedConfirmation": "replicate ordinals 4-7",
+      "ruleAppliesTo": "core, extended, source-terminal, placement-sensitivity, and threshold assignments without portfolio-specific exceptions"
+    },
+    "e07Prohibition": "E07 policy search, surrogate fitting, model selection, threshold selection, prompt or rule tuning, and early stopping may not read protected-confirmation outcomes. Any final E07 evaluation must retain source terminals, censors, costs, and stopped-row semantics."
+  },
+  "metricContract": {
+    "primaryFamilies": [
+      "binary success with full-population terminals retained",
+      "restricted opportunity time with budget-plus-one encoding for failure/censor",
+      "target-appropriate raw and normalized error",
+      "error area under the fixed horizon",
+      "post-hit stability and departure",
+      "native and extension cost ledgers",
+      "cause-specific terminal and censor class"
+    ],
+    "countChangingBoundary": "S03 deletion, duplication, and insertion use separate identity-cardinality and valid-target order metrics and are not executable permutation tasks in the fixed-identity runner.",
+    "severityBoundary": "Lesion severity is a descriptor vector; reversal is exactly paired in S13, while Sattolo realization is base/window/operator-paired but scenario-ID RNG-unpaired.",
+    "timeBoundary": "Progress-first-crossing and paired-event clocks are distinct and are never substituted.",
+    "costBoundary": "Energy, pressure, reads, state bits, compute, communication, and intervention actions are abstract simulator accounting units.",
+    "aggregationProhibited": "Do not collapse competency axes, tasks, policies, costs, failures, and censors into one benchmark score."
+  },
+  "smokeAndReproduction": {
+    "freshScenario": {
+      "n": 32,
+      "direction": "ascending",
+      "replicateOrdinal": 0,
+      "portfolioId": "pure_bubble",
+      "placementMap": 0,
+      "taskId": "segment_reversal_central_v1"
+    },
+    "developmentBudget": "100*n^2",
+    "recoveryBudget": "100*n^2",
+    "stabilization": "S01 absorbing certificate plus at least two uniform opportunities per identity within 20*n",
+    "required": [
+      "fresh source construction",
+      "development and stabilization",
+      "lesion application",
+      "native recovery",
+      "exact deterministic replay",
+      "exact source/checkpoint/lesion/result reproduction against the frozen S13 row"
+    ]
+  },
+  "validation": {
+    "expectedCounts": {
+      "coreS13Sources": 96,
+      "coreS13MainRows": 768,
+      "extendedS13Sources": 256,
+      "extendedS13MainRows": 2048,
+      "allS13MainRows": 2816,
+      "s13ThresholdAssignments": 2016,
+      "s13ThresholdResultRows": 672,
+      "s13StoppedThresholdRows": 1344,
+      "s13SourceCompetingTerminals": 64,
+      "s12MatchedPairs": 2496,
+      "s12AssignedRuns": 4992,
+      "s12ChangedTaskFailureOrCensorRuns": 2120,
+      "s12SubgroupPrecisionRows": 137
+    },
+    "requiredGates": [
+      "specification frozen and schema-valid before packaging",
+      "core and extended assignment uses no outcome field",
+      "core/extended disjointness and complete S13 main-row union",
+      "S12 immutable split and leakage audit",
+      "fresh end-to-end smoke and exact replay",
+      "exact baseline reproduction",
+      "JSON and Parquet schema checks",
+      "artifact checksum and link checks",
+      "failure, censor, source-terminal, and stopped-row accounting",
+      "claim-to-evidence and non-biological claim-boundary review",
+      "complete report-bundle input manifest"
+    ]
+  },
+  "releaseLayout": {
+    "canonicalPackage": "/artifacts/research_steps/S14/regeneration_benchmark",
+    "releasePointer": "/artifacts/release/regeneration_benchmark",
+    "reportInputs": "/artifacts/report_inputs",
+    "canonicalReport": "/artifacts/research_steps/S14/research_step_full_results.md"
+  },
+  "classificationRule": {
+    "supportive": "all required release contents exist and every validation gate passes",
+    "null": "the release is complete and valid but the fresh baseline cannot be reproduced within a documented non-contract-breaking tolerance",
+    "constrainingContradictory": "a frozen split, checksum, schema, replay, accounting, leakage, or claim-boundary gate fails"
+  },
+  "claimBoundary": "This benchmark packages transparent one-dimensional simulator tasks and prior computational evidence. Regeneration, repair, memory, plasticity, learning, adaptation, chimerism, pressure, energy, and transfer are operational terms only; the release is not biological, physical, clinical, causal evidence outside the declared interventions, or evidence of a universal best policy."
+}
