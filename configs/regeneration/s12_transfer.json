@@ -1,0 +1,198 @@
+{
+  "schemaVersion": "e05.s12.transfer-spec.v1",
+  "researchStepId": "S12",
+  "benchmarkVersion": "E05-transfer-v1",
+  "frozenAtUtc": "2026-07-18T14:30:00Z",
+  "implementationStateAtFreeze": "no S12 trajectory had been executed; split, estimand, cost, precision, multiplicity, and decision rules were frozen from S01-S11 and E01/E02 evidence only",
+  "frozenQuestion": "Do the prespecified S06 active-rescue and S09 target-aware engineered mechanisms retain useful performance on immutable S12 holdouts spanning damage, location, size, runtime process, scheduler, and target change without any holdout-driven tuning?",
+  "priorEvidenceConstraints": {
+    "includedMechanisms": [
+      {
+        "mechanismId": "s06_active_local_repair_v1",
+        "status": "supported only versus passive and sham; explicitly constrained by null comparisons to recovery-time/opportunity/energy-matched controls",
+        "primaryControl": "s06_upstream_calibration_schedule_opportunity_energy_matched_v1",
+        "claimBoundary": "engineered one-shot local repair; no biological rescue claim"
+      },
+      {
+        "mechanismId": "s09_gradient_target_code_controller_v1",
+        "status": "supported versus outcome-blind signal/information/cost-matched nonadaptive control",
+        "primaryControl": "s09_gradient_target_code_nonadaptive_matched_v1",
+        "claimBoundary": "engineered target-code access and adaptation; no spontaneous inference"
+      }
+    ],
+    "excludedFromTransferPortfolio": [
+      "S05 contact-conditioned recovery mechanisms: null",
+      "S07 bounded local-memory variants: null against matched controls",
+      "S08 plastic modes: prespecified recovery and stability harms",
+      "S10 repeated-injury history effects: operational exposure finding, not a portable controller",
+      "S11 native Selection-cursor reset: boundary-specific state localization, not a portable repair mechanism"
+    ],
+    "exposureStatement": "All mechanisms are hand-designed and previously exposed; there is no learned model, parameter training, fitting, or controller search in S12."
+  },
+  "inherits": {
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "rescueSpecSchemaVersion": "e05.s06.assisted-rescue-spec.v1",
+    "targetChangeSpecSchemaVersion": "e05.s09.target-change-spec.v1",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "developmentOpportunities": "100*n^2",
+    "postInterventionOpportunities": "100*n^2",
+    "postHitProbeOpportunities": "20*n",
+    "checkpoint": "exact post-completion checkpoint after absorbing-target certificate and uniform two-opportunities-per-identity stabilization capped at 20*n",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "nativeInformationPermission": "policy_native_local",
+    "sharedPrefix": "arms share exact source checkpoint, lesion/change state, scenario, global event clock, native internal state, ledger, and counter addresses until arm-specific behavior diverges",
+    "schedulerPairingBoundary": "within-family arms are counter-address paired; cross-family scheduler comparisons are scenario-paired RNG-unpaired",
+    "dynamicRngBoundary": "S04 intermittent stream remains isolated and counter-addressed; fatigue is an endogenous mediator and owns no random stream"
+  },
+  "immutableSplit": {
+    "splitId": "e05.s12.immutable-transfer-split.v1",
+    "unit": "fully specified scenario before any S12 trajectory outcome exists",
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "calibration": {
+      "sizes": [20, 50],
+      "lesionType": "segment_reversal_central_v1",
+      "lesionLocations": ["central"],
+      "faultProcess": "none",
+      "scheduler": "uniform_random_activation",
+      "targetChanges": [
+        "reverse_total_order_v1",
+        "binary_precedence_partial_order_v1",
+        "cyclic_tertile_value_classes_v1"
+      ]
+    },
+    "heldOutAxes": {
+      "lesionType": ["local_scramble_sattolo_v1"],
+      "lesionLocation": ["left_off_center", "right_off_center"],
+      "size": [32, 80],
+      "faultProcess": [
+        "intermittent_movement_markov_1_16_1_4_v1",
+        "movement_fatigue_threshold_3_cooldown_8_v1"
+      ],
+      "scheduler": ["deterministic_scan", "random_permutation_sweep"],
+      "targetChange": [
+        "adjacent_pair_swap_total_order_v1",
+        "quartile_rotation_2_0_3_1_v1"
+      ],
+      "joint": "held-out size crossed with held-out scheduler and fault; damage uses off-center local scrambling and goals use held-out target changes"
+    },
+    "leakageProhibition": [
+      "No holdout outcome may change a mechanism, target map, split, duration assignment, threshold, endpoint, subgroup, multiplicity family, or decision rule.",
+      "No controller may be selected using S12 calibration or holdout outcomes; the S06 and S09 mechanisms are fixed before S12.",
+      "Implementation debugging may correct contract violations only; every failed execution attempt is logged and the specification hash cannot change after the first S12 trajectory."
+    ]
+  },
+  "damageContract": {
+    "selectedIdentity": "identity occupying floor((n-1)/2) immediately after lesion",
+    "lesionSeverity": "window length round_half_up(0.4*n), minimum 2; location variants use the same length and therefore the same reversal inversion severity",
+    "activeArm": "one-shot S06 local repair with unit action and abstract-energy budgets",
+    "matchedArm": "one-shot recovery-time/opportunity/energy-matched control using durations assigned from the immutable S06 calibration active-run bank before S12 outcomes",
+    "durationBankPath": "/artifacts/research_steps/S06/assisted_rescue.parquet",
+    "durationBankSelection": "filter split=calibration and arm=active_assisted_rescue; choose a donor by counter hash within policy/direction and nearest source-size stratum; scale donor duration by n/donor_n with round-half-up, minimum one",
+    "primaryContrast": "active rescue minus calibration-schedule/opportunity/energy-matched control",
+    "capabilityBoundary": "S06 active-versus-sham evidence is reported from S06 and is not re-estimated as the S12 transfer estimand"
+  },
+  "goalContract": {
+    "signal": "gradient_target_code_v1",
+    "activeArm": "target-aware controller emits the target-code candidate",
+    "matchedArm": "nonadaptive controller receives the same signal, constructs the same shadow candidate, pays the same reads/comparisons/abstract-energy cost, and emits the native proposal",
+    "changeTiming": "instantaneous at the exact stabilized post-completion checkpoint with no clock, stream, ledger, or internal-state advance",
+    "targetPermission": "only records already authorized by the native policy may have value projected to the frozen target code; no target position, global progress, or hidden target access",
+    "primaryContrast": "target-aware minus signal/information/opportunity/cost-matched nonadaptive control"
+  },
+  "runtimeProcesses": {
+    "none": "no runtime overlay",
+    "intermittent_movement_markov_1_16_1_4_v1": "S04 exogenous two-state process with available-to-failed hazard 1/16 and failed-to-available hazard 1/4 on the isolated S04 stream",
+    "movement_fatigue_threshold_3_cooldown_8_v1": "S04 endogenous mediator; every accepted movement participation increments load, threshold three causes eight-opportunity movement unavailability, no exogenous draws"
+  },
+  "estimands": {
+    "population": "every assigned scenario, including construction/stabilization failures, phase-budget failures, quiescent failures, and censors",
+    "primaryEndpoint": "paired success risk difference, active minus matched control",
+    "restrictedTimeEndpoint": "paired restricted time difference with failure/censor encoded as budget+1",
+    "generalizationGap": "held-out paired risk difference minus calibration paired risk difference for the same mechanism",
+    "secondaryEndpoints": [
+      "final normalized target distance",
+      "distance AUC normalized by phase budget and maximum distance",
+      "post-hit target retention and departure",
+      "no-change intact-target departure and final retention",
+      "native activations, proposals, accepted swaps, reads, comparisons, suppressed native opportunities, unit action, and abstract-energy costs"
+    ],
+    "competingTerminalRule": "retain terminal category; count success only when the frozen target is reached within budget; encode all other terminals/censors as restricted time budget+1 without imputation or survivor conditioning",
+    "stabilityRule": "no-change target-aware versus matched nonadaptive probes for 20*n opportunities; any target departure is harm"
+  },
+  "inference": {
+    "confidenceLevel": 0.95,
+    "bootstrapReplicates": 2000,
+    "bootstrapUnit": "paired scenario",
+    "precisionRule": "an aggregate or subgroup is precise only when its paired risk-difference bootstrap 95% interval half-width is <=0.10 and it has at least 48 complete assigned pairs; otherwise label inconclusive without exclusion",
+    "minimumSubgroupPairs": 48,
+    "noninferiorityMarginRiskDifference": 0.10,
+    "benefitRule": "paired risk-difference lower 95% confidence bound >0",
+    "transferRule": "generalization-gap lower 95% simultaneous bound >-0.10 and no multiplicity-adjusted stability harm",
+    "multiplicity": {
+      "benefit": "Holm family across all mechanism-by-held-out-axis primary success contrasts",
+      "generalization": "Holm family across all one-sided noninferiority gap tests",
+      "stability": "separate Holm family across all no-change harm contrasts",
+      "subgroups": "descriptive precision-labeled only; no confirmatory subgroup promotion"
+    },
+    "overallClassification": {
+      "supportive": "validation passes and at least one mechanism passes its joint holdout plus at least three single-axis transfer tests, with no adjusted stability harm",
+      "null": "validation passes but no mechanism meets the supportive rule and no prespecified calibration-supported mechanism shows adjusted holdout harm",
+      "constraining/contradictory": "a calibration-supported mechanism shows adjusted holdout harm, a semantic/validation contract fails, or transfer is materially worse than the frozen margin"
+    }
+  },
+  "validationPanel": {
+    "damageScenarioCounts": {
+      "calibration": 48,
+      "lesion_type": 48,
+      "lesion_location": 96,
+      "size": 48,
+      "scheduler": 96,
+      "fault_process": 96,
+      "joint": 192,
+      "total": 624
+    },
+    "damageArmsPerScenario": 2,
+    "plannedDamageRuns": 1248,
+    "goalScenarioCounts": {
+      "calibration": 144,
+      "target_change": 96,
+      "size": 144,
+      "scheduler": 288,
+      "fault_process": 288,
+      "joint": 384,
+      "total": 1344
+    },
+    "goalArmsPerScenario": 2,
+    "plannedGoalChangeRuns": 2688,
+    "plannedStabilityCases": 528,
+    "stabilityArmsPerCase": 2,
+    "plannedStabilityRuns": 1056,
+    "plannedRunCount": 4992,
+    "plannedExactReplayCount": 4992,
+    "plannedTotalTrajectoryExecutions": 9984,
+    "selectedFullTracePairs": 12,
+    "requiredAudits": [
+      "immutable split hash and zero overlap",
+      "holdout-outcome access and tuning prohibition",
+      "source checkpoint and stabilization",
+      "lesion severity and state preservation",
+      "target feasibility and identity correspondence",
+      "signal and local-observability permissions",
+      "scheduler and process stream isolation",
+      "within-family scenario pairing",
+      "deterministic exact replay",
+      "cost and native ledger identities",
+      "censor and competing-terminal retention",
+      "complete run accounting",
+      "success and transfer-failure cataloguing"
+    ]
+  },
+  "claimBoundary": "S12 tests transfer of two prespecified hand-designed simulator interventions over a frozen synthetic panel. It does not train a controller, establish biological repair or learning, or justify unseen real-world generalization."
+}
