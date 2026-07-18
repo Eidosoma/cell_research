@@ -1386,8 +1386,11 @@ schedule remained censored.
 
 The panel comprised 192 calibration active runs and 1,728 confirmatory runs:
 192 each active, passive, and sham; 576 each spontaneous and matched-cost.
-Every run was repeated for exact serialized replay, yielding 3,840 trajectory
-executions on eight workers. Primary completion inference used 192 paired cases
+Every run was repeated for exact result/state/ledger replay, yielding 3,840
+trajectory executions on eight workers. Ten prespecified runs retained full
+native events; remaining rows used the fixture-validated transition-equivalent
+summary path and retained state, ledger, intervention-audit, and result hashes.
+Primary completion inference used 192 paired cases
 per contrast, exact two-sided McNemar tests, and Holm correction across four
 contrasts. Paired mean-difference 95% t intervals describe completion risk and
 trade-off metrics. Post-opportunity strict-inversion distance AUC, phase time,
@@ -1440,10 +1443,13 @@ local adjacency rules passed. Fixtures covered invalid native proposals,
 non-neighbors, all three native primitive kinds, sham exhaustion, passive
 freezing, finite and unrecovered schedules, matched cost, and exact replay.
 
-All 1,920 result objects, native event digests, intervention audits, ledgers,
-state hashes, and transitions replayed byte-for-byte. The repair channel owned
-no runtime random stream; the construction-only assignment stream never entered
-a trajectory; worker order entered no address. Planned, executed, replayed,
+All 1,920 result objects, final states, intervention audits, ledgers, hashes,
+and transitions replayed byte-for-byte within their declared trace mode. Ten
+full-trace rows additionally replayed every native event byte. A fixture proved
+that the summary path and full-event authority produce identical state, ledger,
+intervention, terminal, distance, and cost results. The repair channel owned no
+runtime random stream; the construction-only assignment stream never entered a
+trajectory; worker order entered no address. Planned, executed, replayed,
 traced, censored, terminal, and contrast counts reconciled with zero runtime
 failures, substitutions, silent exclusions, or scope reduction.
 
@@ -1454,6 +1460,7 @@ failures, substitutions, silent exclusions, or scope reduction.
 - `assisted_rescue.parquet` and `assisted_rescue_scenarios.parquet` retain all 1,920 runs; `paired_rescue_contrasts.parquet` retains 1,536 comparisons.
 - `primary_completion_tests.parquet`, `matching_sensitivity_tests.parquet`, `tradeoff_summary.parquet`, the PNG/SVG trade-off figure, and ten selected full traces preserve direct evidence.
 - Checkpoint, budget, repair-ledger, matching, schedule/cost, pairing, replay, stream, censor, sensitivity, accounting, input, environment, and artifact manifests preserve validation and provenance.
+- `execution_attempts.json` records the outcome-blind performance restart before final aggregation.
 
 ## Caveats, blockers, failed assumptions, and limitations
 
@@ -1474,6 +1481,12 @@ failures, substitutions, silent exclusions, or scope reduction.
 - Count-changing S03 lesions remain outside the fixed-identity runner. Matching
   sensitivities reuse the same calibration bank and active outcomes and are not
   independent replications.
+- An initial canonical attempt completed calibration and returned 300
+  confirmatory jobs but was terminated before aggregation because digest-only
+  rows were still serializing full JSON events. No outcome table was written or
+  inspected. The full panel was rerun from the beginning after fixture-validating
+  the simulator's transition-equivalent summary path; scientific semantics and
+  scope did not change.
 - Failure to find a contrast in this panel would not prove active rescue is
   generally ineffective; any positive result is equally bounded to the frozen
   sizes, policies, timings, lesion anchor, costs, and success rule.
@@ -1639,6 +1652,37 @@ def write_outputs(
             },
         },
     )
+    _write_json(
+        output / "execution_attempts.json",
+        {
+            "schemaVersion": "e05.s06.execution-attempts.v1",
+            "researchStepId": "S06",
+            "attempts": [
+                {
+                    "attemptOrdinal": 1,
+                    "repositoryCommit": "13883059c3a1f39a0de2e9aeef50b912f864e746",
+                    "calibrationJobsReturned": 192,
+                    "confirmatoryJobsReturnedBeforeTermination": 300,
+                    "resultAggregationReached": False,
+                    "artifactFilesWritten": 0,
+                    "outcomesInspected": False,
+                    "terminationReason": "digest-only rows were still serializing and hashing full JSON events, making full-budget censoring runs impractically slow",
+                },
+                {
+                    "attemptOrdinal": 2,
+                    "repositoryCommit": git_commit,
+                    "calibrationJobsReturned": 192,
+                    "confirmatoryJobsReturned": 1728,
+                    "resultAggregationReached": True,
+                    "artifactFilesWritten": "see artifact_manifest.json",
+                    "outcomesInspected": True,
+                    "terminationReason": None,
+                },
+            ],
+            "semanticScopeChanged": False,
+            "runtimeOptimization": "fixture-validated transition-equivalent summary execution for non-full-trace rows",
+        },
+    )
     (output / "execution_commands.log").write_text(
         "\n".join(
             [
@@ -1646,6 +1690,7 @@ def write_outputs(
                 "python -m pytest -q tests/test_regeneration_tasks.py tests/test_regeneration_timing.py tests/test_regeneration_lesions.py tests/test_regeneration_dynamic_faults.py tests/test_regeneration_nudge_recovery.py tests/test_regeneration_assisted_rescue.py",
                 "ruff check src/regeneration/assisted_rescue.py tests/test_regeneration_assisted_rescue.py scripts/build_regeneration_s06.py src/regeneration/__init__.py",
                 f"OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/build_regeneration_s06.py --artifacts-dir {output} --workers {workers}",
+                "NOTE: the first canonical attempt stopped before aggregation after 192 calibration and 300 confirmatory jobs; execution_attempts.json records the outcome-blind summary-path restart.",
             ]
         )
         + "\n",

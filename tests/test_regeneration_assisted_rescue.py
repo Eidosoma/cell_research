@@ -270,3 +270,56 @@ def test_assisted_phase_budget_ledger_and_exact_replay() -> None:
         anchor.post_state.occupancy,
         recovery_budget=6400,
     )
+
+
+def test_digest_summary_path_matches_full_transition_state_and_ledgers() -> None:
+    scenario = _scenario(policy=Policy.BUBBLE, seed=37)
+    checkpoint = initial_checkpoint(scenario)
+    anchor = apply_lesion(
+        "segment_reversal_central_v1",
+        LesionState.from_checkpoint(scenario, checkpoint),
+        s01_pairing_block_id="e05pb1:" + "d" * 64,
+        timing_condition_id="initialization",
+        injury_seed=987,
+    )
+    selected = anchor.post_state.occupancy[3]
+    kwargs = {
+        "post_anchor_occupancy": anchor.post_state.occupancy,
+        "anchor_lesion_state_hash": anchor.post_state.state_hash,
+        "selected_identity": selected,
+        "contract": AssistedRescueContract(RescueArm.PASSIVE),
+        "recovery_budget": 80,
+    }
+    full = run_assisted_rescue_phase(
+        scenario,
+        checkpoint,
+        **kwargs,
+        trace_mode="full",
+        retain_process_audits=True,
+    )
+    digest = run_assisted_rescue_phase(
+        scenario,
+        checkpoint,
+        **kwargs,
+        trace_mode="digest",
+        retain_process_audits=True,
+    )
+    assert digest.final_state == full.final_state
+    assert digest.final_state_hash == full.final_state_hash
+    assert digest.process_final_state == full.process_final_state
+    assert digest.process_ledger == full.process_ledger
+    assert digest.process_audit_digest == full.process_audit_digest
+    assert digest.process_transitions == full.process_transitions
+    assert digest.opportunity_validation == full.opportunity_validation
+    for key in full.summary:
+        if key not in {"traceMode", "retainedEventCount"}:
+            assert digest.summary[key] == full.summary[key]
+    assert full.events
+    assert digest.events == ()
+    exact_replay_assisted_rescue(
+        digest,
+        scenario,
+        checkpoint,
+        anchor.post_state.occupancy,
+        recovery_budget=80,
+    )

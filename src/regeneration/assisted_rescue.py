@@ -667,6 +667,7 @@ def run_assisted_rescue_phase(
             scenario,
             state,
             retain_events=trace_mode == "full",
+            emit_event_records=trace_mode == "full",
             proposal_factory=router.proposal_for,
             schedule_factory=_uniform_schedule(scenario),
             execution_interceptor=controller,
