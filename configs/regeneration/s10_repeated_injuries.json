@@ -1,0 +1,162 @@
+{
+  "schemaVersion": "e05.s10.repeated-injury-spec.v1",
+  "researchStepId": "S10",
+  "benchmarkVersion": "E05-repeated-injuries-v1",
+  "frozenAtUtc": "2026-07-18T11:38:12Z",
+  "frozenQuestion": "Does one standardized prior injury change full-population recovery from a second matched injury through retained native state, structural preconditioning, or movement-dependent fatigue, after retaining every first-stage failure and censor?",
+  "inherits": {
+    "taskSpecSchemaVersion": "e05.s01.task-spec.v1",
+    "timingSpecSchemaVersion": "e05.s02.timing-spec.v1",
+    "lesionSpecSchemaVersion": "e05.s03.lesion-spec.v1",
+    "dynamicSpecSchemaVersion": "e05.s04.dynamic-fault-spec.v1",
+    "checkpointState": "occupancy, Selection cursors, activation count/global event clock, stream counters, native ledger, and S04 fatigue state",
+    "eventBudgetProfile": "profile_scaled_frozen_s07_v1",
+    "phaseRecoveryBudget": "100*n^2 charged opportunities per injury episode",
+    "scheduler": "uniform_random_activation",
+    "architecture": "distributed_local",
+    "continuation": "skip_and_continue",
+    "retry": "no_retry",
+    "informationPermission": "policy_native_local",
+    "legalPrimitives": ["NoOp", "Swap", "MemoryUpdate"],
+    "pairingProfile": "e05.s01.preinjury-shared-prefix-v1",
+    "target": "direction-aware strict unequal inversion distance",
+    "timingConditions": [
+      "initialization",
+      "progress_25",
+      "event_25",
+      "progress_50",
+      "event_50",
+      "progress_75",
+      "event_75",
+      "post_completion"
+    ]
+  },
+  "population": {
+    "estimandPopulation": "all 384 validated S02 checkpoints without conditioning on first-injury recovery",
+    "sizes": [20, 50],
+    "policies": ["Bubble", "Insertion", "Selection"],
+    "directions": ["ascending", "descending"],
+    "replicatesPerCell": 4,
+    "checkpointCount": 384,
+    "survivorOnlyAnalysis": "prohibited"
+  },
+  "sequenceAssignment": {
+    "stream": "repeated_injury_sequence_assignment_s10_v1",
+    "ownership": "construction-only counter-addressed assignment; never enters runtime stream counters",
+    "blocking": "within each S01 pairing block, sort the eight timing conditions by one counter-addressed uint64 and assign four to each sequence",
+    "sequences": [
+      {
+        "sequenceId": "repeat_segment_reversal_v1",
+        "episode1Operator": "segment_reversal_central_v1",
+        "episode2Operator": "segment_reversal_central_v1",
+        "severity": "centered 20%-scale window; affected count fixed by n; target-state inversion addition C(k,2)"
+      },
+      {
+        "sequenceId": "repeat_block_transposition_v1",
+        "episode1Operator": "block_transposition_adjacent_equal_v1",
+        "episode2Operator": "block_transposition_adjacent_equal_v1",
+        "severity": "two centered adjacent equal 10%-scale blocks; affected count fixed by n; target-state inversion addition b^2"
+      }
+    ],
+    "poolingRule": "operator-stratified primary estimates; no scalar severity equivalence is asserted across operators"
+  },
+  "spacing": [
+    {"spacingId": "immediate_v1", "chargedTargetStableOpportunities": "0"},
+    {"spacingId": "rest_20n_v1", "chargedTargetStableOpportunities": "20*n"},
+    {"spacingId": "rest_100n_v1", "chargedTargetStableOpportunities": "100*n"}
+  ],
+  "postRecoveryStabilization": {
+    "rule": "after first target attainment and before assigned spacing, preserve S01's charged uniform-scheduler achieved-state certificate",
+    "uniformCoverageRule": "at least two scheduled opportunities per identity",
+    "uniformCoverageCap": "20*n opportunities",
+    "success": "zero target distance, native absorbing-occupancy certificate, complete actor coverage, and no accepted movement",
+    "failureHandling": "retain as a first-stage competing terminal; episode 2 remains unobservable"
+  },
+  "eligibleControllers": {
+    "nativePolicies": ["Bubble", "Insertion", "Selection"],
+    "primaryOverlay": "movement_fatigue_threshold_3_cooldown_8_v1",
+    "fatigueClassification": "endogenous mediator",
+    "fatigueThreshold": 3,
+    "fatigueCooldownOpportunities": 8,
+    "fatigueRuntimeStreams": [],
+    "excluded": [
+      "all S08 plastic modes because none was validated and four harmed recovery",
+      "S09 target-aware controllers because S10 retains the original target and S09 did not establish learning",
+      "S07 local-memory variants as validated benefits because S07 was null against matched controls"
+    ]
+  },
+  "arms": [
+    {
+      "armId": "prior_injury_retained_fatigue",
+      "sequence": "active assigned injury, retained fatigue/state, active same injury",
+      "role": "previously injured and rested exposure"
+    },
+    {
+      "armId": "naive_opportunity_matched",
+      "sequence": "sham first injury, donor-duration native exposure, active assigned second injury",
+      "role": "naive control matched to the paired donor's pre-second opportunity clock"
+    },
+    {
+      "armId": "naive_fatigue_state_matched",
+      "sequence": "same as naive, then replace fatigue load and residual cooldown vector with the paired donor snapshot before the second injury",
+      "role": "post-treatment mediator benchmark; descriptive, not a total-effect control"
+    },
+    {
+      "armId": "prior_injury_fatigue_disabled",
+      "sequence": "active assigned injury, no fatigue overlay, active same injury",
+      "role": "fatigue-disabled mechanism control"
+    },
+    {
+      "armId": "prior_injury_no_second",
+      "sequence": "active assigned injury, retained fatigue/state, sham second injury plus 20*n stability probe",
+      "role": "appropriate no-second-injury stability and cost control"
+    }
+  ],
+  "stateContract": {
+    "priorInjury": "never reset occupancy, Selection cursors, global event index, stream counters, ledger, or fatigue state between episodes",
+    "rest": "after exact S01 post-recovery stabilization, charge ordinary uniform-scheduler target-stable opportunities; target departure is a validation failure and makes episode 2 unobservable",
+    "fatigueMatching": "copy the paired donor's per-identity load and residual cooldown vector at the second-injury boundary using a frozen same-case rule independent of control outcomes",
+    "structuralPreconditioning": "episode 2 is administered only from the exact original target occupancy; all other first-stage outcomes remain explicit competing terminals",
+    "longitudinalEnvelope": "phase-local budgets are enforced independently beyond the original single-repair Scenario envelope without changing the original scenario ID or RNG root"
+  },
+  "outcomes": {
+    "primary": [
+      "jointSequenceSuccess over the full assigned population",
+      "episode2ObservationRisk over the full assigned population",
+      "all-population restricted episode-2 opportunity time with first-stage competing terminals fixed at the phase budget",
+      "cause-specific terminal counts: episode1 competing terminal, episode2 completion, episode2 quiescence, episode2 phase budget, and no-second control"
+    ],
+    "secondary": [
+      "episode-specific distance AUC and accepted swaps",
+      "fatigue loads, cooldowns, triggers, blocks, and recoveries",
+      "target-stable rest and no-second stability departures",
+      "native internal-state and structure hashes"
+    ],
+    "conditionalAnalysis": "second-stage summaries among observed episode-2 cases are supplementary and explicitly post-treatment selected",
+    "missingObservability": "never substitute, exclude, or classify an unadministered second injury as an ordinary second-stage censor"
+  },
+  "estimands": {
+    "experience": "paired prior-injury versus opportunity-matched naive difference in full-population joint success and restricted episode-2 time, stratified by sequence and spacing",
+    "fatigue": "paired retained-fatigue versus fatigue-disabled and fatigue-state-matched benchmarks; fatigue matching is descriptive mediation evidence",
+    "hysteresis": "any prespecified full-population second-episode difference after prior injury relative to naive under the same assigned injury and spacing",
+    "learning": "requires multiplicity-adjusted improvement over naive at immediate spacing and retained same-direction improvement after 100*n rest, with no joint-success harm; otherwise learning is not claimed"
+  },
+  "multiplicity": {
+    "primaryFamily": "two injury sequences by three spacings by two experience controls",
+    "method": "Holm adjustment across all prespecified paired completion tests",
+    "alpha": 0.05,
+    "durationTest": "two-sided exact sign test on nonzero all-population restricted-time differences"
+  },
+  "validationPanel": {
+    "plannedCaseCount": 384,
+    "plannedSequenceCount": 2,
+    "plannedSpacingCount": 3,
+    "plannedArmCount": 5,
+    "plannedRunCount": 5760,
+    "plannedReplayCount": 5760,
+    "plannedPrimaryPairedContrasts": 2304,
+    "plannedSelectedTraceCount": 24,
+    "sequenceAssignmentsPerSequence": 192
+  },
+  "claimBoundary": "Repeated injury, experience, fatigue, hysteresis, and learning are operational simulator terms. No learning is claimed without prespecified improvement plus long-rest retention, and no result is biological evidence."
+}
