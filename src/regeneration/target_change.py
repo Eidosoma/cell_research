@@ -180,6 +180,38 @@ def _strict_code_inversions(codes: Sequence[int]) -> int:
     )
 
 
+def _applied_swap_inversion_delta(
+    occupancy_after: Sequence[str],
+    codes: Mapping[str, int],
+    first_position: int,
+    second_position: int,
+) -> int:
+    """Return exact post-minus-pre inversion distance for an applied swap.
+
+    ``occupancy_after`` is the state after exchanging the two positions. Only
+    the exchanged identities' pair relations can change, so this calculation
+    is O(distance between positions) and is algebraically identical to a full
+    inversion recount. Equal target codes remain incomparable and contribute
+    zero in both states.
+    """
+
+    if first_position == second_position:
+        return 0
+    left = min(first_position, second_position)
+    right = max(first_position, second_position)
+    post_left = codes[occupancy_after[left]]
+    post_right = codes[occupancy_after[right]]
+    pre_left = post_right
+    pre_right = post_left
+    delta = int(post_left > post_right) - int(pre_left > pre_right)
+    for position in range(left + 1, right):
+        middle = codes[occupancy_after[position]]
+        post = int(post_left > middle) + int(middle > post_right)
+        pre = int(pre_left > middle) + int(middle > pre_right)
+        delta += post - pre
+    return delta
+
+
 def _maximum_code_distance(codes: Mapping[str, int]) -> int:
     counts = Counter(codes.values())
     values = sorted(counts)
@@ -820,7 +852,7 @@ def run_target_change_phase(
         elapsed_before = state.activation_count - start_event
         if contract.phase == "changed" and target_hit_time is not None and post_hit_count >= probe_budget:
             break
-        event, changed, context, _ = _execute_opportunity(
+        event, changed, context, surface = _execute_opportunity(
             scenario,
             state,
             controller,
@@ -830,8 +862,20 @@ def run_target_change_phase(
             retained.append(event)
             digest = hashlib.sha256(digest + canonical_json_bytes(event)).digest()
         if changed:
-            old_distance = definition.old_distance(state.occupancy)
-            new_distance = definition.distance(state.occupancy)
+            if surface.emitted.kind == ProposalKind.SWAP:
+                assert surface.emitted.target_pos is not None
+                old_distance += _applied_swap_inversion_delta(
+                    state.occupancy,
+                    definition.old_code_map,
+                    surface.emitted.actor_pos,
+                    surface.emitted.target_pos,
+                )
+                new_distance += _applied_swap_inversion_delta(
+                    state.occupancy,
+                    definition.target_code_map,
+                    surface.emitted.actor_pos,
+                    surface.emitted.target_pos,
+                )
             coverage.clear()
         elapsed = state.activation_count - start_event
         old_auc += old_distance

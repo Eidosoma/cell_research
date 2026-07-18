@@ -1193,6 +1193,12 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/build_
 Eight replicate workers were used; OMP/MKL/OpenBLAS threads were fixed at one.
 All {len(results):,} planned runs were executed and replayed from scratch for
 {2 * len(results):,} trajectory executions. There was no runtime-driven scope reduction.
+An initial unaggregated attempt was stopped after 6,400 returned jobs when an
+O(n^2) exact inversion recount exposed a long-cycle performance bottleneck. The
+recount was replaced by an algebraically identical O(n) applied-swap delta,
+exhaustively checked over unique and tied five-identity targets. The final
+attempt restarted the complete panel; no initial-attempt outcome was inspected
+or reused, and no scientific contract changed.
 
 ## Results
 
@@ -1230,9 +1236,9 @@ composite score hides instability or cost.
 | Deterministic replay | PASS — {len(results):,}/{len(results):,} |
 | Censor retention, pairing, and complete accounting | PASS — zero substitutions or silent exclusions |
 
-Focused and inherited regeneration tests, lint, schema, Parquet, manifest, and
-artifact round-trip checks passed. Validation details are machine-readable in
-the S09 validation JSON files.
+All 38 focused S09 tests and all 169 inherited regeneration tests, lint, schema,
+Parquet, manifest, and artifact round-trip checks passed. Validation details
+are machine-readable in the S09 validation JSON files.
 
 ## Artifacts
 
@@ -1506,6 +1512,16 @@ def write_outputs(
             "attempts": [
                 {
                     "attemptOrdinal": 1,
+                    "repositoryCommit": "60f9c88de33b560481649abf247e2932ca5bb7ff",
+                    "jobsReturned": 6400,
+                    "validationReached": False,
+                    "validationSuccess": None,
+                    "resultAggregationReached": False,
+                    "outcomesInspected": False,
+                    "terminationReason": "performance-only restart after O(n^2) inversion recount exposed long full-budget cycling cases; no output artifact had been written",
+                },
+                {
+                    "attemptOrdinal": 2,
                     "repositoryCommit": git_commit,
                     "jobsReturned": len(results),
                     "validationReached": True,
@@ -1517,7 +1533,7 @@ def write_outputs(
             ],
             "scopeReduction": False,
             "semanticScopeChanged": False,
-            "runtimeImplementation": "eight-process panel execution; each trajectory is deterministic and serial, with every run replayed from scratch",
+            "runtimeImplementation": "eight-process panel execution; each trajectory is deterministic and serial, exact distances use a fixture-validated applied-swap delta, and every final-attempt run is replayed from scratch",
         },
     )
     provenance = []

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import inspect
+from itertools import permutations
 import json
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from src.regeneration.target_change import (
     TargetChange,
     TargetChangeContract,
     TargetChangeController,
+    _applied_swap_inversion_delta,
     build_target_definition,
     exact_replay_target_change,
     run_target_change_phase,
@@ -77,6 +79,43 @@ def test_spec_freezes_targets_signals_controls_and_complete_panel() -> None:
     assert panel["plannedPairwiseContrasts"] == 5_184
     assert specification["controllerAndCostContract"]["runtimeStreams"] == []
     assert TARGET_CHANGE_RUN_SCHEMA_VERSION == "e05.s09.target-change-run.v1"
+
+
+@pytest.mark.parametrize(
+    "code_values",
+    [
+        (0, 1, 2, 3, 4),
+        (0, 1, 0, 1, 0),
+        (2, 0, 0, 1, 1),
+    ],
+)
+def test_incremental_swap_distance_is_exact_for_unique_and_tied_targets(
+    code_values: tuple[int, ...],
+) -> None:
+    identities = tuple(f"c{index}" for index in range(len(code_values)))
+    codes = dict(zip(identities, code_values, strict=True))
+
+    def distance(occupancy: tuple[str, ...]) -> int:
+        values = [codes[identity] for identity in occupancy]
+        return sum(
+            left > right
+            for index, left in enumerate(values)
+            for right in values[index + 1 :]
+        )
+
+    for before in permutations(identities):
+        before_distance = distance(before)
+        for left in range(len(before)):
+            for right in range(left + 1, len(before)):
+                after_list = list(before)
+                after_list[left], after_list[right] = (
+                    after_list[right],
+                    after_list[left],
+                )
+                after = tuple(after_list)
+                assert distance(after) - before_distance == _applied_swap_inversion_delta(
+                    after, codes, left, right
+                )
 
 
 @pytest.mark.parametrize("direction", list(Direction))
