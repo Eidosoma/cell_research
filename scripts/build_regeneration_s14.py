@@ -54,7 +54,19 @@ SPECIFICATIONS: list[tuple[str, Path]] = [
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(canonical_json_bytes(value) + b"\n")
+    path.write_bytes(canonical_json_bytes(json_ready(value)) + b"\n")
+
+
+def json_ready(value: Any) -> Any:
+    """Convert NumPy/Pandas scalar values without changing canonical content."""
+
+    if isinstance(value, Mapping):
+        return {str(key): json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_ready(item) for item in value]
+    if hasattr(value, "item") and callable(value.item):
+        return json_ready(value.item())
+    return value
 
 
 def write_markdown(path: Path, value: str) -> None:
