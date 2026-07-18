@@ -732,6 +732,51 @@ def _primary_tests(contrasts: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _matching_sensitivity_tests(contrasts: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    for choice in MatchingChoice:
+        choice_rows: list[dict[str, Any]] = []
+        subset = contrasts[contrasts["matchingChoice"] == choice.value]
+        for mechanism in NudgeMechanism:
+            group = subset[subset["mechanismId"] == mechanism.value]
+            gained = int(
+                (group["activeCompleted"] & ~group["controlCompleted"]).sum()
+            )
+            lost = int(
+                (~group["activeCompleted"] & group["controlCompleted"]).sum()
+            )
+            discordant = gained + lost
+            p_value = (
+                float(
+                    binomtest(
+                        gained, discordant, 0.5, alternative="two-sided"
+                    ).pvalue
+                )
+                if discordant
+                else 1.0
+            )
+            choice_rows.append(
+                {
+                    "schemaVersion": "e05.s05.matching-sensitivity-test.v1",
+                    "matchingChoice": choice.value,
+                    "mechanismId": mechanism.value,
+                    "pairCount": len(group),
+                    "activeCompletionCount": int(group["activeCompleted"].sum()),
+                    "controlCompletionCount": int(group["controlCompleted"].sum()),
+                    "activeOnlyCompletionCount": gained,
+                    "controlOnlyCompletionCount": lost,
+                    "discordantPairCount": discordant,
+                    "exactMcNemarPValue": p_value,
+                }
+            )
+        adjusted = _holm([row["exactMcNemarPValue"] for row in choice_rows])
+        for row, value in zip(choice_rows, adjusted, strict=True):
+            row["holmAdjustedPValueWithinChoice"] = value
+            row["rejectAtFamilywise0_05WithinChoice"] = value <= 0.05
+        rows.extend(choice_rows)
+    return pd.DataFrame(rows)
+
+
 def _validate_panel(
     reconstructed: Mapping[str, Any],
     results: pd.DataFrame,
@@ -739,6 +784,7 @@ def _validate_panel(
     assignments: pd.DataFrame,
     contrasts: pd.DataFrame,
     primary_tests: pd.DataFrame,
+    sensitivity_tests: pd.DataFrame,
     failures: list[dict[str, str]],
     traces: list[dict[str, Any]],
 ) -> dict[str, Any]:
@@ -936,8 +982,16 @@ def _validate_panel(
             .astype(int)
             .to_dict(),
             "allChoicesExecuted": contrasts["matchingChoice"].nunique() == 3,
+            "formalTestCount": len(sensitivity_tests),
+            "holmRejectionCountAcrossChoices": int(
+                sensitivity_tests["rejectAtFamilywise0_05WithinChoice"].sum()
+            ),
+            "conclusionStableAcrossChoices": not bool(
+                sensitivity_tests["rejectAtFamilywise0_05WithinChoice"].any()
+            ),
             "censoredCasesRetained": True,
-            "success": contrasts["matchingChoice"].nunique() == 3,
+            "success": contrasts["matchingChoice"].nunique() == 3
+            and len(sensitivity_tests) == 12,
         },
     }
     summary = {
@@ -1037,6 +1091,7 @@ def _report(
     results: pd.DataFrame,
     contrasts: pd.DataFrame,
     primary: pd.DataFrame,
+    sensitivity_tests: pd.DataFrame,
     validations: Mapping[str, Any],
     git_commit: str,
 ) -> str:
@@ -1071,10 +1126,15 @@ def _report(
     recovery_text = "\n".join(recovery_lines)
     sensitivity_lines = []
     for choice, group in contrasts.groupby("matchingChoice"):
+        tested = sensitivity_tests[
+            sensitivity_tests["matchingChoice"] == choice
+        ]
         sensitivity_lines.append(
             f"- `{choice}`: {int(group['completionChanged'].sum())}/"
             f"{len(group)} completion-discordant pairs; median active-minus-control "
-            f"duration {group['phaseActivationDelta'].median():.1f}."
+            f"duration {group['phaseActivationDelta'].median():.1f}; minimum exact "
+            f"p={tested['exactMcNemarPValue'].min():.4g}, Holm rejections "
+            f"{int(tested['rejectAtFamilywise0_05WithinChoice'].sum())}/4."
         )
     sensitivity_text = "\n".join(sensitivity_lines)
     report = f"""# Research step S05 full results — Implement nudge-dependent unfreezing
@@ -1232,7 +1292,7 @@ reconciled with zero substitutions, silent exclusions, or scope reduction.
 - `nudge_recovery_package/nudge_recovery_spec.json`/Markdown and schema freeze the local semantics and decision rule.
 - `nudge_recovery_package/matching_assignments.parquet` records every donor, recipient, rank address, duration, and censor sentinel.
 - `nudge_recovery_results.parquet` and `nudge_recovery_scenarios.parquet` preserve all 3,840 rows; `paired_nudge_contrasts.parquet` preserves 2,304 comparisons.
-- `primary_completion_tests.parquet`, the matching figure, and eight selected full traces provide compact direct evidence.
+- `primary_completion_tests.parquet`, `matching_sensitivity_tests.parquet`, the matching figure, and eight selected full traces provide compact direct evidence.
 - Checkpoint, counter/neighbor, matching, schedule, replay, stream, pairing, sensitivity, accounting, provenance, environment, and artifact manifests preserve validation and reproducibility.
 
 ## Caveats, blockers, failed assumptions, and limitations
@@ -1307,6 +1367,7 @@ def write_outputs(
     assignments: pd.DataFrame,
     contrasts: pd.DataFrame,
     primary: pd.DataFrame,
+    sensitivity_tests: pd.DataFrame,
     traces: list[dict[str, Any]],
     validations: Mapping[str, Any],
     workers: int,
@@ -1347,6 +1408,9 @@ def write_outputs(
     assignments.to_parquet(package / "matching_assignments.parquet", index=False)
     contrasts.to_parquet(output / "paired_nudge_contrasts.parquet", index=False)
     primary.to_parquet(output / "primary_completion_tests.parquet", index=False)
+    sensitivity_tests.to_parquet(
+        output / "matching_sensitivity_tests.parquet", index=False
+    )
     pd.DataFrame(reconstructed["checkpointRows"]).to_parquet(
         output / "checkpoint_compatibility.parquet", index=False
     )
@@ -1424,7 +1488,15 @@ def write_outputs(
         + "\n",
         encoding="utf-8",
     )
-    outcome = _report(output, results, contrasts, primary, validations, git_commit)
+    outcome = _report(
+        output,
+        results,
+        contrasts,
+        primary,
+        sensitivity_tests,
+        validations,
+        git_commit,
+    )
     _artifact_manifest(output, git_commit)
     _write_json(
         output / "outcome_classification.json",
@@ -1478,6 +1550,7 @@ def main() -> None:
         ["mechanismId", "matchingChoice", "n", "policy", "direction", "replicateOrdinal", "timingConditionId"]
     ).reset_index(drop=True)
     primary = _primary_tests(contrasts)
+    sensitivity_tests = _matching_sensitivity_tests(contrasts)
     validations = _validate_panel(
         reconstructed,
         results,
@@ -1485,6 +1558,7 @@ def main() -> None:
         assignments,
         contrasts,
         primary,
+        sensitivity_tests,
         failures,
         traces,
     )
@@ -1502,6 +1576,7 @@ def main() -> None:
         assignments,
         contrasts,
         primary,
+        sensitivity_tests,
         traces,
         validations,
         args.workers,
