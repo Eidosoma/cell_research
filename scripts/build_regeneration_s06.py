@@ -1689,7 +1689,7 @@ def write_outputs(
                     "attemptOrdinal": 3,
                     "repositoryCommit": "4d9f0752d69ef7e19426c22814623189b48bdd97",
                     "calibrationJobsReturned": 192,
-                    "confirmatoryJobsReturnedBeforeTermination": 100,
+                    "confirmatoryJobsReturnedBeforeTermination": 200,
                     "resultAggregationReached": False,
                     "artifactFilesWritten": 0,
                     "outcomesInspected": False,
