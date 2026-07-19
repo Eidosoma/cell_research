@@ -1,0 +1,155 @@
+schemaVersion: e06.s05.policy-catalog.v1
+researchStepId: S05
+libraryVersion: e06-spatial-algotypes-v1
+observationContract:
+  policyReceives: immutable_payload_only
+  candidateAddressing: opaque_candidate_handles
+  engineOnly:
+    - actor_identity
+    - site_ids_and_routes
+    - occupant_identities
+    - state_and_proposal_hashes
+    - expected_resource_identities
+    - site_roles
+    - raw_boundary_tags
+    - obstacle_and_fixed_neighbor_metadata
+    - current_batch_competing_proposals
+    - conflict_priorities
+    - analysis_labels
+    - S02_whole_grid_score
+    - S01_global_completion_audit
+    - future_state
+  evaluationSeparation: S02 actor-local feedback is recorded separately from offline S02 whole-grid grammar and S01 global evaluation.
+  gradientBoundary: S05 consumes a supplied uint8 local field only; S06 must define its source, bandwidth, update schedule, and noise.
+informationCostModel:
+  communicatedBits: Fixed upper-bound scalar encodings plus candidate-count and opaque-handle encodings.
+  logicalReads: Uncached source reads used to form each disclosed projection are recorded by type.
+  candidateLeakage: Candidate count and handles are priced because legal-affordance availability can reveal local topology or immobility.
+  boundaryReads: Natural exterior signals are charged separately; raw tags, obstacle contacts, and fixed-role signals are never disclosed.
+  randomDraws: Exploration receives one bounded result from a counter-addressed uint64 draw; the key and counter address remain engine-only.
+  memory: Only identity-owned int8 best utility and two-bit frustration are readable, for ten persistent bits.
+  movementCost: The disclosed scalar is the legal candidate's S04 single-proposal totalGraphDisplacement; no other ledger or route field is disclosed.
+complexityModel:
+  score: decisionRuleCount + branchCount + tunableScalarCount + ceil(persistentMemoryBits / 4)
+  claimBoundary: This is a transparent implementation-complexity proxy, not Kolmogorov complexity or cognitive complexity.
+policies:
+  - policyId: greedy_neighbor_satisfaction_v1
+    strategy: greedy_neighbor_satisfaction
+    allowedMovementKinds: [adjacent_swap, vacancy_move, short_exchange]
+    maxCandidates: 16
+    observationFeatures: [actor_token, local_relation_delta]
+    informationBudgetMaxBits: 220
+    relationProfileRequired: true
+    targetSpecificity: grammar_parameterized_actor_local_projection
+    parameters: {}
+    complexity: {decisionRuleCount: 2, branchCount: 2, tunableScalarCount: 0, persistentMemoryBits: 0}
+    intendedBehavior: Select the legal local move with the largest strictly positive S02-derived actor-contact utility change.
+    nonGuarantees: [whole_grid_grammar_improvement, S01_completion_improvement, convergence, fairness_across_target_profiles]
+  - policyId: boundary_seeking_v1
+    strategy: boundary_seeking
+    allowedMovementKinds: [adjacent_swap, vacancy_move]
+    maxCandidates: 6
+    observationFeatures: [actor_token, natural_boundary_delta]
+    informationBudgetMaxBits: 80
+    relationProfileRequired: false
+    targetSpecificity: scenario_declared_actor_tokens_and_seek_or_avoid_direction
+    parameters: {}
+    complexity: {decisionRuleCount: 3, branchCount: 3, tunableScalarCount: 0, persistentMemoryBits: 0}
+    intendedBehavior: Move only a declared token toward or away from stronger local natural-exterior evidence.
+    nonGuarantees: [boundary_distance_beyond_one_step, periodic_exterior, obstacle_or_fixed_role_visibility, target_completion]
+  - policyId: gradient_following_v1
+    strategy: gradient_following
+    allowedMovementKinds: [adjacent_swap, vacancy_move]
+    maxCandidates: 6
+    observationFeatures: [gradient_delta]
+    informationBudgetMaxBits: 100
+    relationProfileRequired: false
+    targetSpecificity: scenario_declared_gradient_direction_and_external_field
+    parameters: {}
+    complexity: {decisionRuleCount: 2, branchCount: 2, tunableScalarCount: 0, persistentMemoryBits: 0}
+    intendedBehavior: Select the adjacent legal move with the largest strictly positive change along an explicitly supplied uint8 gradient.
+    nonGuarantees: [gradient_source_validity, channel_fairness, target_completion, local_relation_improvement]
+  - policyId: exploration_v1
+    strategy: exploration
+    allowedMovementKinds: [adjacent_swap, vacancy_move, short_exchange, rotation]
+    maxCandidates: 16
+    observationFeatures: [counter_exploration_index]
+    informationBudgetMaxBits: 90
+    relationProfileRequired: false
+    targetSpecificity: none
+    parameters: {}
+    complexity: {decisionRuleCount: 1, branchCount: 1, tunableScalarCount: 0, persistentMemoryBits: 0}
+    intendedBehavior: Select one legal candidate using a counter-addressed bounded draw with exact deterministic replay.
+    nonGuarantees: [local_improvement, target_completion, equal_kind_probability, equal_route_probability]
+  - policyId: memory_based_recovery_v1
+    strategy: memory_based_recovery
+    allowedMovementKinds: [adjacent_swap, vacancy_move, short_exchange]
+    maxCandidates: 16
+    observationFeatures: [actor_token, local_relation_delta, own_memory]
+    informationBudgetMaxBits: 240
+    relationProfileRequired: true
+    targetSpecificity: grammar_parameterized_with_identity_owned_local_reference
+    parameters: {}
+    complexity: {decisionRuleCount: 4, branchCount: 4, tunableScalarCount: 0, persistentMemoryBits: 10}
+    intendedBehavior: Stay when the remembered local-contact reference is met; otherwise select the largest positive restorative local move.
+    nonGuarantees: [global_state_memory, exact_damage_reversal, S01_completion, recovery_when_no_positive_local_step_exists]
+  - policyId: conflict_avoidance_v1
+    strategy: conflict_avoidance
+    allowedMovementKinds: [adjacent_swap, vacancy_move, short_exchange, rotation]
+    maxCandidates: 16
+    observationFeatures: [actor_token, local_relation_delta, lagged_conflict_count, movement_cost]
+    informationBudgetMaxBits: 320
+    relationProfileRequired: true
+    targetSpecificity: grammar_parameterized_with_fixed_congestion_and_cost_penalties
+    parameters: {laggedConflictPenalty: 2, movementCostWeight: 1}
+    complexity: {decisionRuleCount: 3, branchCount: 3, tunableScalarCount: 2, persistentMemoryBits: 0}
+    intendedBehavior: Choose a positive local-relation move after penalizing saturated prior-batch destination conflicts and declared S04 movement cost.
+    nonGuarantees: [knowledge_of_current_batch_proposals, conflict_elimination, maximum_matching, target_completion]
+toyFixtures:
+  - fixtureId: greedy_restores_local_contact
+    policyId: greedy_neighbor_satisfaction_v1
+    environmentId: square_bounded_occupied_stripes
+    actorSite: r3_c0
+    stateTransform: adjacent_swap_r2_c0_r3_c0
+    relationGrammarId: stripes_axis_relations_v1
+    expectedAction: proposal
+  - fixtureId: boundary_seeks_natural_exterior
+    policyId: boundary_seeking_v1
+    environmentId: square_bounded_occupied_stripes
+    actorSite: r1_c1
+    stateTransform: none
+    boundaryDirection: seek
+    boundaryTokens: [A]
+    expectedAction: proposal
+  - fixtureId: gradient_follows_supplied_field
+    policyId: gradient_following_v1
+    environmentId: square_periodic_vacancy
+    actorSite: r2_c2
+    stateTransform: none
+    gradientField: square_column_uint8
+    gradientDirection: up
+    expectedAction: proposal
+  - fixtureId: exploration_uses_counter_draw
+    policyId: exploration_v1
+    environmentId: hexagonal_bounded_occupied
+    actorSite: q0_r0
+    stateTransform: none
+    decisionKey: exploration-toy-v1
+    activationIndex: 7
+    expectedAction: proposal
+  - fixtureId: memory_activates_below_reference
+    policyId: memory_based_recovery_v1
+    environmentId: square_bounded_occupied_stripes
+    actorSite: r3_c0
+    stateTransform: adjacent_swap_r2_c0_r3_c0
+    relationGrammarId: stripes_axis_relations_v1
+    memory: {bestLocalRelationUtility: 12, frustration: 1}
+    expectedAction: proposal
+  - fixtureId: conflict_avoidance_penalizes_recent_hotspot
+    policyId: conflict_avoidance_v1
+    environmentId: square_bounded_occupied_stripes
+    actorSite: r2_c0
+    stateTransform: adjacent_swap_r2_c0_r3_c0
+    relationGrammarId: stripes_axis_relations_v1
+    laggedConflictField: penalize_first_improving_target
+    expectedAction: proposal
