@@ -1,0 +1,341 @@
+schemaVersion: e06.s01.target-catalog.v1
+researchStepId: S01
+benchmarkVersion: e06-relational-morphology-targets-v1
+coordinateConvention:
+  origin: top_left
+  rowDirection: down
+  columnDirection: right
+  neighborhood: von_neumann_4
+vacancyLabel: "."
+movementFeasibilityAssumption:
+  primaryRule: adjacent_4_neighbor_swap
+  vacancyRule: vacancy_is_a_conserved_site_state_and_may_exchange_with_an_adjacent_cell
+  reachabilityClaim: any two labelings with the same exact counts are connected on these rectangular fixtures
+  scopeBoundary: S01 certifies finite swap witnesses only; S04 will define runtime proposal and conflict semantics
+claimBoundary: These are abstract finite-grid target sets and computational success proxies, not biological morphologies, mechanisms, or evidence of agency.
+
+targets:
+  - targetId: stripes_alternating_three_band
+    family: stripes
+    title: Alternating three-band stripes
+    description: Three equal-width bands with the outer bands sharing a type; horizontal and vertical orientations are equivalent.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - AAAAAAAAA
+        - AAAAAAAAA
+        - AAAAAAAAA
+        - BBBBBBBBB
+        - BBBBBBBBB
+        - BBBBBBBBB
+        - AAAAAAAAA
+        - AAAAAAAAA
+        - AAAAAAAAA
+    cellTypes:
+      ".": {count: 0, role: vacancy}
+      A: {count: 54, role: outer_band}
+      B: {count: 27, role: middle_band}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: none
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: false
+      rationale: D4 symmetry makes horizontal and vertical bands equivalent without relabeling cell types.
+    success:
+      countMode: exact
+      maxMismatches: 2
+      maxMismatchFraction: 0.025
+      mismatchRegion: interface_band
+      interfaceBandRadius: 0
+      componentCounts: {A: [2, 2], B: [1, 1]}
+      vacancyHoles: [0, 0]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: One count-preserving two-site interface jog is allowed; all mismatches must lie on a reference A/B interface.
+    localGrammarCandidate:
+      candidateId: stripes_axis_neighbor_v1
+      orientationOrBoundaryCue: A latent axis or anisotropic neighbor channel is required to distinguish stripes from compact domains.
+      desiredNeighbors: [same_type_along_stripe_axis, alternating_type_across_designated_interfaces]
+      forbiddenNeighbors: [fragmented_middle_band, isolated_cells]
+      motifs: [A_B_A_order_across_normal_axis, continuous_same_type_runs_along_tangent_axis]
+      knownUnderdetermination: Isotropic pairwise affinity alone also admits compact A and B domains and does not select band count.
+    validation:
+      acceptedBoundarySwap: [[2, 4], [3, 5]]
+      rejectedInteriorSwap: [[1, 4], [4, 4]]
+
+  - targetId: layers_three_ordered_tissues
+    family: layers
+    title: Three ordered tissue layers
+    description: Three distinct contiguous layers with order preserved up to rigid rotations and reflections.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - AAAAAAAAA
+        - AAAAAAAAA
+        - AAAAAAAAA
+        - BBBBBBBBB
+        - BBBBBBBBB
+        - BBBBBBBBB
+        - CCCCCCCCC
+        - CCCCCCCCC
+        - CCCCCCCCC
+    cellTypes:
+      ".": {count: 0, role: vacancy}
+      A: {count: 27, role: terminal_layer_a}
+      B: {count: 27, role: middle_layer}
+      C: {count: 27, role: terminal_layer_c}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: none
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: false
+      rationale: Layer order is relational; reflecting the entire labeled morphology is allowed, but swapping labels in place is not.
+    success:
+      countMode: exact
+      maxMismatches: 2
+      maxMismatchFraction: 0.025
+      mismatchRegion: interface_band
+      interfaceBandRadius: 0
+      componentCounts: {A: [1, 1], B: [1, 1], C: [1, 1]}
+      vacancyHoles: [0, 0]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: One count-preserving two-site jog is allowed on either layer interface.
+    localGrammarCandidate:
+      candidateId: ordered_layers_v1
+      orientationOrBoundaryCue: An axis is needed for consistent A-B-C ordering, but its global sign may be chosen spontaneously.
+      desiredNeighbors: [A_contacts_B, B_contacts_A_and_C, C_contacts_B, same_type_tangential_continuity]
+      forbiddenNeighbors: [A_contacts_C, isolated_layer_fragments]
+      motifs: [A_B_C_order_across_normal_axis]
+      knownUnderdetermination: Local A-B-C contacts do not alone guarantee a single unbranched global layer stack.
+    validation:
+      acceptedBoundarySwap: [[2, 4], [3, 5]]
+      rejectedInteriorSwap: [[1, 4], [4, 4]]
+
+  - targetId: ring_core_shell_translatable
+    family: rings
+    title: Translatable core-shell ring
+    description: A one-cell-thick shell encloses a three-by-three core anywhere that the five-by-five motif fits.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - .........
+        - .........
+        - ..RRRRR..
+        - ..RCCCR..
+        - ..RCCCR..
+        - ..RCCCR..
+        - ..RRRRR..
+        - .........
+        - .........
+    cellTypes:
+      ".": {count: 56, role: vacancy_background}
+      R: {count: 16, role: shell_ring}
+      C: {count: 9, role: enclosed_core}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: bounded_foreground
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: false
+      rationale: Absolute position is irrelevant provided the complete core-shell motif remains inside the bounded grid.
+    success:
+      countMode: exact
+      maxMismatches: 0
+      maxMismatchFraction: 0.0
+      mismatchRegion: strict
+      interfaceBandRadius: 0
+      componentCounts: {R: [1, 1], C: [1, 1]}
+      vacancyHoles: [0, 0]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: Strict in S01 because shell continuity and enclosure are not safely relaxed by Hamming tolerance alone.
+    localGrammarCandidate:
+      candidateId: core_shell_ring_v1
+      orientationOrBoundaryCue: No absolute axis is required; shell cells need inside-versus-outside relational state or a curvature surrogate.
+      desiredNeighbors: [C_contacts_C_or_R, R_contacts_R_and_C, exterior_vacancy_contacts_R]
+      forbiddenNeighbors: [C_contacts_exterior_vacancy, broken_R_shell]
+      motifs: [closed_R_cycle_around_connected_C_core]
+      knownUnderdetermination: Pairwise contacts can admit open shells, multiple small rings, or non-circular enclosures without a closure motif.
+    validation: {}
+
+  - targetId: bilateral_lobes_with_midline
+    family: bilateral
+    title: Bilateral lobes with a midline
+    description: Two same-type lobes flank a one-cell-wide midline; the body may rotate, reflect, or translate while remaining in bounds.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - .........
+        - .........
+        - .BBBMBBB.
+        - .BBBMBBB.
+        - .BBBMBBB.
+        - .BBBMBBB.
+        - .BBBMBBB.
+        - .........
+        - .........
+    cellTypes:
+      ".": {count: 46, role: vacancy_background}
+      B: {count: 30, role: paired_lobes}
+      M: {count: 5, role: midline}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: bounded_foreground
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: false
+      rationale: Bilaterality is defined relative to the internal midline, not an absolute image coordinate.
+    success:
+      countMode: exact
+      maxMismatches: 0
+      maxMismatchFraction: 0.0
+      mismatchRegion: strict
+      interfaceBandRadius: 0
+      componentCounts: {B: [2, 2], M: [1, 1]}
+      vacancyHoles: [0, 0]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: Strict in S01; lobe contour tolerance is deferred until a bilateral-symmetry metric is calibrated.
+    localGrammarCandidate:
+      candidateId: bilateral_midline_v1
+      orientationOrBoundaryCue: Cells need an internal midline cue or a locally propagating parity/orientation state.
+      desiredNeighbors: [M_forms_connected_axis, B_contacts_one_side_of_M, mirrored_B_extent_across_M]
+      forbiddenNeighbors: [B_bridge_across_M, disconnected_M, unequal_lobe_extent]
+      motifs: [B_M_B_cross_axis_triplet, continuous_M_axis]
+      knownUnderdetermination: Local B-M contacts cannot distinguish balanced bilateral lobes from an irregular M boundary without a symmetry constraint.
+    validation: {}
+
+  - targetId: separated_paired_regions
+    family: separated_regions
+    title: Two separated organ-like regions
+    description: Two distinct three-by-three regions retain a one-column gap and fixed relative displacement, modulo rigid transforms and bounded translation.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - .........
+        - .........
+        - .........
+        - .AAA.BBB.
+        - .AAA.BBB.
+        - .AAA.BBB.
+        - .........
+        - .........
+        - .........
+    cellTypes:
+      ".": {count: 63, role: vacancy_background_and_separator}
+      A: {count: 9, role: region_a}
+      B: {count: 9, role: region_b}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: bounded_foreground
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: false
+      rationale: Only region shape and relative separation matter; absolute position and orientation do not.
+    success:
+      countMode: exact
+      maxMismatches: 0
+      maxMismatchFraction: 0.0
+      mismatchRegion: strict
+      interfaceBandRadius: 0
+      componentCounts: {A: [1, 1], B: [1, 1]}
+      vacancyHoles: [0, 0]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: Strict in S01 so the declared inter-region gap cannot be gamed by shape distortion.
+    localGrammarCandidate:
+      candidateId: separated_regions_v1
+      orientationOrBoundaryCue: A shared axis or long-range relative-position cue is required to set the A-to-B displacement.
+      desiredNeighbors: [A_compact_with_A, B_compact_with_B, vacancy_separator_between_A_and_B]
+      forbiddenNeighbors: [A_contacts_B, fragmented_A, fragmented_B]
+      motifs: [compact_A_gap_compact_B]
+      knownUnderdetermination: Local segregation creates separated domains but does not fix their relative distance, order, or unique component count.
+    validation: {}
+
+  - targetId: tissue_single_hole
+    family: holes
+    title: Tissue with one enclosed hole
+    description: A connected tissue sheet encloses one connected three-by-three vacancy hole.
+    fixture:
+      shape: [7, 7]
+      rows:
+        - TTTTTTT
+        - TTTTTTT
+        - TT...TT
+        - TT...TT
+        - TT...TT
+        - TTTTTTT
+        - TTTTTTT
+    cellTypes:
+      ".": {count: 9, role: enclosed_hole}
+      T: {count: 40, role: tissue}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: none
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: true
+      rationale: The tissue occupies the fixed domain boundary; only rigid D4 symmetries are equivalent.
+    success:
+      countMode: exact
+      maxMismatches: 2
+      maxMismatchFraction: 0.041
+      mismatchRegion: interface_band
+      interfaceBandRadius: 0
+      componentCounts: {T: [1, 1], ".": [1, 1]}
+      vacancyHoles: [1, 1]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: One two-site interface jog is allowed only if tissue and hole connectivity and exactly one enclosed hole are preserved.
+    localGrammarCandidate:
+      candidateId: one_hole_sheet_v1
+      orientationOrBoundaryCue: A domain-boundary cue is needed to distinguish the exterior boundary from an enclosed vacancy boundary.
+      desiredNeighbors: [T_connected_sheet, vacancy_connected_cavity, T_surrounds_vacancy]
+      forbiddenNeighbors: [vacancy_path_to_domain_boundary, disconnected_T]
+      motifs: [closed_T_boundary_around_one_vacancy_component]
+      knownUnderdetermination: Local T-vacancy contact does not distinguish an internal hole from an exterior notch without boundary information.
+    validation:
+      acceptedBoundarySwap: [[1, 2], [2, 3]]
+      rejectedInteriorSwap: [[0, 0], [3, 3]]
+
+  - targetId: tissue_two_holes
+    family: holes
+    title: Tissue with two separated holes
+    description: A connected tissue sheet encloses exactly two disconnected two-by-two vacancy holes.
+    fixture:
+      shape: [9, 9]
+      rows:
+        - TTTTTTTTT
+        - TTTTTTTTT
+        - TT..TTTTT
+        - TT..TTTTT
+        - TTTTTTTTT
+        - TTTTT..TT
+        - TTTTT..TT
+        - TTTTTTTTT
+        - TTTTTTTTT
+    cellTypes:
+      ".": {count: 8, role: two_enclosed_holes}
+      T: {count: 73, role: tissue}
+    equivalence:
+      transforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+      translation: none
+      labelPermutation: none
+      orientationCueRequired: false
+      boundaryCueRequired: true
+      rationale: The pair geometry is equivalent under D4 transforms but remains anchored relative to the occupied domain boundary.
+    success:
+      countMode: exact
+      maxMismatches: 0
+      maxMismatchFraction: 0.0
+      mismatchRegion: strict
+      interfaceBandRadius: 0
+      componentCounts: {T: [1, 1], ".": [2, 2]}
+      vacancyHoles: [2, 2]
+      requiredMetrics: [exact_count_match, minimum_hamming_mod_equivalence, component_counts, vacancy_holes]
+      boundaryVariation: Strict in S01 because hole-number preservation alone would admit large uncalibrated contour and placement changes.
+    localGrammarCandidate:
+      candidateId: two_hole_sheet_v1
+      orientationOrBoundaryCue: Boundary identity plus a mechanism limiting cavity count to two is required.
+      desiredNeighbors: [T_connected_sheet, two_vacancy_cavities, tissue_bridge_between_cavities]
+      forbiddenNeighbors: [merged_holes, vacancy_path_to_domain_boundary, disconnected_T]
+      motifs: [two_closed_T_boundaries_with_connected_T_between]
+      knownUnderdetermination: Pure local interfaces cannot count cavities globally; many one-hole or multi-hole states share the same local motifs.
+    validation: {}
