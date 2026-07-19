@@ -1,0 +1,133 @@
+schemaVersion: e06.s04.movement-catalog.v1
+researchStepId: S04
+libraryVersion: e06-spatial-movements-v1
+graphContract: e06.s03.environment.v1
+stateContract:
+  identity: Every occupiable S03 site starts with one stable cell, vacancy, or fixed-boundary occupant identity.
+  obstacles: Excluded from movement occupancy and never treated as vacancies.
+  conservation: Occupant identities, token composition, vacancy count, and site coverage are invariant under every S04 commit.
+  fixedBoundary: Fixed-boundary occupants and tokens never move.
+evaluationContract:
+  movementLegalityInputs: [canonical_adjacency, site_roles, authenticated_prebatch_occupancy]
+  excludedInputs: [S02_local_grammar, S01_global_completion, analysis_labels, future_state]
+  downstreamFields: [s02LocalGrammar, s01GlobalCompletionAudit, conjunctiveCompletion]
+  completionRule: s02LocalGrammar.accepted AND s01GlobalCompletionAudit.success
+signalBudget:
+  boundarySignalReadsForMovementLegality: 0
+  note: Fixed and obstacle roles are engine safety metadata; they do not grant a policy any S03 boundary signal.
+conflictContract:
+  snapshot: Every proposal in a batch is authenticated and validated against the same immutable pre-batch state.
+  reservations:
+    adjacent_swap: both endpoints
+    vacancy_move: both endpoints
+    short_exchange: all three path sites, including the unchanged middle site
+    rotation: every cycle site
+  priority: first 64 bits of SHA256(E06/S04/conflict/v1, batch ID, proposal ID)
+  tieBreak: lexicographically smaller content-derived proposal ID
+  resolution: Greedy maximal disjoint set in ascending priority/tie order; losers do not retry.
+  proposalOrderInvariant: true
+enabledMovements:
+  - kind: adjacent_swap
+    routeLength: 2
+    displacement: Each of two non-vacancy occupants traverses one declared graph edge.
+  - kind: vacancy_move
+    routeLength: 2
+    displacement: A non-vacancy occupant moves over one edge into a vacancy; the conserved vacancy identity moves back.
+  - kind: short_exchange
+    routeLength: 3
+    displacement: Two non-vacancy endpoint occupants exchange over an explicit distance-two path; the middle occupant is unchanged but reserved.
+  - kind: rotation
+    routeLength: 3-6
+    displacement: Every non-vacancy cycle occupant moves one edge in direction +1 or -1.
+deferredMovements:
+  - kind: long_range_exchange
+    status: deferred_rejected
+    reason: It can dominate local-policy comparisons and lacks a frozen range, observation, and cost-fairness contract.
+  - kind: division
+    status: deferred_rejected
+    reason: It changes identity and composition and requires new target/count semantics.
+  - kind: removal
+    status: deferred_rejected
+    reason: It changes identity and composition and requires lesion/death and target-feasibility semantics.
+fixtures:
+  - fixtureId: adjacent_swap_square_bounded
+    environmentId: square_bounded_occupied_stripes
+    batchNonce: adjacent-square-v1
+    proposals:
+      - {kind: adjacent_swap, route: [r2_c0, r3_c0], rotationDirection: 0}
+    reversible: true
+    evaluateLayers: true
+  - fixtureId: vacancy_move_periodic_seam
+    environmentId: square_periodic_vacancy
+    batchNonce: vacancy-periodic-v1
+    proposals:
+      - {kind: vacancy_move, route: [r0_c4, r0_c0], rotationDirection: 0}
+    reversible: true
+    evaluateLayers: false
+  - fixtureId: short_exchange_square_distance_two
+    environmentId: square_bounded_occupied_stripes
+    batchNonce: short-square-v1
+    proposals:
+      - {kind: short_exchange, route: [r2_c4, r2_c5, r3_c5], rotationDirection: 0}
+    reversible: true
+    evaluateLayers: true
+  - fixtureId: rotation_square_cycle
+    environmentId: square_bounded_occupied_stripes
+    batchNonce: rotation-square-v1
+    proposals:
+      - {kind: rotation, route: [r2_c0, r2_c1, r3_c1, r3_c0], rotationDirection: 1}
+    reversible: true
+    evaluateLayers: true
+  - fixtureId: rotation_hexagonal_six_cycle
+    environmentId: hexagonal_bounded_occupied
+    batchNonce: rotation-hex-v1
+    proposals:
+      - {kind: rotation, route: [q1_r0, q1_r-1, q0_r-1, q-1_r0, q-1_r1, q0_r1], rotationDirection: 1}
+    reversible: true
+    evaluateLayers: false
+  - fixtureId: short_exchange_irregular_explicit_path
+    environmentId: irregular_bounded_occupied
+    batchNonce: short-irregular-v1
+    proposals:
+      - {kind: short_exchange, route: [a, b, e], rotationDirection: 0}
+    reversible: true
+    evaluateLayers: false
+  - fixtureId: vacancy_move_obstacle_environment
+    environmentId: square_bounded_vacancy_obstacle
+    batchNonce: vacancy-obstacle-v1
+    proposals:
+      - {kind: vacancy_move, route: [r1_c0, r1_c1], rotationDirection: 0}
+    reversible: true
+    evaluateLayers: false
+  - fixtureId: conflicting_and_disjoint_square_batch
+    environmentId: square_bounded_occupied_stripes
+    batchNonce: conflict-square-v1
+    proposals:
+      - {kind: adjacent_swap, route: [r2_c0, r3_c0], rotationDirection: 0}
+      - {kind: adjacent_swap, route: [r3_c0, r4_c0], rotationDirection: 0}
+      - {kind: adjacent_swap, route: [r2_c3, r3_c3], rotationDirection: 0}
+      - {kind: short_exchange, route: [r2_c2, r2_c3, r3_c3], rotationDirection: 0}
+      - {kind: adjacent_swap, route: [r2_c8, r3_c8], rotationDirection: 0}
+    reversible: false
+    evaluateLayers: false
+  - fixtureId: fixed_boundary_mixed_validation
+    environmentId: square_bounded_fixed_boundary
+    batchNonce: fixed-boundary-v1
+    proposals:
+      - {kind: adjacent_swap, route: [r1_c1, r0_c1], rotationDirection: 0}
+      - {kind: adjacent_swap, route: [r1_c1, r1_c2], rotationDirection: 0}
+    reversible: false
+    evaluateLayers: false
+validationProbes:
+  - {probeId: deferred_long_range, environmentId: square_bounded_occupied_stripes, kind: long_range_exchange, route: [r0_c0, r8_c8], rotationDirection: 0, expectedReason: "deferred_kind:long_range_exchange"}
+  - {probeId: deferred_division, environmentId: square_bounded_occupied_stripes, kind: division, route: [r4_c4], rotationDirection: 0, expectedReason: "deferred_kind:division"}
+  - {probeId: deferred_removal, environmentId: square_bounded_occupied_stripes, kind: removal, route: [r4_c4], rotationDirection: 0, expectedReason: "deferred_kind:removal"}
+  - {probeId: non_adjacent_swap, environmentId: square_bounded_occupied_stripes, kind: adjacent_swap, route: [r0_c0, r2_c0], rotationDirection: 0, expectedReason: non_adjacent_edge}
+  - {probeId: wrong_vacancy_direction, environmentId: square_periodic_vacancy, kind: vacancy_move, route: [r0_c0, r0_c4], rotationDirection: 0, expectedReason: vacancy_move_requires_cell_to_vacancy}
+  - {probeId: long_short_exchange, environmentId: square_bounded_occupied_stripes, kind: short_exchange, route: [r0_c0, r0_c1, r0_c2, r0_c3], rotationDirection: 0, expectedReason: short_exchange_requires_three_site_path}
+  - {probeId: open_rotation, environmentId: square_bounded_occupied_stripes, kind: rotation, route: [r0_c0, r0_c1, r0_c2], rotationDirection: 1, expectedReason: rotation_route_not_closed_cycle}
+  - {probeId: fixed_endpoint, environmentId: square_bounded_fixed_boundary, kind: adjacent_swap, route: [r1_c1, r0_c1], rotationDirection: 0, expectedReason: fixed_boundary_site}
+  - {probeId: obstacle_endpoint, environmentId: square_bounded_vacancy_obstacle, kind: adjacent_swap, route: [r1_c2, r2_c2], rotationDirection: 0, expectedReason: obstacle_site}
+  - {probeId: stale_state, environmentId: square_bounded_occupied_stripes, kind: adjacent_swap, route: [r2_c0, r3_c0], rotationDirection: 0, mutation: staleStateHash, expectedReason: stale_observation}
+  - {probeId: stale_identity, environmentId: square_bounded_occupied_stripes, kind: adjacent_swap, route: [r2_c0, r3_c0], rotationDirection: 0, mutation: staleResourceIdentity, expectedReason: stale_resource_identity}
+  - {probeId: actor_mismatch, environmentId: square_bounded_occupied_stripes, kind: adjacent_swap, route: [r2_c0, r3_c0], rotationDirection: 0, mutation: actorMismatch, expectedReason: actor_identity_mismatch}
