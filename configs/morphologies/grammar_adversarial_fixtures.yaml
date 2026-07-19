@@ -1,0 +1,120 @@
+schemaVersion: e06.s02.adversarial-fixtures.v1
+researchStepId: S02
+freezePurpose: Predeclared structural challenges derived from S01 underdetermination hypotheses; final search may improve but not replace these controls.
+fixtures:
+  - fixtureId: stripes_rectangular_interface_jog
+    targetId: stripes_alternating_three_band
+    challengedRelation: band_interfaces_do_not_fix_global_straightness_or_exact_boundary_shape
+    rows:
+      - AAAAAAAAA
+      - AAAAAAAAA
+      - AAABBBAAA
+      - BBBAAABBB
+      - BBBBBBBBB
+      - BBBBBBBBB
+      - AAAAAAAAA
+      - AAAAAAAAA
+      - AAAAAAAAA
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 6
+
+  - fixtureId: layers_branched_A_B_boundary
+    targetId: layers_three_ordered_tissues
+    challengedRelation: forbidden_A_C_contact_does_not_force_one_straight_A_B_interface
+    rows:
+      - AAAAAAAAA
+      - AAAAAAAAA
+      - AAABBBAAA
+      - BBBAAABBB
+      - BBBBBBBBB
+      - BBBBBBBBB
+      - CCCCCCCCC
+      - CCCCCCCCC
+      - CCCCCCCCC
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 6
+
+  - fixtureId: ring_disconnected_outer_corners
+    targetId: ring_core_shell_translatable
+    challengedRelation: shielding_contacts_do_not_force_one_closed_shell_component
+    rows:
+      - .........
+      - ...R.R...
+      - ...RRR...
+      - ..RCCCR..
+      - ..RCCCR..
+      - ..RCCCR..
+      - ...RRR...
+      - ...R.R...
+      - .........
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 8
+
+  - fixtureId: bilateral_lobe_imbalance
+    targetId: bilateral_lobes_with_midline
+    challengedRelation: intact_midline_contacts_do_not_force_balanced_lobe_extent
+    rows:
+      - .........
+      - .........
+      - ..BBMBBBB
+      - ..BBMBBBB
+      - .BBBMBBB.
+      - ..BBMBBBB
+      - ..BBMBBBB
+      - .........
+      - .........
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 8
+
+  - fixtureId: separated_diagonal_displacement
+    targetId: separated_paired_regions
+    challengedRelation: segregation_and_compactness_do_not_fix_relative_displacement_or_gap
+    rows:
+      - .........
+      - .........
+      - .........
+      - .AAA.....
+      - .AAA..BBB
+      - .AAA..BBB
+      - ......BBB
+      - .........
+      - .........
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 10
+
+  - fixtureId: single_hole_off_center
+    targetId: tissue_single_hole
+    challengedRelation: boundary_exclusion_and_cavity_contacts_do_not_fix_hole_position
+    rows:
+      - TTTTTTT
+      - TT...TT
+      - TT...TT
+      - TT...TT
+      - TTTTTTT
+      - TTTTTTT
+      - TTTTTTT
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 6
+
+  - fixtureId: two_holes_changed_separation
+    targetId: tissue_two_holes
+    challengedRelation: local_cavity_counts_and_halfturn_symmetry_do_not_fix_hole_displacement
+    rows:
+      - TTTTTTTTT
+      - T..TTTTTT
+      - T..TTTTTT
+      - TTTTTTTTT
+      - TTTTTTTTT
+      - TTTTTTTTT
+      - TTTTTT..T
+      - TTTTTT..T
+      - TTTTTTTTT
+    expectedGrammarAccepted: true
+    expectedS01Accepted: false
+    minimumMismatch: 12

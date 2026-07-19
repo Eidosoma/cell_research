@@ -1,0 +1,70 @@
+schemaVersion: e06.s02.hand-scored-fixtures.v1
+researchStepId: S02
+grammar:
+  grammarId: hand_scored_center_fixture_v1
+  targetId: hand_scored_center
+  shape: [3, 3]
+  vacancyLabel: "."
+  cellTypeCounts: {".": 0, A: 8, B: 1}
+  orientationTransforms: [identity]
+  conflictResolution: hard_first_then_weighted_soft_v1
+  acceptanceThreshold: 1.0
+  constraints:
+    - constraintId: hand_edge_count
+      kind: edge_count
+      priority: hard
+      weight: 1
+      parameters: {tokens: [A, B], directions: all, min: 4, max: 4, deviationScale: 4}
+    - constraintId: hand_boundary_count
+      kind: boundary_count
+      priority: hard
+      weight: 1
+      parameters: {token: B, sides: [any], min: 0, max: 0, deviationScale: 1}
+    - constraintId: hand_neighbor_count
+      kind: neighbor_count
+      priority: soft
+      weight: 1
+      parameters: {subject: B, neighborTokens: [A], directions: all, min: 4, max: 4, minSubjectFraction: 1.0}
+    - constraintId: hand_motif_count
+      kind: motif_count
+      priority: soft
+      weight: 1
+      parameters: {pattern: [ABA], min: 1, max: 1, deviationScale: 1}
+    - constraintId: hand_symmetry
+      kind: symmetry
+      priority: soft
+      weight: 1
+      parameters: {transform: reflect_vertical, frame: domain, maxMismatches: 0, deviationScale: 9}
+  auditOnlyGlobalConstraints: [none_for_hand_fixture]
+  underdeterminationHypothesis: This fixture validates arithmetic only and is not a morphology claim.
+cases:
+  - caseId: centered_B
+    rows: [AAA, ABA, AAA]
+    expectedAccepted: true
+    expectedHardViolationCount: 0
+    expectedSoftScore: 1.0
+    expectedObservations:
+      hand_edge_count: 4
+      hand_boundary_count: 0
+      hand_neighbor_count:
+        subjectCount: 1
+        satisfyingCount: 1
+        satisfyingFraction: 1.0
+        neighborCountHistogram: {"4": 1}
+      hand_motif_count: 1
+      hand_symmetry: 0
+  - caseId: boundary_B
+    rows: [ABA, AAA, AAA]
+    expectedAccepted: false
+    expectedHardViolationCount: 2
+    expectedSoftScore: 0.6666666666666666
+    expectedObservations:
+      hand_edge_count: 3
+      hand_boundary_count: 1
+      hand_neighbor_count:
+        subjectCount: 1
+        satisfyingCount: 0
+        satisfyingFraction: 0.0
+        neighborCountHistogram: {"3": 1}
+      hand_motif_count: 1
+      hand_symmetry: 0

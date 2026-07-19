@@ -1,0 +1,275 @@
+schemaVersion: e06.s02.grammar-catalog.v1
+researchStepId: S02
+benchmarkVersion: e06-relational-grammar-v1
+observationContract:
+  neighborhood: von_neumann_4
+  availableToOfflineScorer: [site_token, adjacent_site_tokens, local_boundary_flags, declared_orientation_frame, bounded_motif_window]
+  forbidden: [cell_identity, algotype, analysis_label, future_state, target_membership, global_component_count, global_hole_count]
+  policyBoundary: This grammar is an offline relational descriptor; S05 policies may receive only the explicitly budgeted local projection.
+conflictResolution: hard_first_then_weighted_soft_v1
+claimBoundary: Grammar satisfaction is a computational proxy and is never by itself target completion, biological morphology, affinity, agency, or causal evidence.
+
+grammars:
+  - grammarId: stripes_axis_relations_v1
+    targetId: stripes_alternating_three_band
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 0, A: 54, B: 27}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.92
+    constraints:
+      - constraintId: stripes_middle_boundary_extent
+        kind: boundary_count
+        priority: hard
+        weight: 3
+        parameters: {token: B, sides: [any], min: 6, max: 6, deviationScale: 6}
+      - constraintId: stripes_cross_type_interfaces
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [A, B], directions: all, min: 18, max: 28, deviationScale: 18}
+      - constraintId: stripes_middle_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [B, B], directions: all, min: 36, max: 42, deviationScale: 42}
+      - constraintId: stripes_local_middle_support
+        kind: neighbor_count
+        priority: soft
+        weight: 2
+        parameters: {subject: B, neighborTokens: [B], directions: all, min: 2, max: 4, minSubjectFraction: 0.85}
+      - constraintId: stripes_tangent_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 1
+        parameters: {transform: reflect_vertical, frame: domain, maxMismatches: 4, deviationScale: 81}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_component_counts, minimum_hamming_mod_equivalence]
+    underdeterminationHypothesis: Interface and cohesion constraints may accept corrugated, branched, or multi-band arrangements with the same composition.
+
+  - grammarId: layers_ordered_contacts_v1
+    targetId: layers_three_ordered_tissues
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 0, A: 27, B: 27, C: 27}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.92
+    constraints:
+      - constraintId: layers_forbid_terminal_contact
+        kind: edge_count
+        priority: hard
+        weight: 4
+        parameters: {tokens: [A, C], directions: all, min: 0, max: 0, deviationScale: 9}
+      - constraintId: layers_middle_boundary_extent
+        kind: boundary_count
+        priority: hard
+        weight: 2
+        parameters: {token: B, sides: [any], min: 6, max: 6, deviationScale: 6}
+      - constraintId: layers_A_B_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [A, B], directions: all, min: 9, max: 19, deviationScale: 9}
+      - constraintId: layers_B_C_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [B, C], directions: all, min: 9, max: 19, deviationScale: 9}
+      - constraintId: layers_middle_local_support
+        kind: neighbor_count
+        priority: soft
+        weight: 2
+        parameters: {subject: B, neighborTokens: [B], directions: all, min: 1, max: 4, minSubjectFraction: 0.90}
+      - constraintId: layers_tangent_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 1
+        parameters: {transform: reflect_vertical, frame: domain, maxMismatches: 4, deviationScale: 81}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_component_counts, A_B_C_global_order]
+    underdeterminationHypothesis: Forbidding A-C contact may still permit bent, branched, or multiply connected B separators.
+
+  - grammarId: ring_core_shell_contacts_v1
+    targetId: ring_core_shell_translatable
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 56, R: 16, C: 9}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.93
+    constraints:
+      - constraintId: ring_forbid_core_exterior_contact
+        kind: edge_count
+        priority: hard
+        weight: 5
+        parameters: {tokens: [C, "."], directions: all, min: 0, max: 0, deviationScale: 12}
+      - constraintId: ring_core_shell_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [C, R], directions: all, min: 12, max: 16, deviationScale: 12}
+      - constraintId: ring_shell_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [R, R], directions: all, min: 12, max: 18, deviationScale: 16}
+      - constraintId: ring_shell_exterior_interface
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [R, "."], directions: all, min: 10, max: 24, deviationScale: 20}
+      - constraintId: ring_core_local_enclosure
+        kind: neighbor_count
+        priority: soft
+        weight: 2
+        parameters: {subject: C, neighborTokens: [C, R], directions: all, min: 2, max: 4, minSubjectFraction: 1.0}
+      - constraintId: ring_bbox_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 1
+        parameters: {transform: reflect_vertical, frame: foreground_bbox, maxMismatches: 4, deviationScale: 25}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, closed_shell_cycle, exact_component_counts]
+    underdeterminationHypothesis: Local shielding can accept open-looking corners, non-circular shells, or multiple shell components while core cells avoid direct exterior contact.
+
+  - grammarId: bilateral_midline_relations_v1
+    targetId: bilateral_lobes_with_midline
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 46, B: 30, M: 5}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.92
+    constraints:
+      - constraintId: bilateral_lobe_midline_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [B, M], directions: all, min: 8, max: 12, deviationScale: 10}
+      - constraintId: bilateral_midline_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [M, M], directions: all, min: 3, max: 5, deviationScale: 4}
+      - constraintId: bilateral_lobe_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [B, B], directions: all, min: 40, max: 46, deviationScale: 44}
+      - constraintId: bilateral_cross_axis_motif
+        kind: motif_count
+        priority: soft
+        weight: 2
+        parameters: {pattern: [BMB], min: 3, max: 7, deviationScale: 5}
+      - constraintId: bilateral_bbox_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 2
+        parameters: {transform: reflect_vertical, frame: foreground_bbox, maxMismatches: 4, deviationScale: 35}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_two_lobes, balanced_lobe_extent, exact_component_counts]
+    underdeterminationHypothesis: Local B-M-B motifs and approximate symmetry may accept wavy midlines, unbalanced lobes, or extra B bridges.
+
+  - grammarId: separated_region_relations_v1
+    targetId: separated_paired_regions
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 63, A: 9, B: 9}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.92
+    constraints:
+      - constraintId: separated_forbid_direct_contact
+        kind: edge_count
+        priority: hard
+        weight: 5
+        parameters: {tokens: [A, B], directions: all, min: 0, max: 0, deviationScale: 6}
+      - constraintId: separated_A_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [A, A], directions: all, min: 10, max: 12, deviationScale: 12}
+      - constraintId: separated_B_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [B, B], directions: all, min: 10, max: 12, deviationScale: 12}
+      - constraintId: separated_A_exterior
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [A, "."], directions: all, min: 6, max: 16, deviationScale: 12}
+      - constraintId: separated_B_exterior
+        kind: edge_count
+        priority: soft
+        weight: 2
+        parameters: {tokens: [B, "."], directions: all, min: 6, max: 16, deviationScale: 12}
+      - constraintId: separated_bbox_tangent_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 1
+        parameters: {transform: reflect_horizontal, frame: foreground_bbox, maxMismatches: 4, deviationScale: 35}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_component_counts, exact_relative_displacement, exact_gap_width]
+    underdeterminationHypothesis: Local segregation and compactness may leave component distance, order, and displacement unspecified.
+
+  - grammarId: single_hole_boundary_relations_v1
+    targetId: tissue_single_hole
+    shape: [7, 7]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 9, T: 40}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.93
+    constraints:
+      - constraintId: single_hole_forbid_boundary_vacancy
+        kind: boundary_count
+        priority: hard
+        weight: 5
+        parameters: {token: ".", sides: [any], min: 0, max: 0, deviationScale: 8}
+      - constraintId: single_hole_vacancy_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [".", "."], directions: all, min: 10, max: 12, deviationScale: 12}
+      - constraintId: single_hole_tissue_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [".", T], directions: all, min: 12, max: 16, deviationScale: 12}
+      - constraintId: single_hole_domain_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 2
+        parameters: {transform: reflect_vertical, frame: domain, maxMismatches: 4, deviationScale: 49}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_one_enclosed_hole, exact_component_counts]
+    underdeterminationHypothesis: Boundary exclusion and local cohesion may accept off-center or differently shaped enclosed cavities.
+
+  - grammarId: two_hole_boundary_relations_v1
+    targetId: tissue_two_holes
+    shape: [9, 9]
+    vacancyLabel: "."
+    cellTypeCounts: {".": 8, T: 73}
+    orientationTransforms: [identity, rotate90, rotate180, rotate270, reflect_horizontal, reflect_vertical, reflect_main_diagonal, reflect_anti_diagonal]
+    conflictResolution: hard_first_then_weighted_soft_v1
+    acceptanceThreshold: 0.93
+    constraints:
+      - constraintId: two_hole_forbid_boundary_vacancy
+        kind: boundary_count
+        priority: hard
+        weight: 5
+        parameters: {token: ".", sides: [any], min: 0, max: 0, deviationScale: 8}
+      - constraintId: two_hole_vacancy_cohesion
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [".", "."], directions: all, min: 6, max: 8, deviationScale: 8}
+      - constraintId: two_hole_tissue_interface
+        kind: edge_count
+        priority: soft
+        weight: 3
+        parameters: {tokens: [".", T], directions: all, min: 16, max: 20, deviationScale: 16}
+      - constraintId: two_hole_halfturn_symmetry
+        kind: symmetry
+        priority: soft
+        weight: 2
+        parameters: {transform: rotate180, frame: domain, maxMismatches: 4, deviationScale: 81}
+    auditOnlyGlobalConstraints: [s01_equivalence_membership, exact_two_enclosed_holes, exact_component_counts, exact_hole_displacement]
+    underdeterminationHypothesis: Local cavity statistics and half-turn symmetry may accept one elongated cavity, altered hole separation, or more than two cavities.

@@ -9,6 +9,7 @@ from .targets import (
     evaluate_success,
     exact_equivalence_orbit,
     load_target_catalog,
+    transform_grid,
     validate_target_catalog,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "evaluate_success",
     "exact_equivalence_orbit",
     "load_target_catalog",
+    "transform_grid",
     "validate_target_catalog",
 ]

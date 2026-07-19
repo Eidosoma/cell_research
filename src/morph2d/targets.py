@@ -100,6 +100,16 @@ def _transform(grid: Grid, name: str) -> Grid:
     return tuple(tuple(reversed(row)) for row in reversed(transposed))
 
 
+def transform_grid(grid: Grid, name: str) -> Grid:
+    """Apply a declared D4 transform to a grid.
+
+    This public wrapper lets later E06 specification layers reuse S01's exact
+    symmetry semantics without reaching into a private implementation detail.
+    """
+
+    return _transform(grid, name)
+
+
 def _bounded_foreground_translations(grid: Grid, vacancy_label: str) -> set[Grid]:
     height, width = len(grid), len(grid[0])
     occupied = [
@@ -250,7 +260,10 @@ def _coerce_candidate(
 
 
 def evaluate_success(
-    candidate: Sequence[Sequence[str]], target: TargetDefinition
+    candidate: Sequence[Sequence[str]],
+    target: TargetDefinition,
+    *,
+    equivalence_orbit: Sequence[Grid] | None = None,
 ) -> dict[str, Any]:
     """Evaluate count, equivalence-aware mismatch, component, and topology gates."""
 
@@ -262,7 +275,8 @@ def evaluate_success(
 
     tolerance = target.success
     best: dict[str, Any] | None = None
-    for reference in exact_equivalence_orbit(target):
+    orbit = tuple(equivalence_orbit or exact_equivalence_orbit(target))
+    for reference in orbit:
         mismatches = {
             (row, col)
             for row in range(target.shape[0])
@@ -326,7 +340,7 @@ def evaluate_success(
         "topologyMatch": topology_match,
         "componentCounts": component_counts,
         "vacancyHoles": holes,
-        "equivalenceOrbitSize": len(exact_equivalence_orbit(target)),
+        "equivalenceOrbitSize": len(orbit),
         **best,
     }
 
