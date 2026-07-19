@@ -1,5 +1,19 @@
 """Two-dimensional relational morphology benchmark specifications."""
 
+from .environments import (
+    Environment,
+    EnvironmentValidationError,
+    Site,
+    boundary_observation,
+    canonical_environment_bytes,
+    connected_components,
+    environment_sha256,
+    evaluate_conjunctive,
+    load_environment_catalog,
+    neighbor_map,
+    replay_environment,
+    topology_summary,
+)
 from .targets import (
     CATALOG_VERSION,
     TargetDefinition,
@@ -15,13 +29,25 @@ from .targets import (
 
 __all__ = [
     "CATALOG_VERSION",
+    "Environment",
+    "EnvironmentValidationError",
+    "Site",
     "TargetDefinition",
     "adjacent_swap_witness",
     "apply_swap_witness",
+    "boundary_observation",
+    "canonical_environment_bytes",
+    "connected_components",
     "deterministic_scramble",
+    "environment_sha256",
     "evaluate_success",
+    "evaluate_conjunctive",
     "exact_equivalence_orbit",
+    "load_environment_catalog",
     "load_target_catalog",
+    "neighbor_map",
+    "replay_environment",
+    "topology_summary",
     "transform_grid",
     "validate_target_catalog",
 ]

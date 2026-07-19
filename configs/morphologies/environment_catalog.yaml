@@ -1,0 +1,221 @@
+schemaVersion: e06.s03.environment-catalog.v1
+researchStepId: S03
+libraryVersion: e06-spatial-environments-v1
+coordinateConventions:
+  square: {origin: top_left, firstAxis: row_down, secondAxis: column_right, neighborhood: von_neumann_4}
+  hexagonal: {coordinates: axial_q_r, derivedAxis: "s=-q-r", neighborhood: axial_6}
+  irregular: {coordinates: display_only_integer_xy, topologyAuthority: explicit_undirected_edges}
+evaluationContract:
+  profile: s01_s02_conjunctive_square_v1
+  localFieldPurpose: S02 grammar scores are retained for feedback and interpretation.
+  completionRule: localGrammar.accepted AND independentS01GlobalAudit.success
+  independentGlobalFields: [countMatch, equivalenceOrGeometryMatch, componentMatch, topologyMatch]
+  applicability: Only unobstructed bounded square rectangles matching an S01 target shape are calibrated in S03.
+  claimBoundary: Non-square, periodic, obstacle, or fixed-boundary target completion is unsupported until target and grammar semantics are explicitly remapped and validated.
+unsupportedCombinations:
+  - combinationId: periodic_domain_edge_flags
+    status: unsupported
+    reason: A periodic topology has no exterior edge; coordinate seams are not boundaries.
+    requiredAlternative: Use no boundary signal, or define a future explicit non-exterior landmark channel with a new version.
+  - combinationId: periodic_fixed_exterior_boundary
+    status: unsupported
+    reason: Fixed exterior sites contradict the wraparound topology in this S03 schema.
+    requiredAlternative: Use bounded fixed-boundary fixtures or a future explicitly anchored torus profile.
+  - combinationId: irregular_degree_inferred_boundary
+    status: unsupported
+    reason: Low degree in an irregular graph can be intrinsic geometry and cannot identify an exterior.
+    requiredAlternative: Supply explicit per-site boundary tags or expose no boundary signal.
+  - combinationId: obstacle_as_vacancy
+    status: unsupported
+    reason: Obstacles are removed from the occupiable graph while vacancies are conserved occupiable site states.
+    requiredAlternative: Keep obstacle and vacancy tokens and roles distinct.
+  - combinationId: fully_occupied_with_vacancy_token
+    status: unsupported
+    reason: Fully occupied means every non-obstacle site has a non-vacancy token.
+    requiredAlternative: Declare vacancy_enabled occupancy.
+  - combinationId: square_s02_grammar_on_hex_or_irregular
+    status: unsupported
+    reason: S02 edge capacities, motifs, orientation frames, and boundary counts are calibrated only for rectangular four-neighbor grids.
+    requiredAlternative: Version and validate topology-specific grammar semantics before scoring.
+  - combinationId: s01_global_audit_on_modified_topology
+    status: unsupported
+    reason: S01 equivalence, components, and holes use an unobstructed bounded rectangular four-neighbor domain.
+    requiredAlternative: Define new target equivalence and topology contracts before declaring completion.
+  - combinationId: hole_target_without_observable_exterior
+    status: unsupported
+    reason: S01 hole targets require a boundary cue to distinguish an enclosed cavity from exterior-connected vacancy.
+    requiredAlternative: Use a bounded environment with an explicit observable exterior signal.
+
+environments:
+  - environmentId: square_bounded_occupied_stripes
+    title: Bounded occupied square target fixture
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 9, columns: 9}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState:
+      defaultToken: A
+      overrides: {}
+      rows: [AAAAAAAAA, AAAAAAAAA, AAAAAAAAA, BBBBBBBBB, BBBBBBBBB, BBBBBBBBB, AAAAAAAAA, AAAAAAAAA, AAAAAAAAA]
+    targetBinding: {targetId: stripes_alternating_three_band, grammarId: stripes_axis_relations_v1, evaluationProfile: s01_s02_conjunctive_square_v1}
+    requireConnected: true
+    notes: Exact S01/S02 positive control on a fully occupied bounded square.
+    expected: {siteCount: 81, occupiableSiteCount: 81, edgeCount: 144, componentCount: 1, degreeHistogram: {"2": 4, "3": 28, "4": 49}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 32, signaledSiteCount: 32}
+
+  - environmentId: square_bounded_vacancy_single_hole
+    title: Bounded vacancy-enabled square hole fixture
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: vacancy_enabled
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 7, columns: 7}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState:
+      defaultToken: T
+      overrides: {}
+      rows: [TTTTTTT, TTTTTTT, TT...TT, TT...TT, TT...TT, TTTTTTT, TTTTTTT]
+    targetBinding: {targetId: tissue_single_hole, grammarId: single_hole_boundary_relations_v1, evaluationProfile: s01_s02_conjunctive_square_v1}
+    requireConnected: true
+    notes: The observable domain edge satisfies the S01 hole-target boundary-cue requirement.
+    expected: {siteCount: 49, occupiableSiteCount: 49, edgeCount: 84, componentCount: 1, degreeHistogram: {"2": 4, "3": 20, "4": 25}, vacancyCount: 9, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 24, signaledSiteCount: 24}
+
+  - environmentId: square_bounded_occupied_s02_counterexample
+    title: Bounded square conjunctive-contract negative control
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 9, columns: 9}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState:
+      defaultToken: A
+      overrides: {}
+      rows: [AAAAAAAAA, AAAAAAAAA, AAABBBAAA, BBBAAABBB, BBBBBBBBB, BBBBBBBBB, AAAAAAAAA, AAAAAAAAA, AAAAAAAAA]
+    targetBinding: {targetId: stripes_alternating_three_band, grammarId: stripes_axis_relations_v1, evaluationProfile: s01_s02_conjunctive_square_v1}
+    requireConnected: true
+    notes: Frozen S02 challenge; local grammar acceptance must not override the failed S01 geometry audit.
+    expected: {siteCount: 81, occupiableSiteCount: 81, edgeCount: 144, componentCount: 1, degreeHistogram: {"2": 4, "3": 28, "4": 49}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 32, signaledSiteCount: 32}
+
+  - environmentId: square_periodic_vacancy
+    title: Periodic vacancy-enabled square torus
+    geometry: square
+    boundaryMode: periodic
+    occupancyMode: vacancy_enabled
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 4, columns: 5}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: none, observable: false, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: A, overrides: {r0_c0: "."}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Coordinate seams wrap and emit no exterior signal.
+    expected: {siteCount: 20, occupiableSiteCount: 20, edgeCount: 40, componentCount: 1, degreeHistogram: {"4": 20}, vacancyCount: 1, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 0, signaledSiteCount: 0}
+
+  - environmentId: square_bounded_vacancy_obstacle
+    title: Bounded square with a central obstacle
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: vacancy_enabled
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 5, columns: 5}
+    obstacles: [[2, 2]]
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: true, includeFixedRole: false}
+    initialState: {defaultToken: A, overrides: {r1_c1: "."}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: The obstacle is not a vacancy or graph node; adjacent sites receive a separately named obstacle-contact signal.
+    expected: {siteCount: 25, occupiableSiteCount: 24, edgeCount: 36, componentCount: 1, degreeHistogram: {"2": 4, "3": 16, "4": 4}, vacancyCount: 1, obstacleCount: 1, fixedBoundaryCount: 0, naturalBoundarySiteCount: 16, signaledSiteCount: 20}
+
+  - environmentId: square_bounded_fixed_boundary
+    title: Bounded square with immutable perimeter sites
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 5, columns: 5}
+    obstacles: []
+    fixedBoundary: {mode: perimeter, sites: [], token: F}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: true}
+    initialState: {defaultToken: A, overrides: {}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Fixed sites remain occupiable graph nodes with immutable tokens; S04 must later prevent their movement.
+    expected: {siteCount: 25, occupiableSiteCount: 25, edgeCount: 40, componentCount: 1, degreeHistogram: {"2": 4, "3": 12, "4": 9}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 16, naturalBoundarySiteCount: 16, signaledSiteCount: 24}
+
+  - environmentId: hexagonal_bounded_occupied
+    title: Bounded occupied axial hexagon
+    geometry: hexagonal
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: axial_radius, radius: 2}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: H, overrides: {}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Six axial neighbor directions are clipped at the bounded radius-two exterior.
+    expected: {siteCount: 19, occupiableSiteCount: 19, edgeCount: 42, componentCount: 1, degreeHistogram: {"3": 6, "4": 6, "6": 7}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 12, signaledSiteCount: 12}
+
+  - environmentId: hexagonal_periodic_vacancy
+    title: Periodic vacancy-enabled axial hex torus
+    geometry: hexagonal
+    boundaryMode: periodic
+    occupancyMode: vacancy_enabled
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: axial_torus, rows: 4, columns: 4}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: none, observable: false, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: H, overrides: {q0_r0: "."}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Every site has six unique neighbors and no coordinate-seam boundary signal.
+    expected: {siteCount: 16, occupiableSiteCount: 16, edgeCount: 48, componentCount: 1, degreeHistogram: {"6": 16}, vacancyCount: 1, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 0, signaledSiteCount: 0}
+
+  - environmentId: irregular_bounded_occupied
+    title: Explicit connected irregular bounded graph
+    geometry: irregular
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator:
+      kind: explicit_graph
+      sites:
+        - {siteId: a, coordinate: [0, 0], boundaryTags: [north, west]}
+        - {siteId: b, coordinate: [1, 0], boundaryTags: [north]}
+        - {siteId: c, coordinate: [2, 0], boundaryTags: [east, north]}
+        - {siteId: d, coordinate: [0, 1], boundaryTags: [west]}
+        - {siteId: e, coordinate: [1, 1], boundaryTags: []}
+        - {siteId: f, coordinate: [2, 1], boundaryTags: [east]}
+        - {siteId: g, coordinate: [0, 2], boundaryTags: [south, west]}
+        - {siteId: h, coordinate: [1, 2], boundaryTags: [south]}
+      edges: [[a, b], [a, d], [b, c], [b, e], [c, f], [d, e], [d, g], [e, f], [e, h], [f, h], [g, h]]
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: explicit_site_tags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: I, overrides: {}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Explicit edges, not display coordinates or degree, are the topology authority.
+    expected: {siteCount: 8, occupiableSiteCount: 8, edgeCount: 11, componentCount: 1, degreeHistogram: {"2": 3, "3": 4, "4": 1}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 7, signaledSiteCount: 7}
