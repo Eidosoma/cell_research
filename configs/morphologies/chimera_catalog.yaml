@@ -1,0 +1,250 @@
+schemaVersion: e06.s11.chimera-catalog.v1
+researchStepId: S11
+title: Frozen two-dimensional chimera and assignment-intervention matrix
+frozenQuestion: Do conserved spatial policy mixtures remain cooperative when their actor-local grammars align, and do opposed grammars generate composition-corrected conflict domains and target interference beyond identity, label, and kinetic controls?
+claimBoundary: Computational coexistence and conflict on a calibrated bounded 9x9 square target only; no biological affinity, regeneration, attractor, equilibrium, or count-changing claim.
+
+acceptedS10Constraint:
+  repairOutcome: "null"
+  semanticsNotWidened: [repair, removal, insertion, division, token_conversion, count_adjusted_targets, vacancy_adjusted_targets]
+  s11IsNotRepair: true
+
+canonicalContracts:
+  target: e06.s01.target-catalog.v1
+  grammar: e06.s02.grammar-catalog.v1
+  environment: e06.s03.environment-catalog.v1
+  movement: e06.s04.movement-batch-result.v1
+  policy: e06.s05.policy-catalog.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuParity: e06.s08.parity-report.v1
+  baseline: e06.s09.baseline-catalog.v1
+  perturbation: e06.s10.perturbation-catalog.v1
+
+seedContract:
+  masterSeedHex: "0xe0611000000000000000000000000001"
+  domain: E06/S11/seed/v1
+  derivation: first_128_bits_sha256_domain_master_and_canonical_address
+  workerOrderInfluence: none
+  mutablePrngState: forbidden
+
+topologyCalibration:
+  targetId: layers_three_ordered_tissues
+  grammarId: layers_ordered_contacts_v1
+  environment: unobstructed_bounded_square_9x9_von_neumann_4
+  cellTypeCounts: {A: 27, B: 27, C: 27}
+  edgeConvention: undirected_unweighted_each_graph_edge_once
+  boundaryWeighting: none
+  forbiddenCompletionClaims: [periodic, hexagonal, irregular, obstacle, fixed_boundary]
+
+grammarProfiles:
+  aligned:
+    group0: layers_ordered_contacts_v1
+    group1: layers_ordered_contacts_v1
+    transform: identity
+    relation: exact_same_actor_local_S02_projection
+  overlapping:
+    group0: layers_ordered_contacts_v1
+    group1: s11_layers_B_C_token_permutation_v1
+    transform: swap_tokens_B_and_C_on_actor_local_weights
+    relation: retains_B_C_preference_but_exchanges_A_B_preference_and_A_C_prohibition
+  contradictory:
+    group0: layers_ordered_contacts_v1
+    group1: s11_layers_sign_inverted_actor_contacts_v1
+    transform: negate_every_nonzero_actor_local_weight
+    relation: exact_sign_opposition_on_every_projected_nonzero_contact
+  scopeBoundary: S11 transforms only the already-priced S05 actor-local relation profile; S02 whole-grid scoring and S01 completion always use the unchanged canonical layers grammar and target.
+
+mixtureArchetypes:
+  - {mixtureId: aligned_identical_policy, relationClass: aligned, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: greedy_neighbor_satisfaction_v1, controlRole: distinct_label_identical_policy_primary}
+  - {mixtureId: aligned_kinetic_control, relationClass: aligned, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: conflict_avoidance_v1, controlRole: same_grammar_distinct_policy_kinetic_control}
+  - {mixtureId: overlapping_identical_policy, relationClass: overlapping, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: greedy_neighbor_satisfaction_v1, controlRole: grammar_only_overlap}
+  - {mixtureId: overlapping_kinetic, relationClass: overlapping, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: conflict_avoidance_v1, controlRole: grammar_plus_kinetic_overlap}
+  - {mixtureId: contradictory_identical_policy, relationClass: contradictory, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: greedy_neighbor_satisfaction_v1, controlRole: grammar_only_opposition}
+  - {mixtureId: contradictory_kinetic, relationClass: contradictory, group0Policy: greedy_neighbor_satisfaction_v1, group1Policy: conflict_avoidance_v1, controlRole: grammar_plus_kinetic_opposition}
+
+compositions:
+  near_balanced_41_40:
+    groupCounts: [41, 40]
+    perTokenAllocation: rotating_14_13_14_exact_by_replicate
+    tokenAssociation: minimized_and_audited_not_assumed_zero
+  minority_27_54:
+    groupCounts: [27, 54]
+    perTokenAllocation: exact_9_18_for_each_A_B_C
+    tokenAssociation: exactly_zero
+
+initialStates:
+  exact_formed:
+    source: exact_canonical_layers_target
+    interpretation: target_maintenance_and_interference_not_formation_or_repair
+  partially_correct:
+    source: frozen_S09_partially_correct_generator
+    swapFraction: 0.08
+    minimumSwaps: 2
+    interpretation: near_target_formation_challenge_not_post_damage_repair
+
+analysisLabels:
+  primary: executable_group_assignment
+  ghost: exact_composition_token_stratified_and_near_orthogonal_to_executable_group
+  collapsed: one_label_for_every_identity
+  tokenBlockedDiagnostic: label_from_A_BC_partition_not_primary
+  policyVisibility: forbidden
+  runtimeSeedInfluence: none
+
+interventions:
+  arms: [native, executable_decluster]
+  transitionExploratory: 32
+  transitionConfirmation: 64
+  executableDecluster:
+    algorithm: deterministic_checkerboard_seed_plus_within_token_pair_swap_descent
+    preservation: [physical_occupancy, tokens, identities, sites, exact_group_counts, exact_group_by_token_counts, S04_state, S05_policy_payload_schema, scheduler_address]
+    action: reassign_identity_owned_executable_group_policy_and_relation_profile
+    memoryRule: only_memory_free_greedy_and_conflict_avoidance_are_eligible
+    requirement: immediate_same_group_edge_count_must_not_increase
+  labelSham:
+    action: apply_the_same_declustered_partition_to_action_irrelevant_analysis_labels_only
+    runtimeExecution: posthoc_on_untouched_native_trajectory
+    requirement: native_episode_bytes_and_transitions_unchanged
+  costs:
+    stateReadBitsPerIdentity: 10
+    fixedControllerConfigurationBits: 64
+    actionUnit: one_identity_assignment_changed
+    policySwitchUnit: one_identity_executable_policy_changed
+    grammarSwitchUnit: one_identity_actor_local_profile_changed
+    physicalDisplacement: zero
+    S04MovementLedgerMutation: forbidden
+
+simulation:
+  actorBatchSize: 4
+  exploratoryEventBudgetTransitions: 64
+  confirmationEventBudgetTransitions: 128
+  exploratoryReplicatesPerConditionPair: 250
+  confirmationPairsPerContrast: 1000
+  baseConditionCount: 24
+  exploratoryArmCount: 48
+  exploratoryRunCount: 12000
+  mandatoryConfirmationContrasts: 1
+  maximumPromotedContrasts: 2
+  maximumConfirmationContrasts: 3
+  maximumConfirmationRunCount: 6000
+  stopping: fixed_event_budget_only
+  earlyStopping: forbidden
+  quiescenceOrActivityAsOutcome: forbidden
+
+pairing:
+  unit: split_start_composition_replicate
+  sharedAcrossMixturesAndArms: [physical_initial_state, executable_group_assignment, ghost_labels, scheduler_key, event_budget]
+  scenarioIdentityExcludes: [mixtureId, interventionArm, analysisLabels]
+  runIdentityAdds: [mixtureId, interventionArm]
+  exploratorySplit: exploratory
+  confirmationSplit: confirmation_holdout
+  crossSplitSeedOverlap: forbidden
+  confirmationLockedUntilPromotionWritten: true
+
+stateMetrics:
+  checkpointEveryTransitions: 4
+  compositionCorrectedHomotypy: observed_same_group_edge_fraction_minus_sum_nk_nkminus1_over_n_nminus1
+  companions: [categorical_assortativity, signed_neighbor_NMI, largest_group_component_capture, domain_count, cross_group_interface_edges]
+  stateFluxSeparation:
+    state: [composition_corrected_homotypy, S02_whole_grid_score, S01_equivalence_component_topology]
+    flux: [accepted_movements, total_graph_displacement, occupancy_turnover, identities_moved_by_group, cross_group_actor_target_events]
+    prohibition: fixed_or_flat_state_is_not_dynamic_equilibrium_without_nonzero_turnover_and_flux
+
+nulls:
+  staticCalibrationDrawsPerComposition: 50000
+  exhaustiveFixtures: [path4_counts_2_2, square2x2_counts_2_2, square3x3_counts_5_4]
+  trajectorySubsetReplicates: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240]
+  referenceChannels: 128
+  calibrationPseudoChannels: 16
+  families:
+    global_identity_label_permutation: preserves_exact_composition_and_complete_identity_trajectories
+    token_stratified_identity_label_permutation: preserves_exact_label_by_token_counts_sensitivity
+    mobility_matched_identity_label_permutation: preserves_five_cumulative_displacement_strata_post_treatment_sensitivity
+  trajectoryOutcomes: [peak, positive_area]
+  maximumSelection: null_maxima_not_pointwise_nulls
+
+outcomes:
+  primary:
+    - globalNullAdjustedPeakCompositionCorrectedHomotypy
+    - globalNullAdjustedPositiveAreaCompositionCorrectedHomotypy
+    - pairedTerminalS01MismatchDifference
+    - pairedConjunctiveCompletionRiskDifference
+    - executableDeclusteringRecoveryBeyondMatchedLabelSham
+  completionRule: unchanged_S02_layers_grammar_acceptance_AND_independent_S01_layers_equivalence_component_topology_success
+  separateFields: [S05_actor_local_feedback_and_information, S02_whole_grid_acceptance_and_score, S01_global_success_component_topology_and_mismatch]
+  cooperationDefinition: aligned_distinct_policy_is_equivalent_to_aligned_identical_policy_on_completion_and_mismatch_and_does_not_show_material_excess_domain_clustering
+  interferenceDefinition: mixture_has_confirmed_target_mismatch_increase_or_completion_decrease_against_its_aligned_policy_matched_control
+  conflictDomainDefinition: confirmed_global_null_adjusted_peak_and_positive_area_excess_with_largest_component_capture_increase
+  repairClaimsForbidden: true
+
+censoring:
+  partiallyCorrectNoncompletion: right_censored_at_fixed_budget
+  exactFormedMaintenance: not_a_formation_risk_set_and_not_censored
+  departureAfterInitialCompletion: recorded_separately
+  invariantViolation: failed_release_critical_not_censored
+  executionError: failed_not_censored
+  exclusions: none
+  allLaunchedRunsRequiredInAccounting: true
+
+promotion:
+  mandatoryAnchor: aligned_kinetic_control_vs_aligned_identical_policy_near_balanced_41_40_exact_formed_native
+  candidateFamilies: [mixture_vs_policy_matched_aligned, executable_decluster_vs_native]
+  eligibilityAny:
+    absolutePeakCorrectedHomotypyDifference: 0.04
+    absolutePositiveAreaDifference: 0.02
+    absoluteTerminalS01MismatchDifference: 0.03
+    absoluteConjunctiveCompletionRiskDifference: 0.08
+    absolutePostDeclusterRecoveryDifference: 0.04
+  reservedSlots: [highest_eligible_contradictory_mixture_contrast, highest_eligible_intervention_or_overlapping_contrast]
+  maximumPromotedContrasts: 2
+  ranking: maximum_threshold_standardized_absolute_effect_then_contrast_id
+  runtimeAndWallClockForbiddenFromSelection: true
+
+confirmation:
+  pairedBootstrapReplicates: 10000
+  familywiseAlpha: 0.05
+  intervalAdjustment: bonferroni_over_all_confirmation_contrasts
+  direction: frozen_from_exploratory_before_holdout_open_except_mandatory_equivalence_anchor
+  practicalThresholds:
+    peakCorrectedHomotypyDifference: 0.04
+    positiveAreaDifference: 0.02
+    largestComponentCaptureDifference: 0.05
+    terminalS01MismatchDifference: 0.03
+    absoluteCompletionRiskDifference: 0.08
+    alignedCompletionEquivalenceMargin: 0.05
+    alignedMismatchEquivalenceMargin: 0.03
+  conflictDomainRule: contradictory_mixture_peak_and_area_estimates_cross_thresholds_with_familywise_intervals_above_zero_and_capture_increases
+  interferenceRule: mismatch_increase_or_completion_decrease_crosses_threshold_with_familywise_interval_excluding_zero
+  alignedCooperationRule: mandatory_aligned_anchor_stays_inside_both_equivalence_margins_and_has_no_material_domain_excess
+  s11SupportRule: alignedCooperationRule_AND_at_least_one_confirmedContradictoryConflictDomain
+
+backend:
+  production: canonical_s07_cpu_oracle_fallback_with_validated_S11_identity_assignment_dispatch
+  reason: condition pairs of 250 or 1000 are below the S07 material GPU crossover; heterogeneous dispatch, assignment interventions, target audits, nulls, hashes, and ledgers are CPU control-plane work
+  allowedGpuScope: unchanged_frozen_S08_masked_decision_and_integer_transition_data_plane_only
+  gpuUsedForS11: false
+  cpuWorkers: 8
+
+traceAndReplay:
+  traceSampleFraction: 0.01
+  traceSelection: lowest_sha256_run_ids_within_each_base_condition_and_arm_before_outcomes
+  failuresAlwaysSelected: true
+  exactCpuReplay: lexicographically_first_pair_per_base_condition_and_phase
+  replayRequirement: byte_exact_episode_metric_assignment_intervention_and_run_identity
+
+validationRequirements:
+  - exact_composition_and_group_by_token_assignment
+  - grammar_profile_transform_and_relation_class
+  - label_blind_transition_identity
+  - identical_policy_negative_control
+  - collapsed_and_ghost_label_controls
+  - exhaustive_and_monte_carlo_2d_null_calibration
+  - global_token_stratified_and_mobility_matched_trajectory_nulls
+  - state_preserving_decluster_and_nonincreasing_immediate_edge_count
+  - deterministic_seed_and_assignment_replay
+  - complete_run_accounting_and_censoring
+  - identity_token_kind_site_and_role_invariants
+  - S05_observation_and_S06_permission_isolation
+  - information_action_movement_and_perturbation_cost_reconciliation
+  - separate_S02_local_and_S01_global_fields
+  - artifact_hash_coverage

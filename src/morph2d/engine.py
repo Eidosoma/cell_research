@@ -54,6 +54,7 @@ from .policies import (
     PolicyDefinition,
     PolicyDecision,
     PolicyMemory,
+    RelationProfile,
     build_policy_observation,
     compile_relation_profile,
     decide_policy,
@@ -121,6 +122,12 @@ StateAudit = Callable[[int, MovementState, Mapping[str, Any]], None]
 ProposalGate = Callable[
     [int, Environment, MovementState, Sequence[MovementProposal]],
     Sequence[MovementProposal],
+]
+
+ActorPolicyAssignments = Mapping[str, str]
+ActorRelationProfiles = Mapping[str, RelationProfile | None]
+ActorAssignmentSwitches = Mapping[
+    int, tuple[ActorPolicyAssignments, ActorRelationProfiles]
 ]
 
 
@@ -394,6 +401,9 @@ def run_cpu_episode(
     transition_audit: TransitionAudit | None = None,
     state_audit: StateAudit | None = None,
     proposal_gate: ProposalGate | None = None,
+    actor_policy_assignments: ActorPolicyAssignments | None = None,
+    actor_relation_profiles: ActorRelationProfiles | None = None,
+    actor_assignment_switches: ActorAssignmentSwitches | None = None,
 ) -> dict[str, Any]:
     """Execute one exact fixed-budget reference episode.
 
@@ -404,6 +414,15 @@ def run_cpu_episode(
     later perturbation studies. It may suppress already-authenticated native
     proposals, but cannot create or edit one; its separate intervention cost is
     intentionally owned by its caller rather than the frozen S04 ledger.
+
+    S11 may additionally supply complete identity-keyed policy and actor-local
+    relation-profile assignments, with complete replacement maps at declared
+    transition indices.  This does not add a policy observation: assignment
+    selection remains engine-private, analysis labels are absent, and normal
+    S05 observation construction plus S04 proposal authentication remain the
+    only decision/actuation path.  Heterogeneous assignments are intentionally
+    restricted to the no-channel, memory-free S11 scope so that no S05/S06
+    state-transfer semantics are invented.
     """
 
     environment = context.environments[definition.environment_id]
@@ -437,6 +456,67 @@ def run_cpu_episode(
     if state_audit is not None:
         state_audit(-1, state, {"transitionKind": "initial_state"})
     actor_ids = _cell_actor_ids(state)
+    heterogeneous = any(
+        item is not None
+        for item in (
+            actor_policy_assignments,
+            actor_relation_profiles,
+            actor_assignment_switches,
+        )
+    )
+    if heterogeneous and definition.channel_mode != "none":
+        raise EpisodeValidationError(
+            "heterogeneous assignments are restricted to no-channel episodes"
+        )
+
+    def validated_actor_contracts(
+        policy_ids: ActorPolicyAssignments,
+        profiles: ActorRelationProfiles,
+    ) -> tuple[dict[str, PolicyDefinition], dict[str, RelationProfile | None]]:
+        expected = set(actor_ids)
+        if set(policy_ids) != expected or set(profiles) != expected:
+            raise EpisodeValidationError(
+                "heterogeneous assignments must cover every cell identity exactly"
+            )
+        policies_by_actor: dict[str, PolicyDefinition] = {}
+        profiles_by_actor: dict[str, RelationProfile | None] = {}
+        for actor_id in actor_ids:
+            policy_id = str(policy_ids[actor_id])
+            if policy_id not in context.policies:
+                raise EpisodeValidationError("unknown heterogeneous policy")
+            actor_policy = context.policies[policy_id]
+            actor_profile = profiles[actor_id]
+            if actor_policy.strategy == "memory_based_recovery":
+                raise EpisodeValidationError(
+                    "heterogeneous memory transfer is deferred, not inferred"
+                )
+            if actor_policy.relation_profile_required != (actor_profile is not None):
+                raise EpisodeValidationError(
+                    "heterogeneous policy/relation-profile mismatch"
+                )
+            policies_by_actor[actor_id] = actor_policy
+            profiles_by_actor[actor_id] = actor_profile
+        return policies_by_actor, profiles_by_actor
+
+    if heterogeneous:
+        if actor_policy_assignments is None or actor_relation_profiles is None:
+            raise EpisodeValidationError(
+                "heterogeneous policy and relation assignments are both required"
+            )
+        policies_by_actor, profiles_by_actor = validated_actor_contracts(
+            actor_policy_assignments, actor_relation_profiles
+        )
+        switches = dict(actor_assignment_switches or {})
+        if any(index < 0 or index >= definition.transitions for index in switches):
+            raise EpisodeValidationError("heterogeneous switch index outside episode")
+        validated_switches = {
+            int(index): validated_actor_contracts(*replacement)
+            for index, replacement in switches.items()
+        }
+    else:
+        policies_by_actor = {actor_id: policy for actor_id in actor_ids}
+        profiles_by_actor = {actor_id: relation_profile for actor_id in actor_ids}
+        validated_switches = {}
     memory = {
         actor_id: PolicyMemory(
             best_local_utility=int(
@@ -497,6 +577,8 @@ def run_cpu_episode(
     channel_ledger["totalInformationBits"] = channel_ledger["configurationBits"]
 
     for transition_index in range(definition.transitions):
+        if transition_index in validated_switches:
+            policies_by_actor, profiles_by_actor = validated_switches[transition_index]
         epoch_index = transition_index // EPOCH_LENGTH_TRANSITIONS
         epoch_start = transition_index % EPOCH_LENGTH_TRANSITIONS == 0
         if epoch_start and transition_index > 0:
@@ -682,21 +764,26 @@ def run_cpu_episode(
         decision_payloads: list[Mapping[str, Any]] = []
         decisions: list[PolicyDecision] = []
         proposals: list[MovementProposal] = []
-        proposal_to_build: dict[str, tuple[str, ObservationBuild, Any]] = {}
+        proposal_to_build: dict[
+            str, tuple[str, ObservationBuild, Any, PolicyDefinition]
+        ] = {}
+        policies_for_builds: list[PolicyDefinition] = []
         for slot, actor_id in enumerate(scheduled_actors):
+            actor_policy = policies_by_actor[actor_id]
+            actor_profile = profiles_by_actor[actor_id]
             build = build_policy_observation(
                 environment,
                 state,
                 actor_id,
-                policy,
-                relation_profile=relation_profile,
+                actor_policy,
+                relation_profile=actor_profile,
                 boundary_direction=definition.parameters.get("boundaryDirection"),
                 boundary_tokens=definition.parameters.get("boundaryTokens"),
                 gradient_levels=gradient_levels,
                 gradient_direction=definition.parameters.get("gradientDirection"),
                 lagged_conflicts=lagged_conflicts,
                 memory=memory[actor_id]
-                if policy.strategy == "memory_based_recovery"
+                if actor_policy.strategy == "memory_based_recovery"
                 else None,
                 decision_key=definition.scenario_id,
                 activation_index=transition_index * definition.actor_batch_size + slot,
@@ -748,11 +835,12 @@ def run_cpu_episode(
                     + channel_ledger["policyDeliveryBits"]
                     + channel_ledger["addressBits"]
                 )
-            decision = decide_policy(policy, payload)
+            decision = decide_policy(actor_policy, payload)
             proposal = materialize_decision(build, decision)
             builds.append(build)
             decision_payloads.append(payload)
             decisions.append(decision)
+            policies_for_builds.append(actor_policy)
             _add_ledger(
                 observation_ledger,
                 build.observation.budget,
@@ -761,16 +849,26 @@ def run_cpu_episode(
             epoch_bits.append(int(decision.action == "proposal"))
             if proposal is not None:
                 proposals.append(proposal)
-                proposal_to_build[proposal.proposal_id] = (actor_id, build, decision)
+                proposal_to_build[proposal.proposal_id] = (
+                    actor_id,
+                    build,
+                    decision,
+                    actor_policy,
+                )
 
         if policy_batch_audit is not None:
-            policy_batch_audit(
-                transition_index,
-                policy,
-                tuple(builds),
-                tuple(decision_payloads),
-                tuple(decisions),
-            )
+            if heterogeneous:
+                raise EpisodeValidationError(
+                    "S08 policy-batch audit is unavailable for heterogeneous episodes"
+                )
+            else:
+                policy_batch_audit(
+                    transition_index,
+                    policy,
+                    tuple(builds),
+                    tuple(decision_payloads),
+                    tuple(decisions),
+                )
 
         if proposal_gate is not None:
             proposed_by_id = {item.proposal_id: item for item in proposals}
@@ -818,25 +916,36 @@ def run_cpu_episode(
         epoch_conflict_losses += batch["costLedger"]["conflictLosses"]
         accepted = set(batch["acceptedProposalIds"])
         outcome_by_actor = {actor_id: "noop" for actor_id in scheduled_actors}
-        for proposal_id, (actor_id, build, decision) in proposal_to_build.items():
+        for proposal_id, (
+            actor_id,
+            build,
+            decision,
+            actor_policy,
+        ) in proposal_to_build.items():
             outcome_by_actor[actor_id] = (
                 "accepted" if proposal_id in accepted else "rejected"
             )
-            if policy.strategy == "memory_based_recovery":
+            if actor_policy.strategy == "memory_based_recovery":
                 memory[actor_id] = update_policy_memory(
                     memory[actor_id],
                     build.observation,
                     decision,
                     outcome_by_actor[actor_id],
                 )
-        if policy.strategy == "memory_based_recovery":
-            for actor_id, build, decision in zip(
-                scheduled_actors, builds, decisions, strict=True
+        for actor_id, build, decision, actor_policy in zip(
+            scheduled_actors,
+            builds,
+            decisions,
+            policies_for_builds,
+            strict=True,
+        ):
+            if (
+                actor_policy.strategy == "memory_based_recovery"
+                and decision.action == "noop"
             ):
-                if decision.action == "noop":
-                    memory[actor_id] = update_policy_memory(
-                        memory[actor_id], build.observation, decision, "noop"
-                    )
+                memory[actor_id] = update_policy_memory(
+                    memory[actor_id], build.observation, decision, "noop"
+                )
 
         next_lagged = {site.site_id: 0 for site in environment.occupiable_sites}
         proposal_by_id = {item.proposal_id: item for item in proposals}
@@ -924,7 +1033,9 @@ def run_cpu_episode(
         "evaluationSeparation": {
             "s02LocalFeedback": {
                 "pricedObservationField": "localRelationDelta",
-                "activeForEpisodePolicy": relation_profile is not None,
+                "activeForEpisodePolicy": any(
+                    item is not None for item in profiles_by_actor.values()
+                ),
             },
             "s01GlobalCompletion": {
                 "fields": [
