@@ -46,6 +46,7 @@ from .movements import (
     parse_movement_state,
     parse_proposal,
     resolve_batch,
+    validate_state_against_environment,
 )
 from .policies import (
     OBSERVATION_LEDGER_FIELDS,
@@ -116,6 +117,7 @@ TransitionAudit = Callable[
     ],
     None,
 ]
+StateAudit = Callable[[int, MovementState, Mapping[str, Any]], None]
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -383,8 +385,10 @@ def run_cpu_episode(
     definition: EpisodeDefinition,
     *,
     include_selected_traces: bool = True,
+    initial_state_override: MovementState | None = None,
     policy_batch_audit: PolicyBatchAudit | None = None,
     transition_audit: TransitionAudit | None = None,
+    state_audit: StateAudit | None = None,
 ) -> dict[str, Any]:
     """Execute one exact fixed-budget reference episode.
 
@@ -400,7 +404,16 @@ def run_cpu_episode(
         if definition.relation_grammar_id is None
         else compile_relation_profile(context.grammars[definition.relation_grammar_id])
     )
-    state, initial_transform = _initial_state(environment, definition)
+    if initial_state_override is None:
+        state, initial_transform = _initial_state(environment, definition)
+    else:
+        if definition.parameters.get("initialSwap") is not None:
+            raise EpisodeValidationError(
+                "initial-state override cannot be combined with initialSwap"
+            )
+        validate_state_against_environment(environment, initial_state_override)
+        state = initial_state_override
+        initial_transform = None
     if transition_audit is not None and initial_transform is not None:
         transition_audit(
             -1,
@@ -412,6 +425,8 @@ def run_cpu_episode(
             initial_transform,
         )
     initial_state_sha256 = movement_state_sha256(state)
+    if state_audit is not None:
+        state_audit(-1, state, {"transitionKind": "initial_state"})
     actor_ids = _cell_actor_ids(state)
     memory = {
         actor_id: PolicyMemory(
@@ -623,6 +638,8 @@ def run_cpu_episode(
                 "directIntervention": True,
             }
             transition_summaries.append(summary_record)
+            if state_audit is not None:
+                state_audit(transition_index, state, summary_record)
             transition_channel_events.append(
                 {
                     "channelId": direct_event["channelId"],
@@ -816,6 +833,8 @@ def run_cpu_episode(
             "directIntervention": False,
         }
         transition_summaries.append(summary_record)
+        if state_audit is not None:
+            state_audit(transition_index, state, summary_record)
         channel_events.extend(transition_channel_events)
         if include_selected_traces and _trace_selected(
             transition_index, definition.transitions

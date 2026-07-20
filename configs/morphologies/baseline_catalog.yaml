@@ -1,0 +1,170 @@
+schemaVersion: e06.s09.baseline-catalog.v1
+researchStepId: S09
+title: Frozen baseline pattern-formation matrix
+frozenQuestion: Can the frozen S05 local policies reach calibrated relational target sets from random, block-scrambled, and partially correct states without damage or top-down direct control?
+claimBoundary: Computational pattern formation on declared bounded square graphs only; no biological, repair, attractor, or convergence claim.
+
+canonicalContracts:
+  target: e06.s01.target-catalog.v1
+  grammar: e06.s02.grammar-catalog.v1
+  environment: e06.s03.environment-catalog.v1
+  movement: e06.s04.movement-batch-result.v1
+  policy: e06.s05.policy-catalog.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuParity: e06.s08.parity-report.v1
+
+seedContract:
+  masterSeedHex: "0xe0609000000000000000000000000001"
+  derivation: first_128_bits_sha256_domain_master_and_canonical_address
+  domain: E06/S09/seed/v1
+  workerOrderInfluence: none
+  mutablePrngState: forbidden
+
+topologyCalibration:
+  allowed: unobstructed_bounded_square_rectangles_matching_s01_target_shape
+  forbiddenCompletionClaims: [periodic, hexagonal, irregular, obstacle, fixed_boundary]
+  boundarySignals: Declared natural exterior only; hole targets retain the S01 boundary-cue requirement.
+
+targetMatrix:
+  - {targetId: stripes_alternating_three_band, grammarId: stripes_axis_relations_v1}
+  - {targetId: layers_three_ordered_tissues, grammarId: layers_ordered_contacts_v1}
+  - {targetId: ring_core_shell_translatable, grammarId: ring_core_shell_contacts_v1}
+  - {targetId: bilateral_lobes_with_midline, grammarId: bilateral_midline_relations_v1}
+  - {targetId: separated_paired_regions, grammarId: separated_region_relations_v1}
+  - {targetId: tissue_single_hole, grammarId: single_hole_boundary_relations_v1}
+  - {targetId: tissue_two_holes, grammarId: two_hole_boundary_relations_v1}
+
+policyEligibility:
+  universalByTarget:
+    - greedy_neighbor_satisfaction_v1
+    - exploration_v1
+    - memory_based_recovery_v1
+    - conflict_avoidance_v1
+  targetRestricted:
+    boundary_seeking_v1: [tissue_single_hole, tissue_two_holes]
+    gradient_following_v1: [stripes_alternating_three_band, layers_three_ordered_tissues]
+  comparisonReference: exploration_v1
+  nonLocalChannelsForbidden: [sparse_instruction, global_summary, direct_intervention]
+  policyParameters:
+    memoryInitialBestLocalUtility: 12
+    boundaryDirection: seek
+    boundaryActorTokensByTarget:
+      tissue_single_hole: [T]
+      tissue_two_holes: [T]
+    gradientAxis: first
+    gradientDirection: up
+
+initialStateFamilies:
+  random:
+    algorithm: content_ranked_uniform_identity_permutation
+    requirement: S01 global success false at transition minus one
+  block_scrambled:
+    algorithm: content_ranked_permutation_of_same-shape_2x2_spatial_blocks_preserving_within-block_offsets
+    requirement: S01 global success false at transition minus one
+  partially_correct:
+    algorithm: exact target plus content-ranked disjoint cross-token adjacent swaps
+    swapCount: {fractionOfSites: 0.08, minimum: 2}
+    requirement: S01 global success false at transition minus one
+
+simulation:
+  actorBatchSize: 4
+  epochLengthTransitions: 16
+  exploratoryEventBudgetTransitions: 64
+  confirmationEventBudgetTransitions: 128
+  exploratoryReplicatesPerCondition: 250
+  confirmationPairsPerPromotedContrast: 1000
+  exploratoryConditionCount: 96
+  exploratoryRunCount: 24000
+  maximumPromotedContrasts: 3
+  maximumConfirmationRunCount: 6000
+  budgetRationale: The 64-transition screen permits up to 256 accepted local proposals, exceeding every S01 finite adjacent-swap witness (maximum 54); confirmation doubles the transition window without using activity as a stop rule.
+  stopping: fixed_event_budget_only
+  earlyStopping: forbidden
+  activityOrQuiescenceAsCompletion: forbidden
+
+pairing:
+  unit: targetId_startFamily_split_replicate
+  sharedAcrossPolicies: [initial_occupant_projection, scheduler_key, channel_noise_key, event_budget]
+  runIdentityAdds: policyId
+  exploratorySplit: exploratory
+  confirmationSplit: confirmation_holdout
+  crossSplitSeedOverlap: forbidden
+  confirmationLockedUntilPromotionWritten: true
+
+outcomes:
+  primary:
+    - conjunctiveCompletionByBudget
+    - minimumS01MismatchFraction
+  completionRule: s02GrammarAccepted AND independentS01GlobalAuditSuccess
+  firstPassageAudit: evaluate independent global membership after every transition without exposing it to policy or controller
+  secondary:
+    - terminalConjunctiveCompletion
+    - firstCompletionTransition
+    - terminalS01MismatchFraction
+    - terminalS02RelationalScore
+    - terminalS02GrammarAccepted
+    - localGlobalDiscordance
+    - acceptedMovements
+    - totalGraphDisplacement
+    - conflictLosses
+    - observationAndChannelLedgers
+  interpretation: S02 scores are feedback/interpretation fields; only the explicit conjunction can count as completion.
+
+censoring:
+  nonCompletingRun: right_censored_at_fixed_transition_budget
+  completionThenDeparture: completion_event_retained_and_terminal_status_recorded_separately
+  invariantViolation: failed_release_critical_not_censored
+  executionError: failed_not_censored
+  exclusions: none
+  allIntendedRunsRequiredInAccounting: true
+
+promotion:
+  candidateContrasts: every eligible non-exploration policy versus exploration within the same target and start family
+  eligibilityAny:
+    absolutePairedCompletionRiskDifference: 0.08
+    absolutePairedMinimumMismatchProgressDifference: 0.04
+    absoluteLocalGlobalDiscordanceRateDifference: 0.15
+  ranking: maximum_threshold_standardized_absolute_effect_then_contrast_id
+  diversityConstraint: at_most_one_contrast_per_start_family
+  maximumPromotedContrasts: 3
+  noEligibleContrasts: run_no_confirmation_and_classify_screen_as_null_or_constraining
+  runtimeAndWallClockForbiddenFromSelection: true
+
+confirmation:
+  pairedBootstrapReplicates: 10000
+  familywiseAlpha: 0.05
+  intervalAdjustment: bonferroni_over_promoted_contrasts
+  direction: frozen_from_exploratory_contrast_before_holdout_open
+  practicalThresholds:
+    absoluteCompletionRiskDifference: 0.05
+    absoluteMinimumMismatchProgressDifference: 0.03
+    absoluteDiscordanceRateDifference: 0.10
+  contrastConfirmedRule: A practical-threshold effect in the frozen direction whose familywise-adjusted paired-bootstrap interval excludes zero.
+  boundedFormationSupportRule: A target-specific local policy has completion fraction at least 0.20, Wilson lower bound at least 0.15, and completion advantage over exploration at least 0.10 with familywise-adjusted lower confidence bound above zero.
+
+backend:
+  production: canonical_s07_cpu_oracle_fallback
+  reason: Condition batches of 250 or 1000 are below the S07 predeclared material GPU crossover, while S04 authentication, S05 observation construction, S06 sources, metrics, and ledgers remain CPU control-plane work.
+  allowedGpuScope: frozen_s08_masked_decision_and_validated_integer_transition_data_plane_only
+  forbiddenGpuExpansion: [invalid_proposal_rejection, observation_construction, authentication, sha_priority, global_evaluation, controller_authority]
+  cpuWorkers: 8
+
+traceAndReplay:
+  traceSampleFraction: 0.01
+  traceSelection: lowest_sha256_run_ids_within_each_condition_before_outcomes
+  failuresAndAnomaliesAlwaysSelected: true
+  exactCpuReplay: lexicographically_first_run_per_condition_and_phase
+  replayRequirement: byte_exact_episode_and_metric_summary
+  morphologyPanels: target_initial_representative_final_and_completion_heatmap
+
+validationRequirements:
+  - complete_run_accounting
+  - deterministic_seed_regeneration
+  - sampled_cpu_replay
+  - target_metric_agreement
+  - censored_and_noncompleting_accounting
+  - identity_token_kind_site_and_fixed_role_invariants
+  - separate_s02_and_s01_fields
+  - no_online_global_evaluation_access
+  - artifact_hash_coverage

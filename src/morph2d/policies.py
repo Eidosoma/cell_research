@@ -27,7 +27,6 @@ from .movements import (
     MovementState,
     make_proposal,
     movement_state_sha256,
-    parse_movement_state,
     resolve_batch,
     validate_proposal,
 )
@@ -503,17 +502,29 @@ def enumerate_candidate_affordances(
 def _preview_state(
     environment: Environment, state: MovementState, proposal: MovementProposal
 ) -> MovementState:
-    result = resolve_batch(
-        environment,
-        state,
-        (proposal,),
-        batch_nonce=f"policy-preview:{proposal.proposal_id}",
+    # Candidate enumeration has already passed the proposal through the
+    # canonical S04 validator.  A singleton valid batch is conflict-free, so
+    # constructing its occupant permutation directly is semantically identical
+    # to ``resolve_batch`` while avoiding repeated hashes, ledgers, and full
+    # invariant serialization for every actor-local utility preview.
+    before = state.occupant_map
+    after = dict(before)
+    route = proposal.route
+    if proposal.kind in {"adjacent_swap", "vacancy_move", "short_exchange"}:
+        first, second = route[0], route[-1]
+        after[first], after[second] = before[second], before[first]
+    elif proposal.kind == "rotation":
+        for index, site_id in enumerate(route):
+            target = route[(index + proposal.rotation_direction) % len(route)]
+            after[target] = before[site_id]
+    else:  # pragma: no cover - candidates are limited by the frozen S04 set.
+        raise PolicyValidationError("candidate preview received unknown movement kind")
+    return MovementState(
+        environment_id=state.environment_id,
+        environment_sha256=state.environment_sha256,
+        transition_index=state.transition_index + 1,
+        occupancy=tuple(sorted(after.items())),
     )
-    if result["acceptedProposalIds"] != [proposal.proposal_id]:
-        raise PolicyValidationError(
-            "candidate preview did not accept its legal proposal"
-        )
-    return parse_movement_state(result["postState"])
 
 
 def _natural_boundary_level(environment: Environment, site_id: str) -> int:
