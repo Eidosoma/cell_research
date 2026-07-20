@@ -710,7 +710,7 @@ def _report(
 - **Research step ID:** S08
 - **Completion status:** {completion}
 - **Artifacts written:** parity catalog and tolerance specification; three exhaustive small environments; exhaustive and seeded-random transition results; canonical, convergence, replay, policy-decision, and distributional episode parity; conflict/invariant/gradient audits; mismatch index and any complete mismatch fixtures; validation, provenance, commands, manifest, and this canonical report.
-- **Validation result:** {"PASS" if validation["success"] else "FAIL"} — {exhaustive_cases:,} exhaustive transition batches, {random_cases:,} seeded random-legal-state batches, {len(canonical_rows)} complete canonical episodes, {len(convergence_rows)} 128-transition convergence stresses, and {len(distribution_rows)} seeded distributional episodes were checked; {len(policy_rows):,} masked policy decisions and {len(transition_rows):,} episode transitions matched at zero tolerance; `{tests["stdout"]}`.
+- **Validation result:** {"PASS" if validation["success"] else "FAIL"} — {exhaustive_cases:,} exhaustive transition batches, {random_cases:,} seeded random-legal-state batches, {len(canonical_rows)} complete canonical episodes, {len(convergence_rows)} 128-transition convergence stresses, and {len(distribution_rows)} seeded distributional episodes were checked; {len(policy_rows):,} masked policy decisions and {len(transition_rows):,} total transition comparisons matched at zero tolerance; `{tests["stdout"]}`.
 - **Outcome classification:** {outcome}
 - **Caveats or blockers:** The GPU promise remains the S07 masked-decision and validated integer claim/commit data plane; S04 rejection, authentication, S05 source construction, S06 channels/controllers, event hashes, and non-GPU ledgers stay canonical CPU control-plane work. Convergence is descriptive tail behavior under a fixed budget, not proof of an attractor. Current gradients are integer, so no floating tolerance was used. Unresolved release-critical mismatches: {mismatch_index["unresolvedReleaseCriticalCount"]}.
 - **Lay summary:** The same small worlds, randomized legal states, simultaneous conflicts, and complete episodes were independently checked through the CPU reference and GPU integer core. Within the tested scope, every GPU choice and move agreed exactly with the CPU. This establishes a careful software-equivalence boundary; it does not show that the policies form biological tissues or that fixed-budget quietness is true convergence.
@@ -748,7 +748,7 @@ Each of the nine S03 environments received 128 SHA-256 content-ranked occupant p
 
 All nine canonical 32-transition S07 episodes ran with a GPU shadow at every masked decision and movement, including all five channel families plus no-channel controls; the complete canonical result bytes were compared with the immutable S07 artifacts. All nine were then extended to 128 transitions. A descriptive convergence flag requires zero accepted movements in the last 16 transitions; {quiescent}/{len(convergence_rows)} met that description, which is not used as a release gate or an attractor claim.
 
-Finally, eight independently addressed 32-transition replicas were run for every S07 scenario ({len(distribution_rows)} episodes). Accepted movements, conflicts, displacement, information/configuration bits, tail activity, and final-state-hash frequencies matched per seed exactly. Consequently empirical means, quantiles/frequencies, and the two-sample KS statistic match exactly; no sampling tolerance masks a paired discrepancy.
+Finally, eight independently addressed 32-transition replicas were run for every S07 scenario ({len(distribution_rows)} episodes). Accepted movements, conflicts, displacement, information/configuration bits, tail activity, and final-state hashes matched per seed exactly. Consequently empirical means, final-state frequencies, and the two-sample KS statistic match exactly; no sampling tolerance masks a paired discrepancy.
 
 ## Results
 
@@ -762,7 +762,7 @@ Finally, eight independently addressed 32-transition replicas were run for every
 | 128-transition convergence stress | {len(convergence_rows)} episodes | {sum(item["gpuTransitionCount"] for item in convergence_rows):,} | {sum(not item["success"] for item in convergence_rows)} |
 | Seeded distributional episodes | {len(distribution_rows)} episodes | {sum(item["gpuTransitionCount"] for item in distribution_rows):,} | {sum(not item["success"] for item in distribution_rows)} |
 
-Across episode phases, {len(policy_rows):,} GPU masked decisions matched their CPU opaque candidate handles. The episode transition records include {conflicts:,} CPU conflict losses; exact winner sets and post-state integers matched. `parity_report.json` and the CSV/JSON family artifacts contain the complete accounting.
+Across episode phases, {len(policy_rows):,} GPU masked decisions matched their CPU opaque candidate handles. The complete transition matrix includes {conflicts:,} CPU conflict losses; exact winner sets and post-state integers matched. `parity_report.json` and the CSV/JSON family artifacts contain the complete accounting.
 
 ### Invariants, replay, and boundaries
 
@@ -799,7 +799,7 @@ CUDA_VISIBLE_DEVICES=1 PYTHONPATH=/workspace/cell-research OMP_NUM_THREADS=8 MKL
 {tests["command"]}
 ```
 
-The run used Python {platform.python_version()}, PyTorch {torch.__version__}, CUDA {torch.version.cuda}, one NVIDIA {torch.cuda.get_device_name()}, and at most eight CPU threads. No dependency, package, network resource, or capability was installed.
+The run used Python {platform.python_version()}, PyTorch {torch.__version__}, CUDA {torch.version.cuda}, one {torch.cuda.get_device_name()}, and at most eight CPU threads. No dependency, package, network resource, or capability was installed.
 
 ## Caveats, failed assumptions, and limitations
 
