@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
@@ -242,3 +243,29 @@ def test_policy_pairs_share_scenario_but_splits_and_runs_are_disjoint() -> None:
     assert exploration["runId"] != boundary["runId"]
     assert confirmation["scenarioId"] != exploration["scenarioId"]
     assert confirmation["seedHex"] != exploration["seedHex"]
+
+
+def test_seed_vector_includes_frozen_master_seed_and_canonical_address() -> None:
+    address = {
+        "split": "exploratory",
+        "targetId": "tissue_single_hole",
+        "startFamily": "random",
+        "replicate": 11,
+    }
+    payload = {
+        "masterSeedHex": "0xe0609000000000000000000000000001",
+        "address": address,
+    }
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    ).encode("utf-8")
+    expected = hashlib.sha256(b"E06/S09/seed/v1\x00" + encoded).hexdigest()
+    observed = scenario_identity(
+        address["split"],
+        address["targetId"],
+        address["startFamily"],
+        address["replicate"],
+        "exploration_v1",
+    )
+    assert observed["seedHex"] == "0x" + expected[:32]
+    assert observed["seedDecimal"] == str(int(expected[:32], 16))

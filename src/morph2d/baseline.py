@@ -48,6 +48,7 @@ from .targets import (
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_CATALOG_VERSION = "e06.s09.baseline-catalog.v1"
 RUN_RESULT_VERSION = "e06.s09.baseline-run.v1"
+MASTER_SEED_HEX = "0xe0609000000000000000000000000001"
 UNIVERSAL_POLICIES = {
     "greedy_neighbor_satisfaction_v1",
     "exploration_v1",
@@ -375,16 +376,20 @@ def scenario_identity(
     replicate: int,
     policy_id: str,
 ) -> dict[str, Any]:
-    base = {
+    address = {
         "split": split,
         "targetId": target_id,
         "startFamily": start_family,
         "replicate": int(replicate),
     }
-    pairing_digest = _sha256("E06/S09/pairing-block/v1", base)
+    seeded_address = {"masterSeedHex": MASTER_SEED_HEX, "address": address}
+    pairing_digest = _sha256("E06/S09/pairing-block/v1", seeded_address)
     scenario_id = f"s09-{split[:4]}-{pairing_digest[:24]}"
-    run_id = "run1:" + _sha256("E06/S09/run/v1", {**base, "policyId": policy_id})
-    seed_digest = _sha256("E06/S09/seed/v1", base)
+    run_id = "run1:" + _sha256(
+        "E06/S09/run/v1",
+        {**seeded_address, "policyId": policy_id},
+    )
+    seed_digest = _sha256("E06/S09/seed/v1", seeded_address)
     return {
         "scenarioId": scenario_id,
         "pairingBlockId": "pb1:" + pairing_digest,
