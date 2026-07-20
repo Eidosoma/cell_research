@@ -721,7 +721,10 @@ def replay_sample_tasks(
                 "replicate": int(row["replicate"]),
                 "policyId": row["policyId"],
                 "eventBudget": int(row["eventBudgetTransitions"]),
-                "retainTrace": False,
+                # The lexicographically first run is also in the preregistered
+                # lowest-run-ID trace sample.  Replay must preserve that frozen
+                # serialization choice for a byte-exact episode comparison.
+                "retainTrace": bool(row["traceSelected"]),
                 "expectedEpisodeCanonicalBytesSha256": row[
                     "episodeCanonicalBytesSha256"
                 ],
