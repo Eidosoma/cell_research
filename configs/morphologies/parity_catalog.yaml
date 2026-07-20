@@ -1,0 +1,104 @@
+schemaVersion: e06.s08.parity-catalog.v1
+researchStepId: S08
+canonicalContracts:
+  movement: e06.s04.movement-batch-result.v1
+  policyObservation: e06.s05.policy-observation.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuTensor: e06.s07.gpu-tensor-contract.v1
+parityRequirements:
+  integerTransitionAbsoluteTolerance: 0
+  acceptedProposalSetTolerance: 0
+  integerLedgerTolerance: 0
+  deterministicEpisodeCanonicalByteTolerance: 0
+  pairedDistributionOutcomeTolerance: 0
+  floatingGradient:
+    applicable: false
+    absoluteTolerance: null
+    relativeTolerance: null
+    reason: Current S06 gradients, jitter, observations, decisions, and S07 transition tensors are integer-valued; no floating gradient enters the engine.
+  unresolvedReleaseCriticalMismatchLimit: 0
+design:
+  exhaustive:
+    stateSpace: all occupant permutations on each declared small graph
+    proposalSpace: empty batch, every legal proposal, and every unordered pair of legal proposals
+    gpuChunkSize: 4096
+  randomLegalState:
+    statesPerEnvironment: 128
+    proposalBatchSizes: [1, 4, 16]
+    cycleCandidateCap: 64
+    seedDomain: E06/S08/random-legal-state/v1
+  canonicalEpisodes:
+    useAllS07Scenarios: true
+    transitions: 32
+    compareToS07CanonicalArtifacts: true
+  convergenceStress:
+    useAllS07Scenarios: true
+    transitions: 128
+    tailWindowTransitions: 16
+    convergenceDefinition: descriptive_zero_accepted_movements_in_tail_window
+  distributionalEpisodes:
+    useAllS07Scenarios: true
+    replicatesPerScenario: 8
+    transitions: 32
+    seedDomain: E06/S08/distributional-episode/v1
+  mismatchTriage:
+    preserveFullInputState: true
+    preserveProposalsAndNonce: true
+    preserveCpuAndGpuOutputs: true
+    releaseCriticalFields: [post_state, accepted_proposal_ids, accepted_movements, total_graph_displacement, policy_selected_candidate]
+smallEnvironments:
+  - environmentId: s08_square_bounded_2x2_occupied
+    title: Exhaustive bounded occupied square
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 2, columns: 2}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: A, overrides: {}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Exhaust all 24 identity permutations and every empty, singleton, or two-proposal legal batch.
+    expected: {siteCount: 4, occupiableSiteCount: 4, edgeCount: 4, componentCount: 1, degreeHistogram: {"2": 4}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 4, signaledSiteCount: 4}
+  - environmentId: s08_square_bounded_2x2_vacancy
+    title: Exhaustive bounded vacancy square
+    geometry: square
+    boundaryMode: bounded
+    occupancyMode: vacancy_enabled
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator: {kind: rectangle, rows: 2, columns: 2}
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: domain_edge_flags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: A, overrides: {r0_c0: "."}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Exhaust vacancy location/identity permutations, legal cell-to-vacancy moves, swaps, short exchanges, and conflicts.
+    expected: {siteCount: 4, occupiableSiteCount: 4, edgeCount: 4, componentCount: 1, degreeHistogram: {"2": 4}, vacancyCount: 1, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 4, signaledSiteCount: 4}
+  - environmentId: s08_irregular_triangle_occupied
+    title: Exhaustive explicit irregular triangle
+    geometry: irregular
+    boundaryMode: bounded
+    occupancyMode: fully_occupied
+    vacancyLabel: "."
+    obstacleToken: "#"
+    generator:
+      kind: explicit_graph
+      sites:
+        - {siteId: a, coordinate: [0, 0], boundaryTags: [west]}
+        - {siteId: b, coordinate: [1, 0], boundaryTags: [east]}
+        - {siteId: c, coordinate: [0, 1], boundaryTags: [south]}
+      edges: [[a, b], [a, c], [b, c]]
+    obstacles: []
+    fixedBoundary: {mode: none, sites: [], token: null}
+    boundarySignal: {mode: explicit_site_tags, observable: true, includeObstacleContact: false, includeFixedRole: false}
+    initialState: {defaultToken: I, overrides: {}, rows: null}
+    targetBinding: null
+    requireConnected: true
+    notes: Exhaust all six identity permutations, directed edge swaps, three-cycles, and pairwise conflicts on explicit topology.
+    expected: {siteCount: 3, occupiableSiteCount: 3, edgeCount: 3, componentCount: 1, degreeHistogram: {"2": 3}, vacancyCount: 0, obstacleCount: 0, fixedBoundaryCount: 0, naturalBoundarySiteCount: 3, signaledSiteCount: 3}

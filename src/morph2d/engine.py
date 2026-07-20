@@ -15,7 +15,7 @@ import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import yaml
 
@@ -38,17 +38,20 @@ from .environments import Environment, load_environment_catalog
 from .grammar import RelationalGrammar, load_grammar_catalog
 from .movements import (
     LEDGER_FIELDS,
+    MovementProposal,
     MovementState,
     initial_movement_state,
     make_proposal,
     movement_state_sha256,
     parse_movement_state,
+    parse_proposal,
     resolve_batch,
 )
 from .policies import (
     OBSERVATION_LEDGER_FIELDS,
     ObservationBuild,
     PolicyDefinition,
+    PolicyDecision,
     PolicyMemory,
     build_policy_observation,
     compile_relation_profile,
@@ -89,6 +92,30 @@ class EngineContext:
     grammars: Mapping[str, RelationalGrammar]
     channels: Mapping[str, ChannelDefinition]
     episodes: tuple[EpisodeDefinition, ...]
+
+
+PolicyBatchAudit = Callable[
+    [
+        int,
+        PolicyDefinition,
+        Sequence[ObservationBuild],
+        Sequence[Mapping[str, Any]],
+        Sequence[PolicyDecision],
+    ],
+    None,
+]
+TransitionAudit = Callable[
+    [
+        int,
+        str,
+        Environment,
+        MovementState,
+        Sequence[MovementProposal],
+        str,
+        Mapping[str, Any],
+    ],
+    None,
+]
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -356,8 +383,15 @@ def run_cpu_episode(
     definition: EpisodeDefinition,
     *,
     include_selected_traces: bool = True,
+    policy_batch_audit: PolicyBatchAudit | None = None,
+    transition_audit: TransitionAudit | None = None,
 ) -> dict[str, Any]:
-    """Execute one exact fixed-budget reference episode."""
+    """Execute one exact fixed-budget reference episode.
+
+    Optional S08 audit callbacks receive immutable CPU records and cannot
+    replace a decision, proposal, transition, ledger, or state. They are a
+    differential-observation boundary, not an alternative engine authority.
+    """
 
     environment = context.environments[definition.environment_id]
     policy = context.policies[definition.policy_id]
@@ -367,6 +401,16 @@ def run_cpu_episode(
         else compile_relation_profile(context.grammars[definition.relation_grammar_id])
     )
     state, initial_transform = _initial_state(environment, definition)
+    if transition_audit is not None and initial_transform is not None:
+        transition_audit(
+            -1,
+            "initial_condition",
+            environment,
+            parse_movement_state(initial_transform["preState"]),
+            tuple(parse_proposal(item) for item in initial_transform["proposals"]),
+            str(initial_transform["batchNonce"]),
+            initial_transform,
+        )
     initial_state_sha256 = movement_state_sha256(state)
     actor_ids = _cell_actor_ids(state)
     memory = {
@@ -542,6 +586,16 @@ def run_cpu_episode(
                 batch_nonce=f"{definition.scenario_id}:direct:{transition_index}",
             )
             batch = direct_event["movementBatchResult"]
+            if transition_audit is not None:
+                transition_audit(
+                    transition_index,
+                    "direct_intervention",
+                    environment,
+                    state,
+                    tuple(parse_proposal(item) for item in batch["proposals"]),
+                    str(batch["batchNonce"]),
+                    batch,
+                )
             state = parse_movement_state(batch["postState"])
             _add_ledger(movement_ledger, batch["costLedger"], LEDGER_FIELDS)
             _add_ledger(
@@ -599,8 +653,9 @@ def run_cpu_episode(
             definition.actor_batch_size,
         )
         builds: list[ObservationBuild] = []
-        decisions = []
-        proposals = []
+        decision_payloads: list[Mapping[str, Any]] = []
+        decisions: list[PolicyDecision] = []
+        proposals: list[MovementProposal] = []
         proposal_to_build: dict[str, tuple[str, ObservationBuild, Any]] = {}
         for slot, actor_id in enumerate(scheduled_actors):
             build = build_policy_observation(
@@ -670,6 +725,7 @@ def run_cpu_episode(
             decision = decide_policy(policy, payload)
             proposal = materialize_decision(build, decision)
             builds.append(build)
+            decision_payloads.append(payload)
             decisions.append(decision)
             _add_ledger(
                 observation_ledger,
@@ -681,12 +737,32 @@ def run_cpu_episode(
                 proposals.append(proposal)
                 proposal_to_build[proposal.proposal_id] = (actor_id, build, decision)
 
+        if policy_batch_audit is not None:
+            policy_batch_audit(
+                transition_index,
+                policy,
+                tuple(builds),
+                tuple(decision_payloads),
+                tuple(decisions),
+            )
+
+        batch_nonce = f"{definition.scenario_id}:transition:{transition_index}"
         batch = resolve_batch(
             environment,
             state,
             tuple(proposals),
-            batch_nonce=f"{definition.scenario_id}:transition:{transition_index}",
+            batch_nonce=batch_nonce,
         )
+        if transition_audit is not None:
+            transition_audit(
+                transition_index,
+                "native_policy_batch",
+                environment,
+                state,
+                tuple(proposals),
+                batch_nonce,
+                batch,
+            )
         state = parse_movement_state(batch["postState"])
         _add_ledger(movement_ledger, batch["costLedger"], LEDGER_FIELDS)
         epoch_submitted += batch["costLedger"]["submittedProposals"]
