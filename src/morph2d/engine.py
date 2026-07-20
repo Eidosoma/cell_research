@@ -118,6 +118,10 @@ TransitionAudit = Callable[
     None,
 ]
 StateAudit = Callable[[int, MovementState, Mapping[str, Any]], None]
+ProposalGate = Callable[
+    [int, Environment, MovementState, Sequence[MovementProposal]],
+    Sequence[MovementProposal],
+]
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -389,12 +393,17 @@ def run_cpu_episode(
     policy_batch_audit: PolicyBatchAudit | None = None,
     transition_audit: TransitionAudit | None = None,
     state_audit: StateAudit | None = None,
+    proposal_gate: ProposalGate | None = None,
 ) -> dict[str, Any]:
     """Execute one exact fixed-budget reference episode.
 
     Optional S08 audit callbacks receive immutable CPU records and cannot
     replace a decision, proposal, transition, ledger, or state. They are a
     differential-observation boundary, not an alternative engine authority.
+    The optional proposal gate is an engine-owned intervention boundary for
+    later perturbation studies. It may suppress already-authenticated native
+    proposals, but cannot create or edit one; its separate intervention cost is
+    intentionally owned by its caller rather than the frozen S04 ledger.
     """
 
     environment = context.environments[definition.environment_id]
@@ -762,6 +771,29 @@ def run_cpu_episode(
                 tuple(decision_payloads),
                 tuple(decisions),
             )
+
+        if proposal_gate is not None:
+            proposed_by_id = {item.proposal_id: item for item in proposals}
+            gated = tuple(
+                proposal_gate(
+                    transition_index,
+                    environment,
+                    state,
+                    tuple(proposals),
+                )
+            )
+            gated_ids = [item.proposal_id for item in gated]
+            if len(gated_ids) != len(set(gated_ids)):
+                raise EpisodeValidationError("proposal gate returned duplicates")
+            if any(
+                proposal_id not in proposed_by_id
+                or proposed_by_id[proposal_id] != proposal
+                for proposal_id, proposal in zip(gated_ids, gated, strict=True)
+            ):
+                raise EpisodeValidationError(
+                    "proposal gate may only retain authenticated proposals"
+                )
+            proposals = list(gated)
 
         batch_nonce = f"{definition.scenario_id}:transition:{transition_index}"
         batch = resolve_batch(

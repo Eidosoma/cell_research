@@ -1,0 +1,206 @@
+schemaVersion: e06.s10.perturbation-catalog.v1
+researchStepId: S10
+title: Frozen spatial perturbation and paired repair matrix
+frozenQuestion: Does repair from a verified formed target differ from paired no-damage maintenance, and how does it depend on lesion geometry, severity, and movement affordance?
+claimBoundary: Computational repair on calibrated unobstructed bounded square target graphs; no biological regeneration, attractor, or convergence claim.
+
+canonicalContracts:
+  target: e06.s01.target-catalog.v1
+  grammar: e06.s02.grammar-catalog.v1
+  environment: e06.s03.environment-catalog.v1
+  movement: e06.s04.movement-batch-result.v1
+  policy: e06.s05.policy-catalog.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuParity: e06.s08.parity-report.v1
+  noDamageBaseline: e06.s09.baseline-catalog.v1
+
+seedContract:
+  masterSeedHex: "0xe0610000000000000000000000000001"
+  domain: E06/S10/seed/v1
+  derivation: first_128_bits_sha256_domain_master_and_canonical_address
+  workerOrderInfluence: none
+  mutablePrngState: forbidden
+
+topologyCalibration:
+  allowed: unobstructed_bounded_square_rectangles_matching_s01_target_shape
+  forbiddenCompletionClaims: [periodic, hexagonal, irregular, obstacle, fixed_boundary]
+  barriersAre: temporary_engine_side_proposal_suppression_on_declared_edges_not_environment_obstacles
+  immobilityIs: temporary_engine_side_proposal_suppression_for_declared_identities_not_fixed_role_metadata
+  policyVisibility: neither barrier edges nor immobilized identities enter S05 observations
+
+targetPolicyMatrix:
+  - {targetId: stripes_alternating_three_band, grammarId: stripes_axis_relations_v1, policyId: greedy_neighbor_satisfaction_v1, s09Basis: best_random_minimum_mismatch_progress}
+  - {targetId: layers_three_ordered_tissues, grammarId: layers_ordered_contacts_v1, policyId: exploration_v1, s09Basis: best_random_minimum_mismatch_progress}
+  - {targetId: ring_core_shell_translatable, grammarId: ring_core_shell_contacts_v1, policyId: conflict_avoidance_v1, s09Basis: best_partially_correct_completion}
+  - {targetId: bilateral_lobes_with_midline, grammarId: bilateral_midline_relations_v1, policyId: memory_based_recovery_v1, s09Basis: best_partially_correct_completion}
+  - {targetId: separated_paired_regions, grammarId: separated_region_relations_v1, policyId: memory_based_recovery_v1, s09Basis: confirmed_s09_near_target_policy}
+  - {targetId: tissue_single_hole, grammarId: single_hole_boundary_relations_v1, policyId: exploration_v1, s09Basis: best_partially_correct_completion}
+  - {targetId: tissue_two_holes, grammarId: two_hole_boundary_relations_v1, policyId: exploration_v1, s09Basis: best_partially_correct_minimum_mismatch_progress}
+
+lesions:
+  compact_hole:
+    execution: simulated
+    eligibleTargets: [ring_core_shell_translatable, bilateral_lobes_with_midline, separated_paired_regions, tissue_single_hole, tissue_two_holes]
+    geometry: compact foreground sites exchanged with existing target vacancies
+    semantics: exact identity, token, vacancy-kind, and composition preservation
+  temporary_barrier:
+    execution: simulated
+    eligibleTargets: all
+    geometry: compact wound plus a connected-domain central edge barrier
+    semantics: proposals crossing declared edges are suppressed and separately charged; the graph and policy observation remain unchanged
+  immobile_cells:
+    execution: simulated
+    eligibleTargets: all
+    geometry: compact wound plus correctly placed boundary identities held immobile
+    semantics: proposals touching declared identities are suppressed and separately charged; identity/token fields remain unchanged
+  compact_wound:
+    execution: simulated
+    eligibleTargets: all
+    geometry: spatially compact disjoint cross-token adjacent exchanges
+    semantics: external count-preserving lesion permutation
+  formed_structure_displacement:
+    execution: simulated
+    eligibleTargets: all
+    geometry: whole-grid bounded-axis cyclic displacement chosen to leave the S01 target set
+    semantics: external intervention-only permutation; not an S04 policy movement primitive
+  region_deletion:
+    execution: feasibility_only
+    eligibleTargets: all
+    geometry: compact foreground removal
+    semantics: infeasible under frozen S04 identity/composition conservation and unadjusted S01 exact counts; removal remains deferred
+  cell_type_excess:
+    execution: feasibility_only
+    eligibleTargets: all
+    geometry: insertion or token conversion creating an excess target type
+    semantics: infeasible under immutable occupant tokens, site-complete occupancy, and S01 exact counts; division/insertion/conversion remain deferred
+
+severities:
+  mild:
+    affectedSiteFraction: 0.05
+    minimumCrossTokenSwaps: 2
+    holeSwapCount: 2
+    barrierBlockedEdgeFraction: 0.33
+    gateDurationTransitions: 32
+    immobileIdentityCount: 2
+    displacementShift: 1
+  severe:
+    affectedSiteFraction: 0.12
+    minimumCrossTokenSwaps: 4
+    holeSwapCount: 4
+    barrierBlockedEdgeFraction: 0.75
+    gateDurationTransitions: 64
+    immobileIdentityCount: 4
+    displacementShift: 2
+
+timing:
+  damageTransition: 0
+  meaning: immediately_after_independent_s01_and_s02_verification_of_the_exact_formed_source
+  repairClockOrigin: post_lesion_state_before_first_policy_transition
+  preDamageActivity: none
+  activityOrQuiescenceAsRepair: forbidden
+
+simulation:
+  arms: [no_damage, lesion]
+  actorBatchSize: 4
+  exploratoryPostDamageBudgetTransitions: 64
+  confirmationPostDamageBudgetTransitions: 128
+  exploratoryReplicatesPerConditionArm: 250
+  confirmationPairsPerPromotedContrast: 1000
+  simulatedTargetLesionPairs: 33
+  exploratoryConditionArmCount: 132
+  exploratoryRunCount: 33000
+  maximumPromotedContrasts: 3
+  maximumConfirmationRunCount: 6000
+  stopping: fixed_event_budget_only
+  earlyStopping: forbidden
+
+pairing:
+  unit: targetId_lesionId_severity_split_replicate
+  sharedAcrossArms: [formed_source_state, policy, scheduler_key, channel_noise_key, post_damage_budget]
+  runIdentityAdds: arm
+  exploratorySplit: exploratory
+  confirmationSplit: confirmation_holdout
+  crossSplitSeedOverlap: forbidden
+  confirmationLockedUntilPromotionWritten: true
+
+feasibility:
+  simulatedRequirement: pre_damage_conjunctive_true_and_post_damage_conjunctive_false_and_exact_identity_token_kind_site_conservation
+  reachabilityCertificate: connected_mobile_graph_plus_exact_remaining_token_multiset_or_full_connected_graph_exact_composition
+  countChangingRule: never_launch_without_a_separately_versioned_vacancy_or_count_adjusted_target_contract
+  regionDeletionDecision: infeasible_no_adjusted_contract
+  cellTypeExcessDecision: infeasible_no_adjusted_contract
+
+outcomes:
+  primary:
+    - lesionRepairByBudget
+    - pairedTerminalConjunctiveRiskDifferenceLesionMinusNoDamage
+    - pairedTerminalS01MismatchDifferenceLesionMinusNoDamage
+    - lesionMinimumMismatchClosureFraction
+  repairRule: feasible lesion begins outside the conjunctive target and subsequently satisfies S02 grammar acceptance AND independent S01 equivalence/component/topology audit
+  separateFields: [terminalS02GrammarAccepted, terminalS02RelationalScore, terminalS01GlobalSuccess, terminalS01ComponentMatch, terminalS01TopologyMatch, terminalConjunctiveCompletion, localGlobalDiscordance]
+  secondary: [firstRepairTransition, terminalConjunctiveCompletion, minimumS01MismatchFraction, acceptedMovements, totalGraphDisplacement, suppressedProposals, lesionExternalDisplacement, observationAndChannelLedgers]
+  interpretation: repair is post-lesion target restoration; no-damage target maintenance and S09 baseline formation remain distinct estimands
+
+censoring:
+  feasibleLesionNonrepair: right_censored_at_fixed_post_damage_budget
+  noDamageArm: not_a_repair_risk_set_and_not_censored
+  infeasibleCountChangingLesion: not_launched_and_classified_infeasible_not_censored
+  invariantViolation: failed_release_critical_not_censored
+  executionError: failed_not_censored
+  exclusions: none
+  allIntendedLaunchedRunsRequiredInAccounting: true
+
+promotion:
+  candidateContrasts: every simulated lesion condition versus its paired no-damage arm
+  eligibilityAny:
+    absolutePairedTerminalCompletionRiskDifference: 0.10
+    absolutePairedTerminalMismatchDifference: 0.04
+    lesionRepairFraction: 0.20
+    lesionMeanMinimumMismatchClosureFraction: 0.50
+  ranking: maximum_threshold_standardized_effect_then_contrast_id
+  diversityConstraints: [at_most_one_per_lesion_family, at_most_one_per_target]
+  maximumPromotedContrasts: 3
+  runtimeAndWallClockForbiddenFromSelection: true
+
+confirmation:
+  pairedBootstrapReplicates: 10000
+  familywiseAlpha: 0.05
+  intervalAdjustment: bonferroni_over_promoted_contrasts
+  direction: frozen_from_exploratory_dominant_metric_before_holdout_open
+  practicalThresholds:
+    absoluteTerminalCompletionRiskDifference: 0.05
+    absoluteTerminalMismatchDifference: 0.02
+    lesionRepairFraction: 0.20
+    lesionRepairWilsonLower95: 0.15
+    meanMinimumMismatchClosureFraction: 0.50
+  contrastConfirmedRule: dominant paired effect crosses its practical threshold in the frozen direction and its adjusted interval excludes zero, or bounded repair support meets both repair and closure thresholds
+  s10SupportRule: at least one promoted feasible lesion has bounded repair support and at least one promoted paired lesion effect confirms geometry or affordance dependence
+
+backend:
+  production: canonical_s07_cpu_oracle_fallback
+  reason: condition arms of 250 or 1000 remain below the S07 material GPU crossover and proposal suppression, target audits, masks, hashes, and ledgers are CPU control-plane work
+  allowedGpuScope: frozen_s08_masked_decision_and_validated_integer_transition_data_plane_only
+  cpuWorkers: 8
+
+traceAndReplay:
+  traceSampleFraction: 0.01
+  traceSelection: lowest_sha256_run_ids_within_each_condition_arm_before_outcomes
+  failuresAlwaysSelected: true
+  exactCpuReplay: lexicographically_first_pair_per_simulated_target_lesion_severity_and_phase
+  replayRequirement: byte_exact_episode_metric_and_intervention_summary
+
+validationRequirements:
+  - complete_run_accounting
+  - lesion_severity_and_mask_geometry
+  - pre_damage_hash_and_formed_source
+  - target_feasibility_and_explicit_count_changing_infeasibility
+  - deterministic_seed_regeneration
+  - sampled_exact_cpu_replay
+  - target_metric_agreement
+  - identity_token_kind_site_invariants
+  - permission_isolation
+  - intervention_and_movement_cost_reconciliation
+  - right_censoring_consistency
+  - separate_s02_and_s01_fields
+  - artifact_hash_coverage
