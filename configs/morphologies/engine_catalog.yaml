@@ -1,0 +1,141 @@
+schemaVersion: e06.s07.engine-catalog.v1
+researchStepId: S07
+engineVersion: e06-morph2d-hybrid-engine-v1
+scope:
+  cpuOracle: exact_s04_s05_s06_reference_episode
+  gpuControlPlane: cpu_exact_observation_authentication_and_sha_priority
+  gpuDataPlane: masked_policy_decision_conflict_claiming_and_atomic_integer_commit
+  parityDeferredToS08: exhaustive_transitions_random_states_and_distributional_full_episodes
+  forbiddenChanges:
+    - policy_or_controller_input_widening
+    - raw_route_or_site_identity_disclosure
+    - analysis_label_access
+    - whole_grid_s02_or_s01_completion_access
+    - future_state_or_future_random_draw_access
+    - direct_recipient_scan_or_retry
+    - configuration_cost_amortization
+episodeContract:
+  transitionBudget: 32
+  epochLengthTransitions: 16
+  actorBatchSize: 4
+  scheduler: state_blind_identity_hash_rank_without_replacement_per_transition
+  randomness: sha256_counter_addressed
+  conflict: exact_s04_priority_rank_and_greedy_disjoint_claim
+  terminal: fixed_transition_budget_for_s07_engine_validation
+  traceSelection: transition_zero_every_sixteenth_and_final
+  configurationAccounting: charged_once_in_full_per_episode_never_divided_by_transitions
+gpuTensorContract:
+  stateDtype: int32
+  featureDtype: int16
+  indexDtype: int64
+  maximumCandidates: 16
+  maximumRouteLength: 6
+  maskedObservationFields:
+    - local_relation_delta
+    - natural_boundary_delta
+    - gradient_delta
+    - lagged_conflict_count
+    - movement_cost
+    - boundary_directive_applies
+    - exploration_index
+    - current_local_relation_utility
+    - own_memory_best_local_utility
+  enginePrivateFields:
+    - occupant_index_state
+    - proposal_routes
+    - proposal_kind
+    - rotation_direction
+    - exact_s04_priority_rank
+  excludedPolicyFields:
+    - actor_identity
+    - site_ids
+    - routes
+    - occupant_identities
+    - authentication_hashes
+    - site_roles
+    - raw_boundary_tags
+    - current_batch_proposals
+    - conflict_priorities
+    - analysis_labels
+    - s02_whole_grid_score
+    - s01_global_completion_audit
+    - future_state
+benchmarkContract:
+  device: cuda
+  cpuThreads: 8
+  warmupIterations: 5
+  measuredIterationsByBatch:
+    "1": 100
+    "32": 100
+    "256": 100
+    "2048": 50
+    "16384": 20
+    "131072": 5
+  batchSizes: [1, 32, 256, 2048, 16384, 131072]
+  targetBatchSize: 262144
+  targetSites: 81
+  targetProposals: 8
+  targetRouteLength: 3
+  materialBenefitThresholdSpeedup: 2.0
+  fullHybridBatchSizes: [1, 8, 32]
+scenarios:
+  - scenarioId: s07-greedy-local
+    environmentId: square_bounded_occupied_stripes
+    policyId: greedy_neighbor_satisfaction_v1
+    relationGrammarId: stripes_axis_relations_v1
+    channelMode: none
+    initialSwap: [r2_c0, r3_c0]
+  - scenarioId: s07-gradient-static
+    environmentId: square_periodic_vacancy
+    policyId: gradient_following_v1
+    relationGrammarId: null
+    channelMode: static_gradient
+    gradientAxis: second
+    gradientDirection: up
+  - scenarioId: s07-boundary-natural
+    environmentId: square_bounded_occupied_stripes
+    policyId: boundary_seeking_v1
+    relationGrammarId: null
+    channelMode: boundary_signal
+    boundaryDirection: seek
+    boundaryTokens: [A]
+  - scenarioId: s07-exploration-local
+    environmentId: hexagonal_bounded_occupied
+    policyId: exploration_v1
+    relationGrammarId: null
+    channelMode: none
+  - scenarioId: s07-memory-local
+    environmentId: square_bounded_occupied_stripes
+    policyId: memory_based_recovery_v1
+    relationGrammarId: stripes_axis_relations_v1
+    channelMode: none
+    initialSwap: [r2_c0, r3_c0]
+    memoryInitialBestLocalUtility: 12
+  - scenarioId: s07-conflict-local
+    environmentId: square_bounded_occupied_stripes
+    policyId: conflict_avoidance_v1
+    relationGrammarId: stripes_axis_relations_v1
+    channelMode: none
+    initialSwap: [r2_c0, r3_c0]
+  - scenarioId: s07-instruction-advisory
+    environmentId: square_periodic_vacancy
+    policyId: exploration_v1
+    relationGrammarId: null
+    channelMode: sparse_instruction
+    instruction: prefer_exploration
+    regionAlias: zone_1
+    regionSize: 4
+    regionCount: 5
+  - scenarioId: s07-summary-advisory
+    environmentId: square_bounded_occupied_stripes
+    policyId: conflict_avoidance_v1
+    relationGrammarId: stripes_axis_relations_v1
+    channelMode: global_summary
+    summaryRecipients: 8
+    initialSwap: [r2_c0, r3_c0]
+  - scenarioId: s07-direct-bounded
+    environmentId: square_bounded_occupied_stripes
+    policyId: greedy_neighbor_satisfaction_v1
+    relationGrammarId: stripes_axis_relations_v1
+    channelMode: direct_intervention
+    initialSwap: [r2_c0, r3_c0]
