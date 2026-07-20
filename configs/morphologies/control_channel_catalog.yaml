@@ -1,0 +1,291 @@
+schemaVersion: e06.s06.control-channel-catalog.v1
+researchStepId: S06
+libraryVersion: e06-top-down-channels-v1
+commonBudgetContract:
+  epochLengthTransitions: 16
+  ledgerFields:
+    - sourceScalarReads
+    - controllerStateReads
+    - recipientDeliveries
+    - configurationBits
+    - controllerInputBits
+    - policyDeliveryBits
+    - addressBits
+    - totalInformationBits
+    - noiseDraws
+    - controllerComputeUnits
+    - actuationAttempts
+    - actuationSuccesses
+    - overrideActionUnits
+    - movementGraphDisplacement
+    - suppressedNativeActions
+    - opportunityCostUnits
+  informationRule: totalInformationBits = configurationBits + controllerInputBits + policyDeliveryBits + addressBits.
+  actionRule: Report overrideActionUnits, movementGraphDisplacement, suppressedNativeActions, and opportunityCostUnits separately; never convert them to bits.
+  nonDoubleCountingRule: S05 communicatedBitsUpperBound already includes a channel-derived policy payload when present; report that value as policyDeliveryBits and do not add it again to a combined S05 observation total.
+  comparisonRule: Match the information vector and action vector component-wise where possible; report rather than erase semantic and computational asymmetries.
+  comparisonProfiles:
+    delivery_matched_64:
+      purpose: Advisory-channel comparison with no direct actuation.
+      maxRuntimePolicyDeliveryBitsPerEpoch: 64
+      maxRuntimeControllerInputBitsPerEpoch: 0
+      maxAddressBitsPerEpoch: 4
+      maxActuationAttemptsPerEpoch: 0
+      configurationBitsTreatment: report_separately_not_matched
+    action_matched_sparse_1:
+      purpose: Sparse-direct and hybrid comparison.
+      maxRuntimeControllerInputBitsPerEpoch: 352
+      maxAddressBitsPerEpoch: 7
+      maxActuationAttemptsPerEpoch: 1
+      maxOverrideActionUnitsPerEpoch: 1
+      maxMovementGraphDisplacementPerEpoch: 6
+      policyDeliveryBitsTreatment: report_separately
+    native_availability:
+      purpose: Exploratory use at each channel's native cap; not an information-matched causal contrast.
+      rule: Use channel-specific maxima and label results unmatched.
+permissionContract:
+  s05Boundary: S05 base policy payloads, opaque candidates, authentication separation, and independent S02-local/S01-global evaluation fields remain unchanged.
+  channelAttachment: A future engine may attach a separately versioned channelPayload only after validating this catalog and charging its ledger.
+  directInspectionLimit: At most one state-blind preselected opaque recipient and one immutable S05 payload may be inspected per epoch.
+  directActionLimit: At most one opaque-candidate selection attempt per epoch; no recipient scan, native-action suppression, route selection, or action retry.
+  globallyForbiddenControllerInputs:
+    - full_state
+    - occupancy
+    - site_tokens
+    - site_ids
+    - routes
+    - occupant_identities
+    - actor_identity
+    - site_roles
+    - raw_boundary_tags
+    - obstacle_and_fixed_metadata
+    - proposal_authentication
+    - current_batch_proposals
+    - conflict_priorities
+    - analysis_labels
+    - S02_whole_grid_score
+    - S01_global_completion_audit
+    - target_membership
+    - future_state
+    - future_random_draws
+  policyPayloadRule: Raw engine-source fields and controller state are never copied into a policy payload.
+channels:
+  - channelId: static_gradient_v1
+    channelType: static_gradient
+    source:
+      owner: scenario_author
+      implementation: state_blind_scenario_compiler
+      allowedInputs: [environment_geometry, display_coordinates, frozen_axis, frozen_direction]
+      runtimeStateReads: []
+    semanticContent: One uint8 scalar per occupiable site plus one declared up/down direction; S05 exposes only current level and candidate deltas.
+    spatialResolution: per_site_engine_field_actor_and_candidate_projection_only
+    updateSchedule: initialization_only_immutable_for_episode
+    noiseModel:
+      kind: bounded_uniform_integer
+      parameters: {radius: 2}
+      calibrationDraws: 100000
+      toleranceAbsoluteProbability: 0.01
+    bandwidth:
+      configurationBitsFormula: 8 * occupiable_sites + 1 direction bit
+      policyBitsFormula: 9 current/directive bits + 9 bits per opaque candidate delta
+      maxConfigurationBitsPerScenario: 649
+      maxControllerInputBitsPerEpoch: 0
+      maxPolicyDeliveryBitsPerEpoch: 1600
+      maxAddressBitsPerEpoch: 0
+    actionCost:
+      kind: advisory_only
+      maxActuationAttemptsPerEpoch: 0
+      maxOverrideActionUnitsPerEpoch: 0
+      maxMovementGraphDisplacementPerEpoch: 0
+    controllerStatePermissions:
+      allowed: []
+      persistentBits: 0
+    targetSpecificity: scenario_authored_axis_direction_and_field
+    unavoidableAsymmetries:
+      - Encodes a per-site spatial prior before runtime.
+      - Repeated reads reuse a configuration whose one-time description cost scales with site count.
+      - Quantization and clipping make endpoint noise asymmetric.
+  - channelId: natural_boundary_signal_v1
+    channelType: boundary_signal
+    source:
+      owner: environment_author
+      implementation: s03_natural_exterior_projector
+      allowedInputs: [environment_boundary_contract, raw_boundary_tags_engine_only, frozen_seek_or_avoid, declared_actor_tokens]
+      runtimeStateReads: [actor_token_for_directive_match]
+    semanticContent: A 0..6 natural-exterior level, seek/avoid direction, directive applicability, and noisy presence; raw tags and safety roles remain hidden.
+    spatialResolution: actor_and_candidate_natural_exterior_projection_only
+    updateSchedule: immutable_environment_projection_read_on_activation
+    noiseModel:
+      kind: independent_erasure
+      parameters: {numerator: 1, denominator: 8}
+      calibrationDraws: 100000
+      toleranceAbsoluteProbability: 0.01
+    bandwidth:
+      configurationBitsFormula: 3 * occupiable_sites + 2 directive bits
+      policyBitsFormula: 6 current/directive/applicability bits + 5 bits per opaque candidate delta/presence
+      maxConfigurationBitsPerScenario: 245
+      maxControllerInputBitsPerEpoch: 0
+      maxPolicyDeliveryBitsPerEpoch: 1280
+      maxAddressBitsPerEpoch: 0
+    actionCost:
+      kind: advisory_only
+      maxActuationAttemptsPerEpoch: 0
+      maxOverrideActionUnitsPerEpoch: 0
+      maxMovementGraphDisplacementPerEpoch: 0
+    controllerStatePermissions:
+      allowed: []
+      persistentBits: 0
+    targetSpecificity: environment_exterior_plus_scenario_declared_tokens_and_direction
+    unavoidableAsymmetries:
+      - Natural exterior is privileged environment metadata and is absent on periodic domains.
+      - Irregular exteriors depend on authored S03 tags rather than a geometry-independent sensor.
+      - Erasure semantics add a presence bit that the noiseless S05 toy did not require.
+  - channelId: sparse_instruction_v1
+    channelType: sparse_instruction
+    source:
+      owner: scenario_author
+      implementation: state_blind_preregistered_schedule
+      allowedInputs: [epoch_index, frozen_instruction_schedule, frozen_region_partition]
+      runtimeStateReads: []
+    semanticContent: One of eight high-level advisory symbols; symbols cannot name a site, identity, candidate, route, token, or target completion state.
+    spatialResolution: broadcast_or_coarse_region_minimum_four_recipients
+    updateSchedule: at_most_one_instruction_per_sixteen_transition_epoch
+    noiseModel:
+      kind: independent_erasure
+      parameters: {numerator: 1, denominator: 8}
+      calibrationDraws: 100000
+      toleranceAbsoluteProbability: 0.01
+    bandwidth:
+      configurationBitsFormula: 3 * scheduled_instructions + declared region partition description
+      policyBitsFormula: 4 bits per recipient including presence
+      maxConfigurationBitsPerScenario: 256
+      maxControllerInputBitsPerEpoch: 0
+      maxPolicyDeliveryBitsPerEpoch: 64
+      maxAddressBitsPerEpoch: 4
+    actionCost:
+      kind: advisory_only
+      maxActuationAttemptsPerEpoch: 0
+      maxOverrideActionUnitsPerEpoch: 0
+      maxMovementGraphDisplacementPerEpoch: 0
+    controllerStatePermissions:
+      allowed: [epoch_index, frozen_schedule_cursor]
+      persistentBits: 16
+    targetSpecificity: scenario_authored_schedule_and_coarse_region_partition
+    unavoidableAsymmetries:
+      - A symbol can carry more task-relevant semantics than its three-bit code length suggests.
+      - Region partition description is a separate scenario prior.
+      - State-blind timing cannot adapt to realized damage or formation progress.
+  - channelId: lagged_global_summary_v1
+    channelType: global_summary
+    source:
+      owner: audited_engine_monitor
+      implementation: delayed_bounded_aggregate_projector
+      allowedInputs: [prior_epoch_local_dissatisfaction_bits, prior_epoch_conflict_outcomes, active_count]
+      runtimeStateReads: [prior_epoch_local_dissatisfaction_bits, prior_epoch_conflict_outcomes]
+    semanticContent: A three-bit dissatisfied-fraction bin and two-bit conflict-rate bin from the previous completed epoch plus a one-bit age-valid flag.
+    spatialResolution: global_broadcast_same_payload_for_every_recipient
+    updateSchedule: once_per_epoch_with_exactly_one_epoch_delay
+    noiseModel:
+      kind: independent_adjacent_bin_jitter
+      parameters: {downNumerator: 1, unchangedNumerator: 8, upNumerator: 1, denominator: 10}
+      calibrationDraws: 100000
+      toleranceAbsoluteProbability: 0.01
+    bandwidth:
+      configurationBitsFormula: 8 fixed schema bits
+      policyBitsFormula: 6 bits per recipient
+      maxConfigurationBitsPerScenario: 8
+      maxControllerInputBitsPerEpoch: 6
+      maxPolicyDeliveryBitsPerEpoch: 96
+      maxAddressBitsPerEpoch: 0
+    actionCost:
+      kind: advisory_only
+      maxActuationAttemptsPerEpoch: 0
+      maxOverrideActionUnitsPerEpoch: 0
+      maxMovementGraphDisplacementPerEpoch: 0
+    controllerStatePermissions:
+      allowed: [last_delivered_summary, remaining_information_budget]
+      persistentBits: 22
+    targetSpecificity: grammar_parameterized_local_dissatisfaction_aggregate
+    unavoidableAsymmetries:
+      - Requires privileged aggregation over all recipients and source work scaling with population.
+      - Broadcast repeats identical bits to multiple recipients but may coordinate them.
+      - Binning, delay, and clipping discard timing and spatial distribution.
+  - channelId: sparse_direct_intervention_v1
+    channelType: direct_intervention
+    source:
+      owner: bounded_central_controller
+      implementation: one_query_one_action_opaque_adapter
+      allowedInputs: [epoch_index, remaining_budget, lagged_global_summary, one_s05_policy_payload, state_blind_recipient_alias]
+      runtimeStateReads: [one_s05_policy_payload]
+    semanticContent: For one state-blind preselected opaque recipient, select one opaque S05 candidate or take no action; the engine alone materializes and validates S04 authentication and routes. Native-action suppression is not enabled.
+    spatialResolution: one_opaque_recipient_per_epoch_selected_without_state
+    updateSchedule: at_most_one_query_and_one_action_per_sixteen_transition_epoch
+    noiseModel:
+      kind: independent_actuation_failure
+      parameters: {numerator: 1, denominator: 20}
+      calibrationDraws: 100000
+      toleranceAbsoluteProbability: 0.01
+    bandwidth:
+      configurationBitsFormula: state-blind recipient schedule plus controller rule description
+      policyBitsFormula: 0 bits; action bypasses rather than augments local policy
+      maxConfigurationBitsPerScenario: 256
+      maxControllerInputBitsPerEpoch: 352
+      maxPolicyDeliveryBitsPerEpoch: 0
+      maxAddressBitsPerEpoch: 7
+    actionCost:
+      kind: explicit_override_plus_s04_displacement
+      maxActuationAttemptsPerEpoch: 1
+      maxOverrideActionUnitsPerEpoch: 1
+      maxMovementGraphDisplacementPerEpoch: 6
+    controllerStatePermissions:
+      allowed: [epoch_index, remaining_information_budget, remaining_action_budget, last_lagged_global_summary]
+      persistentBits: 46
+    targetSpecificity: controller_rule_plus_s05_policy_payload_and_state_blind_schedule
+    unavoidableAsymmetries:
+      - Bypasses the local decision rule and therefore has qualitatively stronger causal authority than advice.
+      - Receives one priced local payload unavailable to broadcast-only channels.
+      - Controller computation and rule-description complexity are not captured by communication bits.
+      - S04 displacement and override costs are separate and cannot be equated to information.
+instructionAlphabet:
+  - noop
+  - prefer_exploration
+  - prefer_local_relation
+  - seek_natural_boundary
+  - avoid_natural_boundary
+  - ascend_gradient
+  - descend_gradient
+  - conserve_movement
+fixtures:
+  - fixtureId: gradient_static_column
+    channelId: static_gradient_v1
+    environmentId: square_periodic_vacancy
+    policyId: gradient_following_v1
+    actorSite: r2_c2
+    epochIndex: 0
+    parameters: {axis: second, direction: up, scenarioKey: s06-gradient-fixture}
+  - fixtureId: boundary_bounded_projection
+    channelId: natural_boundary_signal_v1
+    environmentId: square_bounded_occupied_stripes
+    policyId: boundary_seeking_v1
+    actorSite: r1_c1
+    epochIndex: 0
+    parameters: {direction: seek, actorTokens: [A], scenarioKey: s06-boundary-fixture}
+  - fixtureId: sparse_instruction_coarse_region
+    channelId: sparse_instruction_v1
+    environmentId: square_periodic_vacancy
+    epochIndex: 2
+    parameters: {instruction: prefer_exploration, regionAlias: zone_1, regionSize: 4, regionCount: 5, scenarioKey: s06-instruction-fixture}
+  - fixtureId: lagged_summary_broadcast
+    channelId: lagged_global_summary_v1
+    environmentId: square_periodic_vacancy
+    epochIndex: 4
+    parameters: {sourceEpoch: 3, activeCount: 8, dissatisfactionPattern: alternating_five_of_eight, submitted: 8, conflictLosses: 2, recipients: 8, scenarioKey: s06-summary-fixture}
+  - fixtureId: direct_one_query_one_action
+    channelId: sparse_direct_intervention_v1
+    environmentId: square_bounded_occupied_stripes
+    policyId: greedy_neighbor_satisfaction_v1
+    actorSite: r2_c0
+    stateTransform: adjacent_swap_r2_c0_r3_c0
+    relationGrammarId: stripes_axis_relations_v1
+    epochIndex: 3
+    parameters: {populationSize: 81, scenarioKey: s06-direct-fixture}
