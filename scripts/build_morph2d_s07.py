@@ -101,7 +101,7 @@ UPSTREAM_INPUTS = {
         "/previous-artifacts/E01/research_steps/S06/schema_documentation.md"
     ),
     "e01_s07_invariants": Path(
-        "/previous-artifacts/E01/research_steps/S07/invariant_validation_report.md"
+        "/previous-artifacts/E01/research_steps/S07/research_step_full_results.md"
     ),
     "e01_seed_spec": Path(
         "/previous-artifacts/E01/research_steps/S08/seed_specification.json"
