@@ -9,6 +9,8 @@ import yaml
 
 from src.morph2d.chimeras import (
     CHIMERA_CATALOG_VERSION,
+    _same_edge_count,
+    _swap_same_edge_delta,
     assign_executable_groups,
     assign_ghost_labels,
     decluster_assignment,
@@ -142,6 +144,30 @@ def test_decluster_preserves_state_token_strata_and_never_increases_edges(
     assert audit["compositionPreserved"]
     assert audit["sameGroupEdgesNonincreasing"]
     assert audit["postSameGroupEdges"] <= audit["preSameGroupEdges"]
+
+
+def test_local_swap_delta_is_exactly_brute_force_equivalent(assets) -> None:
+    _context, _target, _grammar, environment, _catalogs = assets
+    state = initial_movement_state(environment)
+    groups = assign_executable_groups(state, "near_balanced_41_40", "delta-test", 3)
+    labels = {
+        site_id: groups[occupant.occupant_id] for site_id, occupant in state.occupancy
+    }
+    neighbors = {site.site_id: [] for site in environment.sites}
+    for first, second in environment.edges:
+        neighbors[first].append(second)
+        neighbors[second].append(first)
+    before = _same_edge_count(environment, labels)
+    zeros = [site_id for site_id, label in labels.items() if label == 0]
+    ones = [site_id for site_id, label in labels.items() if label == 1]
+    for first in zeros:
+        for second in ones:
+            changed = dict(labels)
+            changed[first], changed[second] = changed[second], changed[first]
+            brute_force = _same_edge_count(environment, changed) - before
+            assert (
+                _swap_same_edge_delta(neighbors, labels, first, second) == brute_force
+            )
 
 
 def test_engine_heterogeneous_dispatch_is_no_channel_and_memory_free(assets) -> None:

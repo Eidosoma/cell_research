@@ -34,7 +34,7 @@ from .channels import (
     load_channel_catalog,
     realize_noisy_gradient,
 )
-from .environments import Environment, load_environment_catalog
+from .environments import Environment, load_environment_catalog, neighbor_map
 from .grammar import RelationalGrammar, load_grammar_catalog
 from .movements import (
     LEDGER_FIELDS,
@@ -426,6 +426,7 @@ def run_cpu_episode(
     """
 
     environment = context.environments[definition.environment_id]
+    environment_neighbors = neighbor_map(environment)
     policy = context.policies[definition.policy_id]
     relation_profile = (
         None
@@ -577,6 +578,7 @@ def run_cpu_episode(
     channel_ledger["totalInformationBits"] = channel_ledger["configurationBits"]
 
     for transition_index in range(definition.transitions):
+        transition_state_sha256 = movement_state_sha256(state)
         if transition_index in validated_switches:
             policies_by_actor, profiles_by_actor = validated_switches[transition_index]
         epoch_index = transition_index // EPOCH_LENGTH_TRANSITIONS
@@ -665,6 +667,8 @@ def run_cpu_episode(
                 lagged_conflicts=lagged_conflicts,
                 decision_key=definition.scenario_id,
                 activation_index=transition_index * definition.actor_batch_size,
+                _state_sha256=transition_state_sha256,
+                _neighbors=environment_neighbors,
             )
             _add_ledger(
                 observation_ledger,
@@ -787,6 +791,8 @@ def run_cpu_episode(
                 else None,
                 decision_key=definition.scenario_id,
                 activation_index=transition_index * definition.actor_batch_size + slot,
+                _state_sha256=transition_state_sha256,
+                _neighbors=environment_neighbors,
             )
             payload: Mapping[str, Any] = build.observation.payload
             if mode == "boundary_signal":

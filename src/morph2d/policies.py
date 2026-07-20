@@ -275,11 +275,17 @@ def local_contact_utility(
     state: MovementState,
     actor_id: str,
     profile: RelationProfile,
+    *,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
+    _occupancy: Mapping[str, Any] | None = None,
+    _locations: Mapping[str, str] | None = None,
 ) -> tuple[int, int]:
-    occupancy = state.occupant_map
-    locations = {
-        occupant.occupant_id: site_id for site_id, occupant in occupancy.items()
-    }
+    occupancy = state.occupant_map if _occupancy is None else _occupancy
+    locations = (
+        {occupant.occupant_id: site_id for site_id, occupant in occupancy.items()}
+        if _locations is None
+        else _locations
+    )
     if actor_id not in locations:
         raise PolicyValidationError("actor identity is absent from movement state")
     site_id = locations[actor_id]
@@ -287,7 +293,9 @@ def local_contact_utility(
     if actor.kind != "cell":
         raise PolicyValidationError("only cell occupants can execute an Algotype")
     weights = profile.weight_map
-    neighbors = neighbor_map(environment)[site_id]
+    neighbors = (neighbor_map(environment) if _neighbors is None else _neighbors)[
+        site_id
+    ]
     utility = sum(
         weights.get((actor.token, occupancy[other].token), 0) for other in neighbors
     )
@@ -354,9 +362,13 @@ def _actor_target(proposal: MovementProposal) -> str:
 
 
 def _simple_cycles_from_actor(
-    environment: Environment, source: str, maximum_length: int = 6
+    environment: Environment,
+    source: str,
+    maximum_length: int = 6,
+    *,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> tuple[tuple[str, ...], ...]:
-    neighbors = neighbor_map(environment)
+    neighbors = neighbor_map(environment) if _neighbors is None else _neighbors
     cycles: set[tuple[str, ...]] = set()
 
     def visit(path: tuple[str, ...]) -> None:
@@ -380,6 +392,9 @@ def enumerate_candidate_affordances(
     state: MovementState,
     actor_id: str,
     definition: PolicyDefinition,
+    *,
+    _state_sha256: str | None = None,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> tuple[tuple[CandidateAffordance, ...], dict[str, int]]:
     """Build legal S04 candidates while keeping their routes engine-private."""
 
@@ -393,7 +408,10 @@ def enumerate_candidate_affordances(
     if occupancy[source].kind != "cell":
         raise PolicyValidationError("Algotype actor must be a cell")
     allowed = set(definition.allowed_movement_kinds)
-    neighbors = neighbor_map(environment)
+    neighbors = neighbor_map(environment) if _neighbors is None else _neighbors
+    state_sha256 = (
+        movement_state_sha256(state) if _state_sha256 is None else _state_sha256
+    )
     raw: list[MovementProposal] = []
     topology_reads = 0
     role_reads = 0
@@ -409,8 +427,19 @@ def enumerate_candidate_affordances(
             )
             if kind not in allowed:
                 continue
-            proposal = make_proposal(state, kind, (source, target))
-            if validate_proposal(environment, state, proposal).valid:
+            proposal = make_proposal(
+                state,
+                kind,
+                (source, target),
+                observed_state_sha256=state_sha256,
+            )
+            if validate_proposal(
+                environment,
+                state,
+                proposal,
+                _state_sha256=state_sha256,
+                _neighbors=neighbors,
+            ).valid:
                 raw.append(proposal)
 
     if "short_exchange" in allowed:
@@ -423,20 +452,41 @@ def enumerate_candidate_affordances(
                 if target == source:
                     continue
                 proposal = make_proposal(
-                    state, "short_exchange", (source, middle, target)
+                    state,
+                    "short_exchange",
+                    (source, middle, target),
+                    observed_state_sha256=state_sha256,
                 )
-                if validate_proposal(environment, state, proposal).valid:
+                if validate_proposal(
+                    environment,
+                    state,
+                    proposal,
+                    _state_sha256=state_sha256,
+                    _neighbors=neighbors,
+                ).valid:
                     raw.append(proposal)
 
     if "rotation" in allowed:
-        for cycle in _simple_cycles_from_actor(environment, source):
+        for cycle in _simple_cycles_from_actor(
+            environment, source, _neighbors=neighbors
+        ):
             topology_reads += len(cycle)
             role_reads += len(cycle)
             for direction in (-1, 1):
                 proposal = make_proposal(
-                    state, "rotation", cycle, rotation_direction=direction
+                    state,
+                    "rotation",
+                    cycle,
+                    rotation_direction=direction,
+                    observed_state_sha256=state_sha256,
                 )
-                if validate_proposal(environment, state, proposal).valid:
+                if validate_proposal(
+                    environment,
+                    state,
+                    proposal,
+                    _state_sha256=state_sha256,
+                    _neighbors=neighbors,
+                ).valid:
                     raw.append(proposal)
 
     unique = {proposal.proposal_id: proposal for proposal in raw}
@@ -455,7 +505,7 @@ def enumerate_candidate_affordances(
             "E06/S05/opaque-candidate-rank/v1",
             {
                 "policyId": definition.policy_id,
-                "stateSha256": movement_state_sha256(state),
+                "stateSha256": state_sha256,
                 "proposalId": item.proposal_id,
             },
         ),
@@ -478,7 +528,7 @@ def enumerate_candidate_affordances(
             "E06/S05/opaque-candidate-order/v1",
             {
                 "policyId": definition.policy_id,
-                "stateSha256": movement_state_sha256(state),
+                "stateSha256": state_sha256,
                 "proposalId": item.proposal_id,
             },
         ),
@@ -612,11 +662,22 @@ def build_policy_observation(
     memory: PolicyMemory | None = None,
     decision_key: str = "default",
     activation_index: int = 0,
+    _state_sha256: str | None = None,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> ObservationBuild:
     """Construct an immutable observation envelope and engine-only handle map."""
 
+    source_hash = (
+        movement_state_sha256(state) if _state_sha256 is None else _state_sha256
+    )
+    neighbors = neighbor_map(environment) if _neighbors is None else _neighbors
     candidates, affordance_cost = enumerate_candidate_affordances(
-        environment, state, actor_id, definition
+        environment,
+        state,
+        actor_id,
+        definition,
+        _state_sha256=source_hash,
+        _neighbors=neighbors,
     )
     occupancy = state.occupant_map
     locations = {
@@ -646,7 +707,13 @@ def build_policy_observation(
         if relation_profile is None:
             raise PolicyValidationError("policy requires an S02 local relation profile")
         current_utility, reads = local_contact_utility(
-            environment, state, actor_id, relation_profile
+            environment,
+            state,
+            actor_id,
+            relation_profile,
+            _neighbors=neighbors,
+            _occupancy=occupancy,
+            _locations=locations,
         )
         ledger["localTokenReads"] += reads
         ledger["utilityEvaluations"] += 1
@@ -654,8 +721,15 @@ def build_policy_observation(
         ledger["communicatedBitsUpperBound"] += 8
         for candidate in candidates:
             preview = _preview_state(environment, state, candidate.proposal)
+            preview_occupancy = preview.occupant_map
             after, after_reads = local_contact_utility(
-                environment, preview, actor_id, relation_profile
+                environment,
+                preview,
+                actor_id,
+                relation_profile,
+                _neighbors=neighbors,
+                _occupancy=preview_occupancy,
+                _locations={actor_id: candidate.target_site},
             )
             utility_deltas[candidate.candidate_key] = after - current_utility
             ledger["localTokenReads"] += after_reads
@@ -785,7 +859,6 @@ def build_policy_observation(
     validate_policy_payload(payload)
     if set(ledger) != set(OBSERVATION_LEDGER_FIELDS):
         raise PolicyValidationError("observation ledger schema mismatch")
-    source_hash = movement_state_sha256(state)
     body = _observation_body(
         definition.policy_id,
         definition.strategy,

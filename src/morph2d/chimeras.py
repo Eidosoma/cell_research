@@ -348,10 +348,42 @@ def _same_edge_count(environment: Environment, labels: Mapping[str, int]) -> int
     )
 
 
+def _swap_same_edge_delta(
+    neighbors: Mapping[str, Sequence[str]],
+    labels: Mapping[str, int],
+    first: str,
+    second: str,
+) -> int:
+    """Return the exact same-label edge-count change for swapping two labels."""
+
+    first_label = labels[first]
+    second_label = labels[second]
+    if first_label == second_label:
+        return 0
+    delta = 0
+    for neighbor in neighbors[first]:
+        if neighbor == second:
+            continue
+        neighbor_label = labels[neighbor]
+        delta += int(second_label == neighbor_label) - int(
+            first_label == neighbor_label
+        )
+    for neighbor in neighbors[second]:
+        if neighbor == first:
+            continue
+        neighbor_label = labels[neighbor]
+        delta += int(first_label == neighbor_label) - int(
+            second_label == neighbor_label
+        )
+    return delta
+
+
 def graph_label_metrics(
     environment: Environment,
     state: MovementState,
     labels_by_identity: Mapping[str, int],
+    *,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> dict[str, Any]:
     site_labels = _site_labels(state, labels_by_identity)
     counts = Counter(site_labels.values())
@@ -389,7 +421,7 @@ def graph_label_metrics(
         if nmi is None or assortativity is None
         else math.copysign(nmi, assortativity)
     )
-    neighbors = neighbor_map(environment)
+    neighbors = neighbor_map(environment) if _neighbors is None else _neighbors
     visited: set[str] = set()
     component_sizes: dict[int, list[int]] = defaultdict(list)
     for site_id in sorted(site_labels):
@@ -473,7 +505,6 @@ def decluster_assignment(
             )
         compute_units = 0
         while True:
-            current_same = _same_edge_count(environment, site_labels)
             best: tuple[int, bytes, str, str] | None = None
             for token, sites in sorted(by_token_sites.items()):
                 zeros = [site for site in sites if site_labels[site] == 0]
@@ -481,9 +512,9 @@ def decluster_assignment(
                 for first in zeros:
                     for second in ones:
                         compute_units += 1
-                        changed = dict(site_labels)
-                        changed[first], changed[second] = 1, 0
-                        delta = _same_edge_count(environment, changed) - current_same
+                        delta = _swap_same_edge_delta(
+                            neighbors, site_labels, first, second
+                        )
                         tie = _rank(
                             "E06/S11/decluster-swap/v1",
                             pairing_key,
@@ -589,6 +620,7 @@ class ChimeraTracker:
         retain_projection: bool = False,
     ) -> None:
         self.environment = environment
+        self.neighbors = neighbor_map(environment)
         self.target_tracker = TargetMetricTracker(environment, target, grammar)
         self.grammar = grammar
         self.initial_groups = dict(initial_groups)
@@ -663,17 +695,34 @@ class ChimeraTracker:
         )
         if not checkpoint:
             return
-        primary = graph_label_metrics(self.environment, state, groups)
-        ghost = graph_label_metrics(self.environment, state, self.ghost_labels)
+        primary = graph_label_metrics(
+            self.environment, state, groups, _neighbors=self.neighbors
+        )
+        ghost = graph_label_metrics(
+            self.environment, state, self.ghost_labels, _neighbors=self.neighbors
+        )
         collapsed = graph_label_metrics(
-            self.environment, state, {identity: 0 for identity in groups}
+            self.environment,
+            state,
+            {identity: 0 for identity in groups},
+            _neighbors=self.neighbors,
         )
         grid = state_grid(self.environment, state)
         local = score_grid(grid, self.grammar)
         profiles = self.profiles_at(transition_index)
+        occupancy = state.occupant_map
+        locations = {
+            occupant.occupant_id: site_id for site_id, occupant in occupancy.items()
+        }
         utilities = [
             local_contact_utility(
-                self.environment, state, identity, profiles[identity]
+                self.environment,
+                state,
+                identity,
+                profiles[identity],
+                _neighbors=self.neighbors,
+                _occupancy=occupancy,
+                _locations=locations,
             )[0]
             for identity in sorted(groups)
         ]

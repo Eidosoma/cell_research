@@ -427,9 +427,14 @@ def parse_proposal(raw: Mapping[str, Any]) -> MovementProposal:
 
 
 def _shortest_distance(
-    environment: Environment, source: str, target: str, maximum: int
+    environment: Environment,
+    source: str,
+    target: str,
+    maximum: int,
+    *,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> int | None:
-    neighbors = neighbor_map(environment)
+    neighbors = neighbor_map(environment) if _neighbors is None else _neighbors
     if source not in neighbors or target not in neighbors:
         return None
     queue = deque([(source, 0)])
@@ -470,6 +475,9 @@ def validate_proposal(
     environment: Environment,
     state: MovementState,
     proposal: MovementProposal,
+    *,
+    _state_sha256: str | None = None,
+    _neighbors: Mapping[str, Sequence[str]] | None = None,
 ) -> ProposalValidation:
     """Validate one proposal against the immutable pre-batch snapshot."""
 
@@ -480,7 +488,10 @@ def validate_proposal(
     if proposal.kind not in ENABLED_KINDS:
         return _invalid_validation(proposal, "unknown_kind", ledger)
     ledger["stateHashChecks"] = 1
-    if proposal.observed_state_sha256 != movement_state_sha256(state):
+    state_sha256 = (
+        movement_state_sha256(state) if _state_sha256 is None else _state_sha256
+    )
+    if proposal.observed_state_sha256 != state_sha256:
         return _invalid_validation(proposal, "stale_observation", ledger)
     route = proposal.route
     if not route or proposal.source_site != route[0]:
@@ -564,7 +575,16 @@ def validate_proposal(
                 route,
                 ledger["adjacencyChecks"],
             )
-        if _shortest_distance(environment, route[0], route[2], 2) != 2:
+        if (
+            _shortest_distance(
+                environment,
+                route[0],
+                route[2],
+                2,
+                _neighbors=_neighbors,
+            )
+            != 2
+        ):
             return _invalid_validation(
                 proposal, "short_exchange_endpoints_not_distance_two", ledger, route, 2
             )
