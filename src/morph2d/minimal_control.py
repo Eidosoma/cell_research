@@ -9,6 +9,7 @@ separate components.
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from collections import Counter, deque
@@ -22,7 +23,7 @@ import yaml
 from .baseline import _rectangle_expected, load_baseline_assets
 from .engine import EpisodeDefinition, canonical_episode_result_bytes, run_cpu_episode
 from .environments import Environment, parse_environment_spec
-from .hybrid_control import canonical_bytes, run_hybrid_once
+from .hybrid_control import canonical_bytes, load_hybrid_catalog, run_hybrid_once
 from .movements import (
     MovementState,
     initial_movement_state,
@@ -209,8 +210,29 @@ def run_minimal_once(
         policy_id,
     )
     base_arm = str(policy["baseArm"])
+    hybrid_catalog = copy.deepcopy(load_hybrid_catalog())
+    registered_targets = {
+        str(item["targetId"])
+        for item in hybrid_catalog["topologyAndFeasibility"]["targets"]
+    }
+    if target_id not in registered_targets:
+        _context, _targets, grammars, _environments = load_baseline_assets()
+        grammar = next(
+            item for item in grammars.values() if item.target_id == target_id
+        )
+        hybrid_catalog["topologyAndFeasibility"]["targets"].append(
+            {
+                "targetId": target_id,
+                "grammarId": grammar.grammar_id,
+                # S14 held-out policies are greedy/direct only. These inherited
+                # fields are never delivered to a gradient policy.
+                "gradientAxis": "first",
+                "gradientDirection": "up",
+            }
+        )
     row, trace, mask = run_hybrid_once(
         {
+            "catalog": hybrid_catalog,
             "phase": str(specification["phase"]),
             "split": str(specification["split"]),
             "targetId": target_id,

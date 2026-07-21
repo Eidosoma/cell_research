@@ -78,6 +78,19 @@ def test_zero_query_central_freeze_replays_and_prices_foregone_opportunity() -> 
     assert first["permissionAuditSuccess"]
 
 
+def test_calibrated_heldout_target_is_registered_without_widening_completion() -> None:
+    specification = {
+        **_minimal_spec("central_q0_freeze", transitions=17),
+        "targetId": "ring_core_shell_translatable",
+        "replicate": 1,
+    }
+    row, _, _ = run_minimal_once(specification)
+    assert row["targetId"] == "ring_core_shell_translatable"
+    assert row["topologyCompletionCalibrated"]
+    assert row["terminalConjunctiveCompletion"]
+    assert row["directRecipientQuerySlots"] == 0
+
+
 def test_narrow_query_reduces_controller_input_without_reducing_source_work() -> None:
     narrow, _, _ = run_minimal_once(_minimal_spec("central_q4_low1"))
     full, _, _ = run_minimal_once(_minimal_spec("central_q4_spread_full"))

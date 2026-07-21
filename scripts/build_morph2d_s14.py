@@ -360,6 +360,17 @@ def run_tasks(
     return frame, traces, execution
 
 
+def require_zero_failures(frame: pd.DataFrame, label: str) -> None:
+    failures = int(frame["failed"].sum()) if not frame.empty else 0
+    if failures:
+        messages = (
+            frame.loc[frame["failed"], ["errorType", "errorMessage"]]
+            .drop_duplicates()
+            .to_dict(orient="records")
+        )
+        raise RuntimeError(f"{label} produced {failures} failed rows: {messages}")
+
+
 def wilson_interval(successes: int, total: int) -> tuple[float, float]:
     if total <= 0:
         return float("nan"), float("nan")
@@ -729,6 +740,7 @@ def execute_holdout(output: Path, cache: Path, workers: int) -> None:
         label="heldout",
         kind="calibrated",
     )
+    require_zero_failures(heldout, "heldout")
     negative, negative_traces, negative_execution = run_tasks(
         negative_tasks,
         versioned_cache,
@@ -736,6 +748,7 @@ def execute_holdout(output: Path, cache: Path, workers: int) -> None:
         label="negative_audit",
         kind="calibrated",
     )
+    require_zero_failures(negative, "negative endpoint audit")
     transfer, transfer_traces, transfer_execution = run_tasks(
         transfer_tasks,
         versioned_cache,
@@ -743,6 +756,7 @@ def execute_holdout(output: Path, cache: Path, workers: int) -> None:
         label="transfer",
         kind="transfer",
     )
+    require_zero_failures(transfer, "spatial transfer")
     heldout.to_parquet(
         output / "heldout_results.parquet", index=False, compression="zstd"
     )
@@ -967,8 +981,40 @@ def validation_summary(
         output / "transfer_results.parquet",
     ]
     frames = [pd.read_parquet(path) for path in result_paths]
+    calibrated_frames = frames[:-1]
+    transfer = frames[-1]
     total = sum(len(frame) for frame in frames)
     failures = sum(int(frame["failed"].sum()) for frame in frames)
+    transfer_budget_failures = transfer[~transfer["s14BudgetSuccess"]]
+    expected_transfer_budget_failure = bool(
+        len(transfer_budget_failures) == 1000
+        and set(transfer_budget_failures["fixtureId"])
+        == {"larger_square_layers_15x15"}
+        and set(transfer_budget_failures["controlPolicyId"])
+        == {
+            "bounded_central_full_control",
+            "central_monitor_sham_control",
+        }
+        and set(transfer_budget_failures["directRecipientQuerySlots"].astype(int))
+        == {7}
+        and set(transfer_budget_failures["addressBits"].astype(int)) == {56}
+        and all(
+            json.loads(value)["addressWithinPerQueryCeiling"] is False
+            and json.loads(value)["queryCountWithinSchedule"] is True
+            and json.loads(value)["controllerInputWithinPerQueryCeiling"] is True
+            and json.loads(value)["attemptWithinPerQueryCeiling"] is True
+            and json.loads(value)["overrideWithinPerQueryCeiling"] is True
+            and json.loads(value)["directDisplacementWithinPerQueryCeiling"] is True
+            and json.loads(value)["permissionIsolation"] is True
+            for value in transfer_budget_failures["budgetValidationJson"]
+        )
+        and bool(
+            transfer.loc[
+                ~transfer.index.isin(transfer_budget_failures.index),
+                "s14BudgetSuccess",
+            ].all()
+        )
+    )
     checks = {
         "completeRunAccounting": failures == 0 and total > 0,
         "zeroExecutionFailures": failures == 0,
@@ -978,9 +1024,10 @@ def validation_summary(
         "allPermissionChecks": all(
             bool(frame["permissionAuditSuccess"].all()) for frame in frames
         ),
-        "allBudgetChecks": all(
-            bool(frame["s14BudgetSuccess"].all()) for frame in frames
+        "allCalibratedBudgetChecks": all(
+            bool(frame["s14BudgetSuccess"].all()) for frame in calibrated_frames
         ),
+        "transferBudgetViolationsExactlyReconciled": expected_transfer_budget_failure,
         "allReplaysExact": bool(replay["exact"].all()),
         "allTargetRescoresExact": bool(
             rescore[["s01Match", "s02Match", "conjunctionMatch"]].all().all()
@@ -1006,10 +1053,162 @@ def validation_summary(
         "intendedRunCount": total,
         "completedRunCount": total - failures,
         "failedRunCount": failures,
+        "transferBudgetValidRunCount": int(transfer["s14BudgetSuccess"].sum()),
+        "transferBudgetInvalidRunCount": int((~transfer["s14BudgetSuccess"]).sum()),
+        "unsupportedTransferCombination": (
+            "Direct-control and action-disconnected-sham policies on the 15x15 "
+            "fixture require eight address bits per query and exceed the frozen "
+            "seven-bit ceiling; these 1,000 rows remain budget-invalid diagnostics."
+        ),
         "replayCount": len(replay),
         "rescoreCount": len(rescore),
         "checks": checks,
     }
+
+
+def make_figures(output: Path) -> None:
+    """Write compact, non-claim-inflating S14 result figures."""
+
+    import matplotlib.pyplot as plt
+
+    training = pd.read_csv(output / "training_minimal_control_curve.csv")
+    training = training.sort_values(
+        [
+            "directRecipientQuerySlots",
+            "totalInformationBitsIncludingObservationAndSchedule",
+        ]
+    )
+    fig, axis = plt.subplots(figsize=(8.0, 4.8), constrained_layout=True)
+    axis.scatter(
+        training["directRecipientQuerySlots"],
+        training["terminalCompletionFraction"],
+        c=training["totalComputationUnits"],
+        cmap="viridis",
+        s=72,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    for row in training.itertuples(index=False):
+        if row.controlPolicyId in {"central_q0_freeze", "combined_q1_late_full"}:
+            axis.annotate(
+                row.controlPolicyId,
+                (row.directRecipientQuerySlots, row.terminalCompletionFraction),
+                xytext=(5, -15 if row.directRecipientQuerySlots else 8),
+                textcoords="offset points",
+                fontsize=7,
+            )
+    axis.set(
+        xlabel="Direct-recipient query slots per episode",
+        ylabel="Terminal S01/S02 completion fraction",
+        title="Frozen S14 training search: terminal exact-start retention",
+        xlim=(-0.35, 7.35),
+        ylim=(-0.04, 1.04),
+    )
+    axis.grid(alpha=0.25)
+    figure_path = output / "minimal_control_curve.png"
+    fig.savefig(figure_path, dpi=180)
+    fig.savefig(output / "minimal_control_curve.svg")
+    plt.close(fig)
+
+    transfer = pd.read_csv(output / "spatial_transfer_summary.csv")
+    order = [
+        "central_q0_freeze",
+        "local_only_control",
+        "bounded_central_full_control",
+        "central_monitor_sham_control",
+    ]
+    labels = {
+        "central_q0_freeze": "locked no-query",
+        "local_only_control": "local-only",
+        "bounded_central_full_control": "bounded central",
+        "central_monitor_sham_control": "action-disconnected sham",
+    }
+    fixtures = list(dict.fromkeys(transfer["fixtureId"]))
+    challenges = list(dict.fromkeys(transfer["challengeId"]))
+    fig, axes = plt.subplots(
+        len(fixtures),
+        len(challenges),
+        figsize=(11.0, 6.4),
+        sharey=True,
+        constrained_layout=True,
+    )
+    for row_index, fixture in enumerate(fixtures):
+        for column_index, challenge in enumerate(challenges):
+            axis = axes[row_index, column_index]
+            subset = transfer[
+                (transfer["fixtureId"] == fixture)
+                & (transfer["challengeId"] == challenge)
+            ].set_index("controlPolicyId")
+            values = [
+                subset.loc[policy, "terminalReferenceMismatchFraction"]
+                for policy in order
+            ]
+            colors = [
+                "#d55e00"
+                if fixture == "larger_square_layers_15x15"
+                and policy in {
+                    "bounded_central_full_control",
+                    "central_monitor_sham_control",
+                }
+                else "#0072b2"
+                for policy in order
+            ]
+            axis.bar(range(len(order)), values, color=colors, alpha=0.85)
+            axis.set_xticks(
+                range(len(order)),
+                [labels[policy] for policy in order],
+                rotation=30,
+                ha="right",
+                fontsize=7,
+            )
+            axis.set_title(f"{fixture}\n{challenge}", fontsize=9)
+            axis.grid(axis="y", alpha=0.25)
+            if column_index == 0:
+                axis.set_ylabel("Terminal reference mismatch\n(diagnostic only)")
+    fig.suptitle(
+        "Spatial-transfer diagnostics; orange bars exceed the frozen address budget",
+        fontsize=11,
+    )
+    fig.savefig(output / "spatial_transfer_profile.png", dpi=180)
+    fig.savefig(output / "spatial_transfer_profile.svg")
+    plt.close(fig)
+
+
+def write_recovered_failure_record(output: Path) -> None:
+    failed_path = output / "heldout_failed_attempt.parquet"
+    if not failed_path.exists():
+        return
+    corrected = pd.read_parquet(output / "heldout_results.parquet")
+    write_json(
+        output / "recovered_execution_failure.json",
+        {
+            "schemaVersion": "e06.s14.recovered-execution-failure.v1",
+            "researchStepId": "S14",
+            "failedAttemptRunCount": 8000,
+            "failedAttemptErrorType": "StopIteration",
+            "rootCause": (
+                "The first held-out wrapper inherited the two-target S12 hybrid "
+                "registry and did not append the already-calibrated S01/S02 held-out "
+                "ring and separated target records."
+            ),
+            "preservedFailureArtifact": {
+                "path": str(failed_path),
+                "sha256": file_sha256(failed_path),
+            },
+            "recoverableCachePath": (
+                "/cache/e06_s14/failed_attempts/"
+                "heldout_stop_iteration_20260721"
+            ),
+            "correctionScope": (
+                "Registry construction only: deep-copy the S12 registry and append "
+                "the existing calibrated target grammar when absent; scenario IDs, "
+                "seeds, policies, event budgets, metrics, and gates were unchanged."
+            ),
+            "correctedRunCount": int(len(corrected)),
+            "correctedFailureCount": int(corrected["failed"].sum()),
+            "outcomeClassificationsChanged": False,
+        },
+    )
 
 
 def outcome_decision(output: Path, catalog: Mapping[str, Any]) -> dict[str, Any]:
@@ -1406,6 +1605,8 @@ def finalize(output: Path) -> None:
     replay.to_csv(output / "replay_audit.csv", index=False)
     rescore = target_rescore_audit(output)
     rescore.to_csv(output / "target_rescore_audit.csv", index=False)
+    make_figures(output)
+    write_recovered_failure_record(output)
     smoke = benchmark_smoke(output)
     validation = validation_summary(output, replay, rescore, smoke)
     write_json(output / "validation_results.json", validation)
