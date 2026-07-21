@@ -22,6 +22,7 @@ import yaml
 from .channels import (
     CHANNEL_LEDGER_FIELDS,
     ChannelDefinition,
+    DirectControllerDecision,
     GlobalSummarySource,
     build_boundary_delivery,
     build_direct_controller_view,
@@ -124,6 +125,8 @@ ProposalGate = Callable[
     Sequence[MovementProposal],
 ]
 NativeBatchGate = Callable[[int], bool]
+DirectEpochGate = Callable[[int], bool]
+DirectActionGate = Callable[[int], bool]
 
 ActorPolicyAssignments = Mapping[str, str]
 ActorRelationProfiles = Mapping[str, RelationProfile | None]
@@ -403,6 +406,8 @@ def run_cpu_episode(
     state_audit: StateAudit | None = None,
     proposal_gate: ProposalGate | None = None,
     native_batch_gate: NativeBatchGate | None = None,
+    direct_epoch_gate: DirectEpochGate | None = None,
+    direct_action_gate: DirectActionGate | None = None,
     actor_policy_assignments: ActorPolicyAssignments | None = None,
     actor_relation_profiles: ActorRelationProfiles | None = None,
     actor_assignment_switches: ActorAssignmentSwitches | None = None,
@@ -431,6 +436,13 @@ def run_cpu_episode(
     observations, proposals, or random addresses.  The transition still runs
     through the canonical empty S04 batch and remains visible in summaries;
     callers must price foregone actor opportunities separately.
+
+    S14 may narrow direct control with two public-time-only gates.  The epoch
+    gate can skip a scheduled query/action without inspecting state; the
+    action gate can disconnect the relay after the bounded controller has
+    produced a recommendation.  Neither gate may create, edit, or reroute a
+    proposal.  S14 must price schedule configuration and foregone native
+    opportunity outside this frozen S07 ledger.
     """
 
     environment = context.environments[definition.environment_id]
@@ -597,6 +609,13 @@ def run_cpu_episode(
             epoch_submitted = 0
             epoch_conflict_losses = 0
 
+        direct_epoch_selected = bool(
+            mode == "direct_intervention"
+            and epoch_start
+            and previous_epoch
+            and (direct_epoch_gate is None or bool(direct_epoch_gate(epoch_index)))
+        )
+
         transition_channel_events: list[dict[str, Any]] = []
         if mode == "sparse_instruction" and epoch_start:
             delivery = build_sparse_instruction_delivery(
@@ -626,10 +645,8 @@ def run_cpu_episode(
             )
 
         if (
-            mode in {"global_summary", "direct_intervention"}
-            and epoch_start
-            and previous_epoch
-        ):
+            mode == "global_summary" and epoch_start and previous_epoch
+        ) or direct_epoch_selected:
             prior_bits, prior_submitted, prior_losses = previous_epoch
             summary = build_global_summary_delivery(
                 context.channels["lagged_global_summary_v1"],
@@ -664,7 +681,7 @@ def run_cpu_episode(
         # Direct intervention owns this transition and uses exactly one
         # state-blind recipient/query/action.  It never co-schedules a native
         # proposal or retries.
-        if mode == "direct_intervention" and epoch_start and previous_epoch:
+        if direct_epoch_selected:
             recipient = actor_ids[epoch_index % len(actor_ids)]
             build = build_policy_observation(
                 environment,
@@ -691,8 +708,26 @@ def run_cpu_episode(
                 lagged_summary=latest_summary,
                 remaining_information_budget=352,
                 remaining_action_budget=1,
+                candidate_limit=(
+                    None
+                    if definition.parameters.get("directCandidateLimit") is None
+                    else int(definition.parameters["directCandidateLimit"])
+                ),
             )
-            decision = decide_direct_controller(view.payload)
+            recommendation = decide_direct_controller(view.payload)
+            relay_enabled = bool(
+                direct_action_gate is None or direct_action_gate(epoch_index)
+            )
+            decision = (
+                recommendation
+                if relay_enabled
+                else DirectControllerDecision(
+                    "noop",
+                    None,
+                    "s14_action_relay_disconnected",
+                    None,
+                )
+            )
             direct_event = execute_direct_intervention(
                 context.channels[_channel_id(mode)],
                 environment,
@@ -750,6 +785,13 @@ def run_cpu_episode(
                     "outcome": direct_event["outcome"],
                     "ledger": direct_event["ledger"],
                     "eventSha256": direct_event["eventSha256"],
+                    "actionRelayEnabled": relay_enabled,
+                    "controllerRecommendation": {
+                        "action": recommendation.action,
+                        "selectedCandidateKey": recommendation.selected_candidate_key,
+                        "reason": recommendation.reason,
+                        "score": recommendation.score,
+                    },
                 }
             )
             channel_events.extend(transition_channel_events)

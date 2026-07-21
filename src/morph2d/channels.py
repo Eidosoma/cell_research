@@ -833,6 +833,7 @@ def build_direct_controller_view(
     lagged_summary: Mapping[str, int],
     remaining_information_budget: int,
     remaining_action_budget: int,
+    candidate_limit: int | None = None,
 ) -> DirectControllerView:
     if definition.channel_type != "direct_intervention":
         raise ChannelValidationError("wrong channel type for direct controller view")
@@ -845,17 +846,44 @@ def build_direct_controller_view(
     }:
         raise ChannelValidationError("direct controller summary schema mismatch")
     alias = state_blind_recipient_alias(epoch_index, population_size)
+    local_payload: Mapping[str, Any] = observation_build.observation.payload
+    local_bits = observation_build.observation.budget["communicatedBitsUpperBound"]
+    projection_mode: str | None = None
+    if candidate_limit is not None:
+        if not 1 <= int(candidate_limit) <= 6:
+            raise ChannelValidationError("direct candidate limit must be in 1..6")
+        # S14 may narrow, but never widen, the S06 input.  The controller sees
+        # the first N already-opaque handles and their disclosed candidate
+        # scalars.  The source still constructs and prices the complete S05
+        # observation; this projection reduces only transmitted content.
+        candidates = list(local_payload.get("candidates", ()))[: int(candidate_limit)]
+        projected = {"candidates": candidates}
+        validate_policy_payload(projected)
+        candidate_field_bits = {
+            "candidateKey": 3,
+            "localRelationDelta": 8,
+            "naturalBoundaryDelta": 4,
+            "gradientDelta": 9,
+            "laggedConflictCount": 2,
+            "movementCost": 4,
+        }
+        local_bits = 3 + sum(
+            sum(candidate_field_bits[key] for key in record) for record in candidates
+        )
+        local_payload = projected
+        projection_mode = f"opaque_first_{int(candidate_limit)}_candidates"
     payload = {
         "epochIndex": epoch_index,
         "recipientAlias": alias,
         "laggedGlobalSummary": dict(lagged_summary),
-        "localPolicyPayload": observation_build.observation.payload,
+        "localPolicyPayload": local_payload,
         "remainingInformationBudget": remaining_information_budget,
         "remainingActionBudget": remaining_action_budget,
     }
+    if projection_mode is not None:
+        payload["projectionMode"] = projection_mode
     validate_controller_view_payload(payload)
     address_bits = _bits_for_count(population_size - 1)
-    local_bits = observation_build.observation.budget["communicatedBitsUpperBound"]
     ledger = _finalize_ledger(
         {
             "sourceScalarReads": 1,

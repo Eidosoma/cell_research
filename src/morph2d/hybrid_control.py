@@ -258,6 +258,10 @@ def _episode_definition(
         }
     if arm_id in DIRECT_MODES:
         parameters["summaryRecipients"] = 1
+        if target_record.get("directCandidateLimit") is not None:
+            parameters["directCandidateLimit"] = int(
+                target_record["directCandidateLimit"]
+            )
     return EpisodeDefinition(
         scenario_id=scenario_id,
         environment_id=environment_id,
@@ -347,20 +351,37 @@ def run_hybrid_once(
     challenge_id = str(specification["challengeId"])
     arm_id = str(specification["armId"])
     target = targets[target_id]
-    target_record = next(
-        item
-        for item in catalog["topologyAndFeasibility"]["targets"]
-        if item["targetId"] == target_id
+    target_record = dict(
+        next(
+            item
+            for item in catalog["topologyAndFeasibility"]["targets"]
+            if item["targetId"] == target_id
+        )
     )
+    if specification.get("directCandidateLimit") is not None:
+        target_record["directCandidateLimit"] = int(
+            specification["directCandidateLimit"]
+        )
     grammar = grammars[str(target_record["grammarId"])]
     environment = environments[target_id]
-    identity = scenario_identity(
-        str(specification["split"]),
-        target_id,
-        challenge_id,
-        int(specification["replicate"]),
-        arm_id,
+    identity = dict(
+        specification.get("identityOverride")
+        or scenario_identity(
+            str(specification["split"]),
+            target_id,
+            challenge_id,
+            int(specification["replicate"]),
+            arm_id,
+        )
     )
+    if set(identity) != {
+        "scenarioId",
+        "pairingBlockId",
+        "runId",
+        "seedHex",
+        "seedDecimal",
+    }:
+        raise ValueError("hybrid identity override schema mismatch")
     initial_state, mask, external, formed_source, feasible = make_challenge_state(
         target_id, challenge_id, identity["pairingBlockId"]
     )
@@ -384,6 +405,12 @@ def run_hybrid_once(
         int(specification["eventBudget"]),
     )
     started = time.perf_counter()
+    direct_epochs = (
+        None
+        if specification.get("directEpochs") is None
+        else frozenset(int(value) for value in specification["directEpochs"])
+    )
+    action_relay_enabled = bool(specification.get("directActionRelayEnabled", True))
     result = run_cpu_episode(
         context,
         definition,
@@ -391,6 +418,10 @@ def run_hybrid_once(
         initial_state_override=initial_state,
         state_audit=tracker.observe,
         native_batch_gate=(lambda _index: False) if arm_id == "central_only" else None,
+        direct_epoch_gate=(
+            None if direct_epochs is None else lambda epoch: epoch in direct_epochs
+        ),
+        direct_action_gate=(None if action_relay_enabled else lambda _epoch: False),
     )
     elapsed = time.perf_counter() - started
     metrics = tracker.finalize()
@@ -534,6 +565,14 @@ def run_hybrid_once(
         "directMovementGraphDisplacement": int(channel["movementGraphDisplacement"]),
         "suppressedNativeActions": int(channel["suppressedNativeActions"]),
         "channelOpportunityCostUnits": int(channel["opportunityCostUnits"]),
+        "shamSuppressedControllerRecommendations": sum(
+            int(
+                event.get("actionRelayEnabled") is False
+                and event.get("controllerRecommendation", {}).get("action")
+                == "select_candidate"
+            )
+            for event in result["channelEvents"]
+        ),
         "allocatedNativeActorSlots": allocated_slots,
         "usedNativeActorSlots": used_native_slots,
         "directRecipientQuerySlots": direct_query_slots,

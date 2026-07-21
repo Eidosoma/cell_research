@@ -1,0 +1,206 @@
+schemaVersion: e06.s14.minimal-control-catalog.v1
+researchStepId: S14
+title: Frozen minimal-control optimization and spatial-transfer design
+frozenQuestion: Can the supported exact-start terminal-retention endpoint be preserved with fewer, later, or lower-content bounded direct queries, and do the resulting policies expose any independently reported formation, repair, larger-grid, or irregular-graph capability?
+claimBoundary: S14 optimizes only exact-start terminal retention on S01/S02-calibrated unobstructed bounded-square targets. Formation and repair remain sealed negative audits. Larger-square and irregular-graph results are transfer diagnostics, never completion, formation, repair, robustness, or competency claims.
+
+canonicalContracts:
+  target: e06.s01.target-catalog.v1
+  grammar: e06.s02.grammar-catalog.v1
+  environment: e06.s03.environment-catalog.v1
+  movement: e06.s04.movement-batch-result.v1
+  policy: e06.s05.policy-catalog.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuParity: e06.s08.parity-report.v1
+  baselineConstraint: e06.s09.baseline-run.v1
+  repairConstraint: e06.s10.perturbation-run.v1
+  hybridConstraint: e06.s12.hybrid-control-run.v1
+  morphometrics: e06.s13.morphometric-catalog.v1
+
+seedContract:
+  masterSeedHex: "0xe0614000000000000000000000000001"
+  domain: E06/S14/seed/v1
+  derivation: first_128_bits_sha256_domain_master_and_canonical_address
+  workerOrderInfluence: none
+  mutablePrngState: forbidden
+  policyBlindPairing: true
+
+metricDirections:
+  completionContract: s02_local_grammar_accepted_AND_s01_equivalence_component_topology_success
+  terminalConjunctiveCompletion: maximize_primary_only_where_calibrated
+  terminalS01MismatchFraction: minimize
+  minimumS01MismatchFraction: minimize_diagnostic
+  terminalS02RelationalScore: maximize_diagnostic_never_substitute_for_s01
+  symmetryModuloImageDistance: minimize
+  categoricalTransportDistance: minimize
+  componentError: minimize
+  heterotypicBoundaryError: minimize
+  occupiedRegionImpurity: minimize
+  symmetryMismatch: minimize
+  holeCountError: minimize
+  allCostComponents: minimize_separately
+  forbiddenSubstitution: No S13 metric, weighted score, local grammar acceptance, activity, quiescence, or transfer reference match can replace the conjunctive completion endpoint.
+
+topologySuccessCriteria:
+  calibrated:
+    topology: unobstructed_bounded_square_matching_an_s01_target_shape
+    success: terminal S02 acceptance AND independent S01 equivalence, component, and topology success
+    targets: [layers_three_ordered_tissues, stripes_alternating_three_band, ring_core_shell_translatable, separated_paired_regions]
+  transferDiagnostics:
+    - fixtureId: larger_square_layers_15x15
+      geometry: square
+      boundaryMode: bounded
+      shape: [15, 15]
+      completionCalibrated: false
+    - fixtureId: irregular_pruned_layers_9x9
+      geometry: irregular
+      boundaryMode: bounded
+      siteCount: 81
+      completionCalibrated: false
+  transferFields: [terminalReferenceMismatchFraction, minimumReferenceMismatchFraction, graphComponentError, normalizedBoundaryError, compositionCorrectedHomotypicEdgeExcess]
+  transferGate: diagnostic_only_require_complete_accounting_invariants_replay_and_no_claim_promotion
+
+splits:
+  training:
+    splitId: s14_training
+    targetIds: [layers_three_ordered_tissues]
+    challengeIds: [exact_maintenance]
+    replicatesPerPolicy: 250
+    eventBudgetTransitions: 128
+    outcomeAccessibleDuringSearch: true
+  validation:
+    splitId: s14_validation
+    targetIds: [stripes_alternating_three_band]
+    challengeIds: [exact_maintenance]
+    replicatesPerPolicy: 1000
+    eventBudgetTransitions: 128
+    outcomeAccessibleAfterTrainingSelection: true
+  heldout:
+    splitId: s14_heldout
+    targetIds: [ring_core_shell_translatable, separated_paired_regions]
+    challengeIds: [exact_maintenance]
+    replicatesPerPolicy: 1000
+    eventBudgetTransitions: 128
+    e07ProtectedConfirmation: true
+    outcomeAccessibleAfterValidationPolicyLock: true
+  negativeEndpointAudit:
+    splitId: s14_negative_audit
+    targetIds: [layers_three_ordered_tissues]
+    challengeIds: [partially_correct_formation, compact_wound_mild]
+    replicatesPerPolicy: 1000
+    eventBudgetTransitions: 128
+    e07ProtectedConfirmation: true
+    optimizationUse: forbidden
+  spatialTransfer:
+    splitId: s14_spatial_transfer
+    fixtureIds: [larger_square_layers_15x15, irregular_pruned_layers_9x9]
+    challengeIds: [exact_reference_retention, one_swap_displacement_diagnostic]
+    replicatesPerPolicy: 250
+    eventBudgetTransitions: 128
+    e07ProtectedConfirmation: true
+    optimizationUse: forbidden
+
+interventionPolicies:
+  epochLengthTransitions: 16
+  eligibleEpochs: [1, 2, 3, 4, 5, 6, 7]
+  locationRule: s06_state_blind_recipient_alias_epoch_mod_population
+  fullCandidateLimit: 6
+  searchCandidates:
+    - {policyId: central_q0_freeze, baseArm: central_only, directEpochs: [], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q1_early_full, baseArm: central_only, directEpochs: [1], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q1_late_full, baseArm: central_only, directEpochs: [7], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q2_spread_full, baseArm: central_only, directEpochs: [1, 4], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q4_spread_full, baseArm: central_only, directEpochs: [1, 2, 4, 6], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q7_full, baseArm: central_only, directEpochs: [1, 2, 3, 4, 5, 6, 7], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_q4_low1, baseArm: central_only, directEpochs: [1, 2, 4, 6], candidateLimit: 1, actionRelay: enabled}
+    - {policyId: central_q4_low2, baseArm: central_only, directEpochs: [1, 2, 4, 6], candidateLimit: 2, actionRelay: enabled}
+    - {policyId: central_q4_low4, baseArm: central_only, directEpochs: [1, 2, 4, 6], candidateLimit: 4, actionRelay: enabled}
+    - {policyId: combined_q0_local, baseArm: combined, directEpochs: [], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: combined_q4_full, baseArm: combined, directEpochs: [1, 2, 4, 6], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: combined_q4_low2, baseArm: combined, directEpochs: [1, 2, 4, 6], candidateLimit: 2, actionRelay: enabled}
+    - {policyId: combined_q7_full, baseArm: combined, directEpochs: [1, 2, 3, 4, 5, 6, 7], candidateLimit: 6, actionRelay: enabled}
+  mandatoryControls:
+    - {policyId: local_only_control, baseArm: local_only, directEpochs: [], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: bounded_central_full_control, baseArm: central_only, directEpochs: [1, 2, 3, 4, 5, 6, 7], candidateLimit: 6, actionRelay: enabled}
+    - {policyId: central_monitor_sham_control, baseArm: central_only, directEpochs: [1, 2, 3, 4, 5, 6, 7], candidateLimit: 6, actionRelay: disconnected}
+  narrowedContentRule: A candidateLimit below six transmits only the first N opaque candidates from the same priced S05 payload. Candidate order remains state-keyed and opaque; source observation work is not reduced or hidden. No field, route, identity, site role, boundary metadata, or global audit is added.
+
+budgets:
+  perScenarioConfigurationBitsCeiling: 649
+  perQueryControllerInputBitsCeiling: 352
+  perQueryAddressBitsCeiling: 7
+  perQueryActuationAttemptsCeiling: 1
+  perQueryOverrideActionUnitsCeiling: 1
+  perQueryDirectGraphDisplacementCeiling: 6
+  nativeActorSlotsPerTransition: 4
+  scheduleConfigurationBitsFormula: 4_plus_three_bits_per_declared_epoch_plus_three_candidate_limit_bits_plus_one_action_relay_bit
+  configurationChargedOnceNeverAmortized: true
+  costFamilies:
+    information: [observationCommunicatedBitsUpperBound, configurationBits, scheduleConfigurationBits, controllerInputBits, policyDeliveryBits, addressBits, totalInformationBitsIncludingObservationAndSchedule]
+    action: [acceptedMovements, totalGraphDisplacement, actuationAttempts, actuationSuccesses, overrideActionUnits, directMovementGraphDisplacement]
+    intervention: [externalDisplacedEntities, externalGraphDisplacement, shamSuppressedControllerRecommendations]
+    sourceWork: [policyLogicalSourceReads, sourceScalarReads, controllerStateReads]
+    computation: [policyUtilityEvaluations, policyComparisonOperations, controllerComputeUnits]
+    opportunity: [allocatedNativeActorSlots, usedNativeActorSlots, foregoneNativeActorSlots, suppressedNativeActions, channelOpportunityCostUnits]
+  scalarCostForbidden: true
+  semanticAuthorityMatched: false
+  centralComputationPricedSeparately: true
+
+optimization:
+  method: exhaustive_frozen_candidate_grid
+  maximumCandidatePolicies: 13
+  adaptiveCandidateCreation: forbidden
+  runtimeDrivenScopeReduction: forbidden
+  trainingReliabilityGate: {terminalCompletionFraction: 0.95, wilsonLower95: 0.93}
+  validationReliabilityGate: {terminalCompletionFraction: 0.95, wilsonLower95: 0.93}
+  maximumPoliciesPromotedToValidation: 3
+  maximumPoliciesLockedForHeldout: 1
+  morphologyEquivalenceMargins: {terminalCompletionFraction: 0.02, terminalS01MismatchFraction: 0.01}
+  paretoCostAxes: [totalInformationBitsIncludingObservationAndSchedule, totalGraphDisplacement, externalInterventionGraphDisplacement, totalSourceWorkUnits, totalComputationUnits, totalOpportunityCostUnits]
+  dominanceRule: no_worse_outside_morphology_margins_and_no_greater_on_every_cost_axis_with_one_strict_axis
+  deterministicTieBreak: fewest_queries_then_lowest_candidate_limit_then_latest_mean_query_epoch_then_policy_id
+  holdoutLeakageRule: heldout and transfer scenario IDs and outcomes are constructed only after a validation policy lock is written and hashed
+
+endpointRules:
+  exactMaintenance: terminal conjunction only; initial success and first-passage do not establish uninterrupted maintenance
+  formationAudit: terminal conjunction required; first passage reported separately; cannot change S09 or S12 classification
+  repairAudit: preserve S10 feasibility and require terminal conjunction; cannot change S10 classification
+  formationAndRepairSupportGate: each negative audit block must reach terminal fraction 0.20 and Wilson lower 0.15 for the locked strategy
+  s14HypothesisSupportRule: heldoutRetentionGate AND formationAndRepairSupportGate AND allValidationGates
+  operationalRetentionRule: may be reported separately when heldoutRetentionGate passes, with action suppression and opportunity costs explicit
+  zeroActionFreezeRule: static retention caused by disabling native actuation is not formation, repair, uninterrupted maintenance, or evidence of self-organization
+
+transfer:
+  heldoutRetentionGate: every calibrated heldout target reaches terminal fraction 0.95 with Wilson lower 0.93 for the locked strategy
+  largerGridAndIrregularGate: diagnostics_only_no_completion_promotion
+  referenceMismatchNoninferiorityMargin: 0.02
+  graphDefinitions:
+    componentError: absolute_difference_from_reference_per_token_summed
+    normalizedBoundaryError: absolute_heterotypic_edge_fraction_difference_from_reference
+    compositionCorrectedHomotypicEdgeExcess: observed_homotypic_edge_fraction_minus_exact_composition_expectation
+
+censoring:
+  exactMaintenance: false
+  formationAndRepair: right_censored_if_no_conjunctive_completion_by_fixed_budget
+  transferDiagnostics: false_no_completion_time_defined
+  earlyStopping: forbidden
+  exclusions: none
+  allIntendedRunsRequired: true
+
+validation:
+  cpuWorkers: 8
+  backend: canonical_s07_cpu_oracle_fallback
+  backendReason: Per-condition populations are below S07's 16,384-episode GPU crossover and S05/S06 control plus S01/S02 audits remain CPU-owned; the release separately smoke-tests the frozen GPU data plane.
+  exactReplaySample: lexicographically_first_run_per_policy_split_target_challenge
+  targetRescoreSampleFraction: 0.01
+  requirements: [split_and_holdout_isolation, complete_run_accounting, deterministic_seeds, policy_blind_pairing, permission_isolation, per_query_and_total_budget_reconciliation, component_cost_reconciliation, sampled_exact_cpu_replay, independent_target_rescoring, invariant_preservation, censoring_consistency, separate_s02_and_s01_fields, topology_claim_boundary, artifact_hash_coverage, fresh_cpu_gpu_benchmark_smoke]
+
+release:
+  archivePath: /artifacts/release/morph2d-benchmark.tar.zst
+  format: deterministic_tar_zstd
+  pointerBasedSource: true
+  sourceCopiedIntoArtifacts: false
+  reportInputsPath: /artifacts/report_inputs
+  requiredReportInputs: [evidence_index.csv, methods_summary.md, figure_index.csv, table_index.csv, claim_to_evidence_matrix.csv, caveat_register.csv, provenance_manifest.json, lay_summary.md, e07_handoff.md, report_input_manifest.json]
+  e07Rule: every row marked e07_protected_confirmation is excluded from surrogate training, policy search, reward shaping, and model selection
