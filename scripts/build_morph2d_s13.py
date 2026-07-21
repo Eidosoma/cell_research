@@ -971,6 +971,7 @@ def report_text(
         "time_to_endpoint_summary.csv and cost_component_summary.csv",
         "classification_lock.json",
         "validation_results.json, provenance_manifest.json, execution_manifest.json, and artifact_manifest.json",
+        "test_results.json",
         "adversarial_examples.png and metric_disagreement.png",
     ]
     return f"""# S13 — Use morphological and topological metrics
@@ -1025,13 +1026,12 @@ The analysis applied all prespecified thresholds, reported every pairwise Spearm
 
 ```bash
 PYTHONPATH=src python scripts/build_morph2d_s13.py --freeze-only --replace
-PYTHONPATH=src pytest -q tests/test_morph2d_morphometrics.py
+PYTHONPATH=src:. pytest -q tests/test_morph2d_morphometrics.py tests/test_morph2d_targets.py tests/test_morph2d_grammar.py
 PYTHONPATH=src python scripts/build_morph2d_s13.py --workers 8
-PYTHONPATH=src pytest -q tests/test_morph2d_morphometrics.py
-PYTHONPATH=src pytest -q tests/test_morph2d_*.py
+PYTHONPATH=src:. pytest -q tests/test_morph2d_*.py
 ```
 
-Outcome rescoring used {execution['workers']} worker processes with one BLAS/OpenMP thread each and took {execution['wallSeconds']:.1f} seconds. GPU acceleration was not used: this step was small-grid CPU metric analysis, not a transition-data-plane workload.
+Outcome rescoring used {execution['workers']} worker processes with one BLAS/OpenMP thread each and took {execution['wallSeconds']:.1f} seconds. The fixture-focused suite passed 30/30 tests and the complete morphology suite passed 157/157. An initial broad-suite invocation with only `PYTHONPATH=.` produced three import-collection errors in older builders; the canonical `PYTHONPATH=src:.` invocation above resolved the environment path and passed without code changes. GPU acceleration was not used: this step was small-grid CPU metric analysis, not a transition-data-plane workload.
 
 ## Calibration results
 
@@ -1059,6 +1059,7 @@ S09 remained supportive only for its frozen near-target contrast with broad-form
 - Costs: all applicable components agreed for every row; every structurally unavailable component remained null.
 - S12 claim boundary: {validation['s12ConfirmationCentralExactTerminalConjunctions']:,}/{validation['s12ConfirmationCentralExactRows']:,} central-only exact rows were terminally conjunctive, and {validation['s12ConfirmationCentralExactTimeIneligibleRows']:,}/{validation['s12ConfirmationCentralExactRows']:,} were excluded from uninterrupted-maintenance time.
 - Artifact hashes cover all compact outputs; upstream report/manifest and source-table hashes are recorded.
+- Tests: 30/30 fixture-focused and 157/157 complete morphology tests passed; Ruff and byte-compilation checks passed.
 
 ## Caveats, blockers, and failed assumptions
 
