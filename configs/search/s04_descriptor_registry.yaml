@@ -1,0 +1,91 @@
+schemaVersion: e07.s04.descriptor-registry.v1
+researchStepId: S04
+frozenAtUtc: '2026-07-21T00:00:00Z'
+archivePolicy:
+  taskStratified: true
+  crossTaskArchiveCellsPermitted: false
+  crossMetricE03CellsPermitted: false
+  descriptorsPolicyVisibleOnline: false
+  s03StructuralCoverageUsedAsDescriptor: false
+  s03FiniteCorpusEquivalenceUsedAsDescriptor: false
+  e05UnboundRowsUsedAsDescriptor: false
+  e06SyntheticTypedFixturesUsedAsDescriptor: false
+  confirmationOutcomesUsed: false
+  validationOutcomesUsed: false
+  requiredEligibilityGate: e07.s04.s05-eligibility-gate.v1
+commonArchive:
+  id: native_movement_behavior_v1
+  applicability: one archive per task after validated native episode binding
+  dimensions:
+    - id: accepted_native_action_fraction
+      numerator: committed_native_movement_actions
+      denominator: native_eligible_action_opportunities
+      emptyDenominator: invalid_record
+      bounds: [0.0, 1.0]
+      binEdges: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    - id: committed_displacement_fraction
+      numerator: sum_committed_native_graph_or_line_displacement
+      denominator: committed_action_count_times_scenario_maximum_enabled_native_displacement
+      emptyDenominator: 0.0_if_no_committed_actions
+      bounds: [0.0, 1.0]
+      binEdges: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  note: Proposal count, invalid-action count, cursor advance, prefix reads, and structural complexity are not substitutes for committed movement.
+taskPhenotypeArchives:
+  e07_s02_faults_1d:
+    id: paired_fault_response_v1
+    requires: matched_clean_and_fault_episodes_with_identical_scenario_support
+    dimensions:
+      - {id: paired_completion_delta, bounds: [-1.0, 1.0], binEdges: [-1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0]}
+      - {id: paired_residual_delta, bounds: [-1.0, 1.0], binEdges: [-1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0]}
+  e07_s02_detour_1d:
+    id: metric_specific_excursion_v1
+    oneArchivePerMetric: [adjacent_descents, inversion_count, spearman_footrule, maximum_rank_error, duplicate_aware_earth_movers_distance]
+    exactSmallAndEmpiricalLargeSeparated: true
+    dimensions:
+      - {id: maximum_positive_excursion_fraction, bounds: [0.0, 1.0], binEdges: [0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0]}
+      - {id: worsening_event_fraction, bounds: [0.0, 1.0], binEdges: [0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0]}
+  e07_s02_chimera_1d:
+    id: corrected_aggregation_dynamics_v1
+    requires: fixed_composition_full_trace_and_preregistered_dynamic_null
+    dimensions:
+      - {id: composition_corrected_null_excess_peak, bounds: [-1.0, 1.0], binEdges: [-1.0, -0.5, -0.2, -0.05, 0.0, 0.05, 0.2, 0.5, 1.0]}
+      - {id: fixed_horizon_positive_null_excess_area_mean, bounds: [0.0, 1.0], binEdges: [0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0]}
+    prohibitedSubstitutes: [raw_adjacency, raw_duration, uncorrected_peak, terminal_plateau_without_flux]
+  e05_benchmark_axes:
+    id: e05_separate_axis_archives_v1
+    oneArchivePerAxis: [robustness, repair, memory, plasticity_target_adaptation, transfer]
+    dimensionsByAxis:
+      robustness: [paired_completion_delta, paired_residual_delta]
+      repair: [distance_restoration_fraction, restricted_recovery_time_fraction_with_censor_flag]
+      memory: [history_intervention_effect, reset_intervention_effect]
+      plasticity_target_adaptation: [restricted_adaptation_time_fraction_with_censor_flag, post_hit_departure_fraction]
+      transfer: [frozen_stratum_success_fraction, frozen_stratum_residual]
+    aggregateAxisCellPermitted: false
+    requires: validated_e05_dsl_adapter_and_native_E05_pairing_phase_count_target_contracts
+  e06_bounded_square:
+    id: spatial_state_flux_v1
+    requires: validated_e06_dsl_adapter_and_calibrated_bounded_square
+    dimensions:
+      - {id: committed_movement_kind_entropy, bounds: [0.0, 1.0], binEdges: [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]}
+      - {id: state_turnover_fraction, bounds: [0.0, 1.0], binEdges: [0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.7, 1.0]}
+    prohibitedSubstitutes: [S03_typed_fixture_behavior, fixedBudgetCompleted, S13_diagnostic_morphology_as_completion, terminal_immobilization_as_equilibrium]
+noveltyTests:
+  policyIdentity:
+    canonicalDuplicate: reject
+    boundedSemanticDuplicateOnFrozenTrainingCorpus: reject_from_same_search_population
+    finiteCorpusBoundary: not_universal_program_equivalence
+  archiveCellNovelty:
+    rule: unoccupied_cell_within_same_task_archive_metric_support_and_descriptor_version
+    crossTaskNearestNeighbor: forbidden
+    crossMetricNearestNeighbor: forbidden
+  behaviorDistance:
+    metric: task_local_manhattan_on_bounded_descriptor_coordinates
+    threshold: 0.1
+    use: secondary_novelty_annotation_only
+  stability:
+    minimumBootstrapSameCellProbability: 0.8
+    bootstrapReplicates: 1000
+    blockUnit: scenario
+    boundaryRule: lower_inclusive_upper_exclusive_except_final_upper_inclusive
+  insertionRule:
+    requirements: [eligibility_gate_pass, valid_native_episode, stable_cell, no_semantic_duplicate, within_task_pareto_nondominated_or_empty_cell]

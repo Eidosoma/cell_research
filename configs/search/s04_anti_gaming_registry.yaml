@@ -1,0 +1,21 @@
+schemaVersion: e07.s04.anti-gaming-registry.v1
+researchStepId: S04
+channels:
+  - {id: noop_freeze, trigger: action_suppression_or_zero_native_opportunity, mitigation: opportunity_cost_and_no_formation_or_repair_credit}
+  - {id: invalid_proposal_spam, trigger: submitted_or_invalid_actions_without_commits, mitigation: descriptors_use_committed_actions_and_invalid_rejection_costs_remain_visible}
+  - {id: event_budget_stall, trigger: event_budget_or_phase_budget_stop, mitigation: failed_completion_and_right_censor_time_never_zero_or_success}
+  - {id: competing_terminal_erasure, trigger: quiescent_blocking_source_or_stopped_row, mitigation: terminal_category_retained_outside_censor_and_completion}
+  - {id: raw_aggregation_inflation, trigger: composition_imbalance_raw_adjacency_or_duration, mitigation: fixed_composition_corrected_dynamic_null_peak_and_fixed_horizon_area}
+  - {id: fixed_plateau_equilibrium, trigger: flat_terminal_state_without_turnover, mitigation: require_state_plus_flux_and_longer_budget_contract}
+  - {id: detour_metric_shopping, trigger: select_metric_or_support_post_outcome, mitigation: separate_frozen_metric_archives_and_exact_empirical_supports}
+  - {id: e05_axis_collapse, trigger: scalarize_five_competencies, mitigation: separate_axis_profiles_and_no_aggregate_score}
+  - {id: e06_diagnostic_substitution, trigger: fixed_budget_or_S13_diagnostic_used_as_completion, mitigation: require_calibrated_S01_S02_conjunction}
+  - {id: prefix_information_free_lunch, trigger: line.prefix_ordered_used_without_charges, mitigation: separate_predicate_read_comparison_ledger}
+  - {id: cursor_range_free_lunch, trigger: selection_cursor_or_long_range_used_without_charges, mitigation: separate_cursor_projection_advance_swap_distance_ledger}
+  - {id: semantic_duplicate_padding, trigger: canonical_variants_with_same_bounded_behavior, mitigation: bounded_semantic_dedup_with_finite_corpus_caveat}
+  - {id: complexity_padding, trigger: unreachable_or_redundant_rules_memory_or_signals, mitigation: canonical_source_plus_dynamic_use_audit_and_minimize_complexity_vector}
+  - {id: protected_outcome_leakage, trigger: validation_or_confirmation_outcome_access_during_design_search, mitigation: access_broker_denial_before_materialization_and_zero_outcome_evaluations}
+  - {id: task_weight_cherry_pick, trigger: outcome_selected_task_weights, mitigation: frozen_allocation_profiles_only_no_weighted_score}
+  - {id: descriptor_boundary_thrash, trigger: unstable_cell_assignment, mitigation: scenario_block_bootstrap_same_cell_probability_at_least_0.8}
+  - {id: E05_field_name_binding, trigger: infer_E05_DSL_semantics_from_matching_fields, mitigation: mandatory_validated_E05_adapter_gate}
+  - {id: E06_fixture_binding, trigger: treat_typed_fixture_candidate_as_authenticated_native_action, mitigation: mandatory_candidate_enumeration_authentication_conflict_commit_adapter_gate}

@@ -1,0 +1,35 @@
+schemaVersion: e07.s04.task-weighting.v1
+researchStepId: S04
+purpose: evaluation_allocation_only
+scalarPerformanceAggregationPermitted: false
+minimumAllocationPerTaskBlock: 1
+primaryProfile: equal_task_blocks
+profiles:
+  equal_task_blocks:
+    e07_s02_sorting_1d: 0.125
+    e07_s02_faults_1d: 0.125
+    e07_s02_detour_1d: 0.125
+    e07_s02_chimera_1d: 0.125
+    e07_s02_regeneration_1d: 0.125
+    e07_s02_target_change_1d: 0.125
+    e07_s02_spatial2d_local: 0.125
+    e07_s02_spatial2d_memory: 0.125
+  line_emphasis_sensitivity:
+    e07_s02_sorting_1d: 0.175
+    e07_s02_faults_1d: 0.175
+    e07_s02_detour_1d: 0.175
+    e07_s02_chimera_1d: 0.175
+    e07_s02_regeneration_1d: 0.075
+    e07_s02_target_change_1d: 0.075
+    e07_s02_spatial2d_local: 0.075
+    e07_s02_spatial2d_memory: 0.075
+  repair_spatial_emphasis_sensitivity:
+    e07_s02_sorting_1d: 0.075
+    e07_s02_faults_1d: 0.075
+    e07_s02_detour_1d: 0.075
+    e07_s02_chimera_1d: 0.075
+    e07_s02_regeneration_1d: 0.175
+    e07_s02_target_change_1d: 0.175
+    e07_s02_spatial2d_local: 0.175
+    e07_s02_spatial2d_memory: 0.175
+sensitivityDecisionRule: A conclusion may not be called allocation-stable if any task receives zero allocation or if S05 eligibility changes by profile; policy rankings are never computed from these weights.

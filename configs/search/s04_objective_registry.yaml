@@ -1,0 +1,160 @@
+schemaVersion: e07.s04.objective-registry.v1
+researchStepId: S04
+frozenAtUtc: '2026-07-21T00:00:00Z'
+frozenQuestion: A multi-objective evaluation can reward task performance, robustness, repair, controllability, simplicity, and diversity without collapsing all behavior into speed.
+globalRules:
+  universalNormalizedScorePermitted: false
+  crossTaskScalarizationPermitted: false
+  crossTaskDominancePermitted: false
+  crossMetricDetourPoolingPermitted: false
+  aggregateE05CompetencyScorePermitted: false
+  taskWeightsAffect: evaluation_allocation_only
+  taskWeightsDoNotAffect: [objective_values, pareto_dominance, archive_cell_quality, confirmation_selection]
+  objectiveVisibility: terminal_split_gated_offline_only
+  nativeRawValuesRequiredBesideAnyDisplayTransform: true
+  censorAndCompetingTerminalFieldsRequired: true
+  confirmationOutcomesUsedToDefineRegistry: false
+  validationOutcomesUsedToDefineRegistry: false
+commonObjectiveFamilies:
+  policyComplexity:
+    aggregation: pareto_vector_only
+    fields:
+      - {field: ruleCount, direction: minimize, lowerBound: 0}
+      - {field: expressionNodes, direction: minimize, lowerBound: 0}
+      - {field: actionCount, direction: minimize, lowerBound: 1}
+      - {field: persistentMemoryBits, direction: minimize, lowerBound: 0, upperBound: 32}
+      - {field: outboundSignalBits, direction: minimize, lowerBound: 0, upperBound: 32}
+      - {field: worstCaseOperations, direction: minimize, lowerBound: 1, upperBound: 256}
+      - {field: canonicalBytes, direction: minimize, lowerBound: 1}
+  licensedInsertionPrefix:
+    applicability: policies_declaring_line.prefix_ordered
+    aggregation: separate_capability_ledger_never_folded_into_native_cost
+    fields:
+      - {field: licensedPrefixPredicateEvaluations, direction: minimize, lowerBound: 0}
+      - {field: licensedPrefixValueReads, direction: minimize, lowerBound: 0}
+      - {field: licensedPrefixValueComparisons, direction: minimize, lowerBound: 0}
+  licensedSelectionCursorAndRange:
+    applicability: policies_declaring_selection_cursor_or_swap_cursor
+    aggregation: separate_capability_ledger_never_folded_into_native_cost
+    fields:
+      - {field: engineCursorStateReads, direction: minimize, lowerBound: 0}
+      - {field: engineCursorTargetProjectionReads, direction: minimize, lowerBound: 0}
+      - {field: engineCursorAdvanceActions, direction: minimize, lowerBound: 0}
+      - {field: engineCursorSwapActions, direction: minimize, lowerBound: 0}
+      - {field: licensedLongRangeRequestedDistance, direction: minimize, lowerBound: 0}
+      - {field: licensedLongRangeMaximumRequestedDistance, direction: report_only, lowerBound: 0}
+  dslPeerCommunication:
+    profile: recipient_activation_lag_lww_sum_u8_v1
+    aggregation: separate_ledger
+    fields: [emittedSignalWrites, transmittedSignalBits, recipientDeliveries, bufferOverwrites, consumedDeliveries, observableAggregateReads]
+taskObjectives:
+  e07_s02_sorting_1d:
+    predecessor: E01
+    performance:
+      - {id: sorting_completion, field: completed, direction: maximize, bounds: [0, 1]}
+      - {id: sorting_terminal_normalized_kendall, field: derived.finalNormalizedKendallDistance, direction: minimize, bounds: [0, 1]}
+    costs: {families: [E01_reference_10_field_ledger], aggregation: pareto_vector_only}
+    clock: charged_activation_opportunity
+    censoring: event_budget_is_failure_for_completion_and_right_censor_for_time
+    claimBoundary: Reconstructed-simulator sorting only; not biological morphogenesis or historical-output identity.
+  e07_s02_faults_1d:
+    predecessor: E02
+    performance:
+      - {id: fault_completion, field: completed, direction: maximize, bounds: [0, 1]}
+      - {id: fault_terminal_normalized_kendall, field: derived.finalNormalizedKendallDistance, direction: minimize, bounds: [0, 1]}
+      - {id: paired_fault_completion_delta, field: paired.completedFaultMinusMatchedClean, direction: maximize, bounds: [-1, 1], requires: matched_clean_pair}
+      - {id: paired_fault_residual_delta, field: paired.residualFaultMinusMatchedClean, direction: minimize, bounds: [-1, 1], requires: matched_clean_pair}
+    costs: {families: [E01_reference_ledger, E02_complete_mechanism_ledger], aggregation: separate_vectors}
+    competingTerminals: [quiescent, blocking_failure, event_budget]
+    clock: charged_actor_policy_opportunity
+    censoring: budget_exhaustion_is_failure_and_time_censor;_blocking_is_competing_failure
+    claimBoundary: Engineered fault tolerance on matched simulator support; not biological robustness or universal architecture superiority.
+  e07_s02_detour_1d:
+    predecessor: E03
+    performance:
+      - {id: detour_completion, field: completed, direction: maximize, bounds: [0, 1]}
+      - {id: adjacent_descents_final, field: finalDistanceProfile.normalized_adjacent_descents, direction: minimize, bounds: [0, 1], metricClass: local}
+      - {id: inversion_final, field: finalDistanceProfile.normalized_kendall_distance, direction: minimize, bounds: [0, 1], metricClass: global}
+      - {id: footrule_final, field: finalDistanceProfile.normalized_spearman_footrule, direction: minimize, bounds: [0, 1], metricClass: global_correlated_with_transport}
+      - {id: max_rank_error_final, field: finalDistanceProfile.normalized_maximum_rank_error, direction: minimize, bounds: [0, 1], metricClass: global}
+      - {id: duplicate_transport_final, field: finalDistanceProfile.normalized_duplicate_aware_earth_movers_distance, direction: minimize, bounds: [0, 1], metricClass: global_correlated_with_footrule}
+    excludedAsObjectives: [necessaryDetourClaim, adaptiveDetourLabel, confirmationExpectedCategory]
+    metricAggregationPermitted: false
+    exactSmallAndEmpiricalLargePoolingPermitted: false
+    successfulRunEfficiencyPopulation: completed_only_with_full_failure_and_censor_counts_beside_it
+    costs: {families: [E01_reference_ledger, E03_metric_specific_path_costs], aggregation: separate_by_metric_and_support}
+    clock: charged_activation_opportunity
+    censoring: empirical_budget_exhaustion_is_censor;_structural_graph_budget_is_not_a_terminal
+    claimBoundary: Metric-relative trajectory properties only; not planning, foresight, or subjective intent.
+  e07_s02_chimera_1d:
+    predecessor: E04
+    performance:
+      - {id: chimera_completion, field: completed, direction: maximize, bounds: [0, 1]}
+      - {id: corrected_null_adjusted_peak, field: dynamicNull.compositionCorrectedPeakExcess, direction: maximize, bounds: [-1, 1], requires: fixed_composition_dynamic_null_trace}
+      - {id: corrected_null_adjusted_positive_area, field: dynamicNull.fixedHorizonPositiveAreaMean, direction: maximize, bounds: [0, 1], requires: fixed_horizon_dynamic_null_trace}
+    reportOnlyDiagnostics: [categorical_assortativity, neighbor_mi_bits, largest_cluster_fraction, state_flux_class]
+    prohibitedObjectives: [raw_adjacency, publication_aggregation_without_composition_correction, raw_duration, fixed_plateau_as_equilibrium]
+    costs: {families: [E01_reference_ledger], aggregation: pareto_vector_only}
+    clock: charged_activation_opportunity
+    censoring: event_budget_is_failure_for_completion_and_time_censor
+    claimBoundary: Composition-corrected simulated association only; not affinity, preference, attractor, biological aggregation, or agency.
+  e05_benchmark_axes:
+    predecessor: E05
+    aggregateScorePermitted: false
+    axes:
+      robustness:
+        fields: [fullPopulationSuccessBySeverity, targetAppropriateErrorBySeverity, terminalCauseBySeverity]
+        direction: report_curve_and_pareto_not_auc_total
+      repair:
+        fields: [recoverySuccess, restrictedRecoveryTime, initialDistance, finalDistance, fixedHorizonErrorAuc]
+        direction: separate_success_time_error
+      memory:
+        fields: [historyMatchedEffect, resetMatchedEffect, postInjuryStability]
+        direction: separate_paired_effects
+      plasticity_target_adaptation:
+        fields: [targetCompleted, restrictedAdaptationTime, adaptationCensored, postHitAnyDeparture]
+        direction: separate_success_time_stability
+      transfer:
+        fields: [successByFrozenStratum, residualByFrozenStratum, terminalCauseByFrozenStratum]
+        direction: separate_by_stratum_and_policy_family
+    costs: {families: [development, stabilization, lesion, recovery, native, extension, target_signal], aggregation: separate_phase_and_family_vectors}
+    clocks: [phase_local_charged_opportunity, paired_event_clock, restricted_opportunity_time]
+    censoring: preserve_source_terminals_censors_stopped_rows_and_count_change_semantics
+    claimBoundary: Five operational simulator competencies reported separately; not biological regeneration, natural memory, learning, clinical repair, or universal competence.
+  e07_s02_regeneration_1d:
+    predecessor: E05
+    objectiveSubset: [repair, robustness]
+    performance:
+      - {id: regeneration_success, field: success, direction: maximize, bounds: [0, 1]}
+      - {id: regeneration_restricted_time, field: restrictedTime, direction: minimize, lowerBound: 0, censorAware: true}
+      - {id: regeneration_final_distance, field: finalDistance, direction: minimize, lowerBound: 0}
+    bindingStatus: unavailable_for_arbitrary_dsl_until_e05_gate
+  e07_s02_target_change_1d:
+    predecessor: E05
+    objectiveSubset: [plasticity_target_adaptation]
+    performance:
+      - {id: target_completion, field: targetCompleted, direction: maximize, bounds: [0, 1]}
+      - {id: restricted_adaptation_time, field: restrictedAdaptationTime, direction: minimize, lowerBound: 0, censorAware: true}
+      - {id: post_hit_departure, field: postHitAnyDeparture, direction: minimize, bounds: [0, 1]}
+    bindingStatus: unavailable_for_arbitrary_dsl_until_e05_gate
+  e06_bounded_square:
+    predecessor: E06
+    performance:
+      - {id: conjunctive_completion, field: conjunctiveCompletion, direction: maximize, bounds: [0, 1], requires: calibrated_bounded_square_s01_and_s02}
+      - {id: s01_global_mismatch, field: s01GlobalCompletionAudit.normalizedMismatch, direction: minimize, bounds: [0, 1], role: component_not_substitute}
+      - {id: s02_local_acceptance, field: s02LocalGrammar.accepted, direction: maximize, bounds: [0, 1], role: component_not_substitute}
+      - {id: formation_success, field: formationCompletion, direction: maximize, bounds: [0, 1], requires: calibrated_formation_fixture}
+      - {id: repair_success, field: repairCompletion, direction: maximize, bounds: [0, 1], requires: calibrated_repair_fixture}
+    prohibitedObjectives: [fixedBudgetCompleted, finalStateSha256, s13DiagnosticAsCompletion, exactStartTerminalRetentionAsFormation, zeroQueryFreezeAsRepair]
+    costs:
+      families: [movement, observation, channel, information, action, intervention, source_work, computation, opportunity]
+      aggregation: separate_vectors_with_S06_authority_labels
+    clock: synchronous_graph_transition_with_declared_actor_slots
+    censoring: fixed_budget_noncompletion_is_censored_only_when_a_calibrated_completion_endpoint_is_defined
+    claimBoundary: Calibrated computational pattern criteria only; not biological formation, repair, convergence, memory, agency, or topology-general success.
+  e07_s02_spatial2d_local:
+    objectiveReference: e06_bounded_square
+    bindingStatus: unavailable_for_arbitrary_dsl_until_e06_gate
+  e07_s02_spatial2d_memory:
+    objectiveReference: e06_bounded_square
+    bindingStatus: unavailable_for_arbitrary_dsl_until_e06_gate

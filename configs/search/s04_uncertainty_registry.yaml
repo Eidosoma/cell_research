@@ -1,0 +1,34 @@
+schemaVersion: e07.s04.uncertainty-registry.v1
+researchStepId: S04
+confidenceLevel: 0.95
+methods:
+  binaryOrRate:
+    estimator: full_population_fraction_or_scenario_block_mean
+    interval: wilson_when_independent_binomial_else_scenario_block_bootstrap
+    bootstrapReplicates: 2000
+  pairedContrast:
+    estimator: paired_scenario_mean_difference
+    interval: paired_scenario_block_bootstrap
+    bootstrapReplicates: 2000
+  boundedContinuous:
+    estimator: scenario_block_mean_and_quantiles
+    interval: scenario_block_bootstrap
+    bootstrapReplicates: 2000
+  completionTime:
+    estimator: task_specific_restricted_mean_and_completion_curve
+    censoring: native_task_censor_rule
+    prohibited: [drop_censored, impute_censored_as_zero, compare_incomparable_native_clocks]
+  singletonTrainingAnchor:
+    interval: not_estimable
+    label: deterministic_training_anchor_not_population_uncertainty
+  archiveCell:
+    estimator: scenario_block_cell_assignment_probability
+    bootstrapReplicates: 1000
+    stableThreshold: 0.8
+randomness:
+  bootstrapSeed: 704001
+  workerOrderAsRandomSource: false
+multipleViews:
+  E03: metrics_and_supports_separate
+  E05: competency_axes_separate
+  E06: local_global_conjunction_and_cost_families_separate

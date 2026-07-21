@@ -1,0 +1,36 @@
+schemaVersion: e07.s04.s05-eligibility-gate.v1
+researchStepId: S04
+decision: blocked
+s05SearchEligible: false
+enforcementFunction: src.objective_design.require_s05_eligible
+e05AdapterRequiredBeforeS05: true
+e06AdapterRequiredBeforeS05: true
+fieldNameSimilarityCanWaiveAdapter: false
+structuralCoverageCanWaiveAdapter: false
+finiteCorpusEquivalenceCanWaiveAdapter: false
+requirements:
+  - id: G01_protected_split_access
+    currentStatus: pass
+    evidence: S02/S03 access audits; no validation or confirmation outcome materialization
+  - id: G02_line_E01_E04_arbitrary_DSL_episode_binding
+    currentStatus: fail
+    requiredEvidence: train-only full-episode parity for faithful policies plus legality/rejection/cost/event/terminal/censor checks for adversarial arbitrary DSL policies
+    reason: S03 validates proposal shadows only and reports no seed episode outcomes
+  - id: G03_E05_arbitrary_DSL_binding
+    currentStatus: fail
+    nonWaivable: true
+    requiredEvidence: preserve phase-local clocks, five nonaggregated competencies, target-signal authority, identity/cardinality, source terminals, censors, stopped rows, pairing, and native/extension cost ledgers on train-only fixtures
+    reason: S03 E05 rows are unbound_preserved; generic peer communication is not an E05 target signal
+  - id: G04_E06_arbitrary_DSL_binding
+    currentStatus: fail
+    nonWaivable: true
+    requiredEvidence: engine-owned opaque candidate enumeration, S04 authentication, native legality, conflict resolution, atomic commit, identity-memory ownership, channel authority, separate cost ledgers, fixed transition clock, and offline S01/S02 conjunction on train-only calibrated fixtures
+    reason: S03 spatial results are synthetic typed fixtures, not authenticated native episodes
+  - id: G05_objective_descriptor_extraction
+    currentStatus: fail
+    requiredEvidence: every active objective and descriptor extracted from bound native train episodes with metric-bound, censor, and anti-gaming checks
+  - id: G06_deterministic_replay_and_leakage
+    currentStatus: fail
+    requiredEvidence: exact replay, worker-order independence, zero validation/confirmation outcomes, and denial before materialization for every new adapter
+passRule: all_requirements_pass_on_authorized_training_evidence_before_any_S05_mutation_or_archive_search
+recommendedRemediation: Authorize a bounded adapter-integration prerequisite before S05; do not begin quality-diversity search while this gate is blocked.
