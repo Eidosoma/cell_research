@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "e07.policy-dsl.v1",
+  "policyId": "nudge_signal_repair_v1",
+  "environment": "line1d.v1",
+  "permissions": [
+    "last_action.rejected",
+    "repair.nudge_count",
+    "signal.neighbor_sum_u8"
+  ],
+  "memory": [
+    {"name": "frustration", "bits": 2, "initial": 0}
+  ],
+  "signals": {"channels": 1, "bitsPerChannel": 2},
+  "limits": {
+    "maxRules": 2,
+    "maxExpressionNodes": 8,
+    "maxActionsPerActivation": 3,
+    "maxOperationsPerActivation": 24,
+    "maxMovementRadius": 0,
+    "maxCandidates": 0
+  },
+  "rules": [
+    {
+      "when": {"op": "eq", "left": {"obs": "last_action.rejected"}, "right": {"const": true}},
+      "actions": [
+        {"kind": "set_memory", "register": "frustration", "mode": "increment_saturating", "value": null},
+        {"kind": "emit_signal", "channel": 0, "value": {"mem": "frustration"}},
+        {"kind": "noop"}
+      ]
+    },
+    {
+      "when": {"all": [
+        {"op": "ge", "left": {"obs": "repair.nudge_count"}, "right": {"const": 2}},
+        {"op": "gt", "left": {"obs": "signal.neighbor_sum_u8"}, "right": {"const": 0}}
+      ]},
+      "actions": [
+        {"kind": "set_memory", "register": "frustration", "mode": "decrement_saturating", "value": null},
+        {"kind": "emit_signal", "channel": 0, "value": {"const": 0}},
+        {"kind": "noop"}
+      ]
+    }
+  ],
+  "default": {"actions": [{"kind": "noop"}]}
+}

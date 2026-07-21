@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "e07.policy-dsl.v1",
+  "policyId": "spatial_greedy_local_v1",
+  "environment": "spatial2d.v1",
+  "permissions": [
+    "candidate.kind",
+    "candidate.local_relation_delta"
+  ],
+  "memory": [],
+  "signals": {"channels": 0, "bitsPerChannel": 0},
+  "limits": {
+    "maxRules": 1,
+    "maxExpressionNodes": 1,
+    "maxActionsPerActivation": 1,
+    "maxOperationsPerActivation": 20,
+    "maxMovementRadius": 2,
+    "maxCandidates": 16
+  },
+  "rules": [
+    {
+      "when": {"const": true},
+      "actions": [{
+        "kind": "move_candidate",
+        "selector": {
+          "mode": "argmax",
+          "field": "candidate.local_relation_delta",
+          "requirePositive": true,
+          "indexObservation": null
+        },
+        "allowedMovementKinds": ["adjacent_swap", "short_exchange", "vacancy_move"]
+      }]
+    }
+  ],
+  "default": {"actions": [{"kind": "noop"}]}
+}

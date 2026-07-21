@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "e07.policy-dsl.v1",
+  "policyId": "bubble_cell_view_v1",
+  "environment": "line1d.v1",
+  "permissions": [
+    "activation.side",
+    "neighbor.left.exists",
+    "neighbor.left.value",
+    "neighbor.right.exists",
+    "neighbor.right.value",
+    "own.direction",
+    "own.value"
+  ],
+  "memory": [],
+  "signals": {"channels": 0, "bitsPerChannel": 0},
+  "limits": {
+    "maxRules": 4,
+    "maxExpressionNodes": 8,
+    "maxActionsPerActivation": 1,
+    "maxOperationsPerActivation": 32,
+    "maxMovementRadius": 1,
+    "maxCandidates": 0
+  },
+  "rules": [
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "activation.side"}, "right": {"const": "left"}},
+        {"op": "eq", "left": {"obs": "own.direction"}, "right": {"const": "ascending"}},
+        {"op": "eq", "left": {"obs": "neighbor.left.exists"}, "right": {"const": true}},
+        {"op": "lt", "left": {"obs": "own.value"}, "right": {"obs": "neighbor.left.value"}}
+      ]},
+      "actions": [{"kind": "swap_relative", "offset": -1}]
+    },
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "activation.side"}, "right": {"const": "right"}},
+        {"op": "eq", "left": {"obs": "own.direction"}, "right": {"const": "ascending"}},
+        {"op": "eq", "left": {"obs": "neighbor.right.exists"}, "right": {"const": true}},
+        {"op": "gt", "left": {"obs": "own.value"}, "right": {"obs": "neighbor.right.value"}}
+      ]},
+      "actions": [{"kind": "swap_relative", "offset": 1}]
+    },
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "activation.side"}, "right": {"const": "left"}},
+        {"op": "eq", "left": {"obs": "own.direction"}, "right": {"const": "descending"}},
+        {"op": "eq", "left": {"obs": "neighbor.left.exists"}, "right": {"const": true}},
+        {"op": "gt", "left": {"obs": "own.value"}, "right": {"obs": "neighbor.left.value"}}
+      ]},
+      "actions": [{"kind": "swap_relative", "offset": -1}]
+    },
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "activation.side"}, "right": {"const": "right"}},
+        {"op": "eq", "left": {"obs": "own.direction"}, "right": {"const": "descending"}},
+        {"op": "eq", "left": {"obs": "neighbor.right.exists"}, "right": {"const": true}},
+        {"op": "lt", "left": {"obs": "own.value"}, "right": {"obs": "neighbor.right.value"}}
+      ]},
+      "actions": [{"kind": "swap_relative", "offset": 1}]
+    }
+  ],
+  "default": {"actions": [{"kind": "noop"}]}
+}

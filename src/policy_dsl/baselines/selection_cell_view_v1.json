@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "e07.policy-dsl.v1",
+  "policyId": "selection_cell_view_v1",
+  "environment": "line1d.v1",
+  "permissions": [
+    "own.direction",
+    "own.value",
+    "selection.cursor_at_actor",
+    "selection.cursor_in_bounds",
+    "selection.target.stuck",
+    "selection.target.value"
+  ],
+  "memory": [],
+  "signals": {"channels": 0, "bitsPerChannel": 0},
+  "limits": {
+    "maxRules": 3,
+    "maxExpressionNodes": 8,
+    "maxActionsPerActivation": 1,
+    "maxOperationsPerActivation": 24,
+    "maxMovementRadius": 65535,
+    "maxCandidates": 0
+  },
+  "rules": [
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "selection.cursor_in_bounds"}, "right": {"const": true}},
+        {"op": "eq", "left": {"obs": "selection.cursor_at_actor"}, "right": {"const": false}},
+        {"op": "eq", "left": {"obs": "selection.target.stuck"}, "right": {"const": true}}
+      ]},
+      "actions": [{"kind": "advance_cursor", "direction": "own_direction"}]
+    },
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "selection.cursor_in_bounds"}, "right": {"const": true}},
+        {"op": "eq", "left": {"obs": "selection.cursor_at_actor"}, "right": {"const": false}},
+        {"op": "le", "left": {"obs": "selection.target.value"}, "right": {"obs": "own.value"}}
+      ]},
+      "actions": [{"kind": "advance_cursor", "direction": "own_direction"}]
+    },
+    {
+      "when": {"all": [
+        {"op": "eq", "left": {"obs": "selection.cursor_in_bounds"}, "right": {"const": true}},
+        {"op": "eq", "left": {"obs": "selection.cursor_at_actor"}, "right": {"const": false}}
+      ]},
+      "actions": [{"kind": "swap_cursor"}]
+    }
+  ],
+  "default": {"actions": [{"kind": "noop"}]}
+}

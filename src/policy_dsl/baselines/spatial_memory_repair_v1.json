@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "e07.policy-dsl.v1",
+  "policyId": "spatial_memory_repair_v1",
+  "environment": "spatial2d.v1",
+  "permissions": [
+    "candidate.kind",
+    "candidate.local_relation_delta",
+    "own.local_relation_utility"
+  ],
+  "memory": [
+    {"name": "best_local_utility", "bits": 8, "initial": 12},
+    {"name": "frustration", "bits": 2, "initial": 0}
+  ],
+  "signals": {"channels": 0, "bitsPerChannel": 0},
+  "limits": {
+    "maxRules": 2,
+    "maxExpressionNodes": 2,
+    "maxActionsPerActivation": 3,
+    "maxOperationsPerActivation": 24,
+    "maxMovementRadius": 2,
+    "maxCandidates": 16
+  },
+  "rules": [
+    {
+      "when": {"op": "lt", "left": {"obs": "own.local_relation_utility"}, "right": {"mem": "best_local_utility"}},
+      "actions": [
+        {"kind": "set_memory", "register": "frustration", "mode": "increment_saturating", "value": null},
+        {
+          "kind": "move_candidate",
+          "selector": {
+            "mode": "argmax",
+            "field": "candidate.local_relation_delta",
+            "requirePositive": true,
+            "indexObservation": null
+          },
+          "allowedMovementKinds": ["adjacent_swap", "short_exchange", "vacancy_move"]
+        }
+      ]
+    },
+    {
+      "when": {"op": "ge", "left": {"obs": "own.local_relation_utility"}, "right": {"mem": "best_local_utility"}},
+      "actions": [
+        {"kind": "set_memory", "register": "best_local_utility", "mode": "assign", "value": {"obs": "own.local_relation_utility"}},
+        {"kind": "set_memory", "register": "frustration", "mode": "decrement_saturating", "value": null},
+        {"kind": "noop"}
+      ]
+    }
+  ],
+  "default": {"actions": [{"kind": "noop"}]}
+}
