@@ -1,0 +1,133 @@
+schemaVersion: e06.s13.morphometric-catalog.v1
+researchStepId: S13
+title: Frozen two-dimensional morphology and topology metric panel
+frozenQuestion: Can a prespecified panel of local, geometric, transport, component, boundary, purity, symmetry, topology, time, and component-wise cost views prevent interpretation from depending on one favorable score without changing the S01/S02 completion contract?
+claimBoundary: These are bounded-square computational morphology diagnostics. They do not redefine S01 completion, establish biological morphology, prove convergence, or convert terminal restoration into uninterrupted maintenance.
+
+canonicalContracts:
+  localGrammar: e06.s02.grammar-catalog.v1
+  globalCompletion: e06.s01.target-catalog.v1
+  topologyCalibration: unobstructed_bounded_square_four_neighbor_target_fixtures_only
+  endpointSources: [S09, S10, S11, S12]
+
+equivalenceHandling:
+  imageDistance: minimum categorical Hamming distance over the complete S01 exact equivalence orbit
+  referenceSelection: S01 rank of boundary violations, mismatch count, mismatch fraction, then canonical reference key
+  transportAnchor: exact categorical transport is evaluated against the reference selected by the frozen S01 rank
+  labelPermutation: forbidden
+  postOutcomeReferenceSelection: forbidden
+  caveat: The transport anchor is equivalence-aware but is not a second minimization over transport distance; a different orbit member can have lower transport cost.
+
+metricDefinitions:
+  grammarSatisfaction:
+    fields: [s02GrammarAccepted, s02SoftScore, s02RelationalScore, s02HardViolationCount]
+    definition: Canonical S02 hard-first best-orientation score_grid result.
+    role: local_feedback_and_interpretation_only
+  imageDistanceModuloEquivalence:
+    fields: [s01MismatchCount, imageDistanceModuloEquivalence]
+    definition: S01 minimum categorical Hamming mismatch count and fraction over its exact equivalence orbit.
+    normalization: mismatch_count_divided_by_site_count
+  categoricalEarthMoversDistance:
+    fields: [transportDistance, transportRawCost, transportCompositionValid]
+    definition: Sum, over every declared token including vacancy, of the exact minimum one-to-one Manhattan assignment cost from candidate sites to the S01-selected reference sites.
+    normalization: raw_cost_divided_by_site_count_times_bounded_grid_diameter
+    invalidComposition: null_distance_and_false_validity_flag
+  connectedComponents:
+    fields: [componentCountsJson, componentExcess, s01ComponentMatch]
+    definition: Four-neighbor connected component counts for every declared token; excess is summed distance outside S01 component-count intervals.
+  boundaryLength:
+    fields: [heterotypicBoundaryEdges, boundaryLengthNormalized, targetBoundaryRelativeError]
+    definition: Undirected internal four-neighbor edges whose endpoint tokens differ.
+    normalization: edge_count_divided_by_square_root_of_site_count
+    targetError: absolute_candidate_minus_selected_reference_edge_count_divided_by_max_one_reference_edge_count
+  regionPurity:
+    fields: [occupiedRegionPurity]
+    definition: Size-weighted modal-token fraction within each four-connected non-vacancy region of the S01-selected reference.
+    semantics: label_blind_diagnostic_not_completion
+  symmetry:
+    fields: [symmetryMismatchFraction, symmetryTransformCount]
+    definition: Mean self-mismatch fraction under the nonidentity exact D4 stabilizers of the S01-selected reference, using the domain frame for anchored targets and foreground bounding-box frame for translatable targets.
+    noNonidentityStabilizer: null
+  holes:
+    fields: [vacancyHoles, holeCountError, s01TopologyMatch]
+    definition: Four-connected vacancy components that do not touch the bounded exterior; error is distance outside the S01 allowed interval.
+  endpointTime:
+    fields: [timeEndpointType, timeEligible, timeEventObserved, timeToEndpoint, timeRightCensored, timeAnalysisTransition]
+    definition: First conjunctive completion for initially incomplete formation starts, or first conjunctive repair for explicitly repair-eligible damaged starts; non-events are right-censored at the fixed event budget.
+    exactStartMaintenance: not_applicable_without_loss_and_restoration_instrumentation
+    s12CentralOnlyInterpretation: terminal_restoration_or_maintenance_only_not_uninterrupted_maintenance
+  componentWiseCost:
+    definition: Preserve every available action, displacement, observation, information, intervention, source-work, computation, and opportunity ledger component in separate columns; unavailable components are null rather than zero.
+    scalarCollapse: forbidden
+
+calibrationFixtures:
+  exactOrbit:
+    source: complete_S01_equivalence_orbits
+    expectedCount: 148
+  toleratedVariants:
+    source: S01_acceptedBoundarySwap_records
+    expectedCount: 3
+  grammarFalsePositives:
+    source: configs/morphologies/grammar_adversarial_fixtures.yaml
+    expectedCount: 7
+  handLabeled:
+    - fixtureId: solid_five
+      rows: [TTTTT, TTTTT, TTTTT, TTTTT, TTTTT]
+      vacancyLabel: "."
+      expected: {TComponents: 1, vacancyComponents: 0, holes: 0, heterotypicBoundaryEdges: 0}
+    - fixtureId: centered_three_by_three_hole
+      rows: [TTTTT, T...T, T...T, T...T, TTTTT]
+      vacancyLabel: "."
+      expected: {TComponents: 1, vacancyComponents: 1, holes: 1, heterotypicBoundaryEdges: 12}
+    - fixtureId: boundary_notch
+      rows: [TT.TT, TT.TT, TT.TT, TTTTT, TTTTT]
+      vacancyLabel: "."
+      expected: {TComponents: 1, vacancyComponents: 1, holes: 0, heterotypicBoundaryEdges: 7}
+    - fixtureId: two_single_site_holes
+      rows: [TTTTT, T.TTT, TTTTT, TTT.T, TTTTT]
+      vacancyLabel: "."
+      expected: {TComponents: 1, vacancyComponents: 2, holes: 2, heterotypicBoundaryEdges: 8}
+
+resolutionRobustness:
+  scales: [1, 2, 3]
+  fixture: centered_three_by_three_hole_with_one_count_preserving_interface_exchange
+  exactInvariants:
+    imageMismatchFraction: 0.0
+    occupiedRegionPurity: 0.0
+    boundaryLengthNormalized: 1.0e-12
+    componentCounts: exact
+    vacancyHoles: exact
+    symmetryMismatchFraction: 1.0e-12
+  transportMaximumAbsoluteDrift: 0.03
+  unsupportedAtNoncanonicalResolution: [S01GlobalCompletion, S02GrammarSatisfaction]
+
+disagreementRules:
+  thresholds:
+    transportNear: 0.01
+    boundaryNear: 0.05
+    occupiedRegionPurityHigh: 0.95
+    symmetryNear: 1.0e-12
+  requiredAnalyses:
+    - s02_accepts_while_s01_rejects
+    - component_or_hole_agrees_while_s01_rejects
+    - high_purity_or_symmetry_or_boundary_agrees_while_s01_rejects
+    - pairwise_spearman_correlations_without_metric_selection
+  favorableMetricSelectionAfterOutcome: forbidden
+
+decisionRules:
+  completionContract: s02GrammarAccepted_AND_independentS01GlobalSuccess
+  completionRedefinition: forbidden
+  priorOutcomeClassificationChanges: forbidden
+  calibrationSupportRequires:
+    - all_148_exact_equivalence_states_pass_zero_distance_and_target_audits
+    - all_3_tolerated_variants_retain_S01_and_S02_acceptance
+    - all_7_S02_false_positives_are_flagged_by_at_least_one_independent_S01_global_metric
+    - all_hand_labeled_and_resolution_gates_pass
+    - every_S09_to_S12_run_is_rescored_without_accounting_or_classification_change
+    - endpoint_time_censoring_and_component_cost_semantics_validate
+  priorOutcomeLocks:
+    S09: supportive_with_constraining_broad_formation_subfinding
+    S10: null
+    S11: constraining_contradictory
+    S12: constraining_contradictory
+  recommendedUse: Report the complete panel and prespecify study-specific directions before future outcomes; never substitute a favorable diagnostic for the frozen conjunction.
