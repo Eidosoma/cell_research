@@ -498,11 +498,15 @@ def _score_record(step_id: str, row: Mapping[str, Any]) -> dict[str, Any]:
         for column in CONTEXT_COLUMNS
         if column in row and column != "finalGridRowsJson"
     }
+    retained_cost_sources = {
+        column: row.get(column) for column in COST_SOURCE_COLUMNS[step_id]
+    }
     return {
         "sourceStepId": step_id,
         "analysisArm": arm,
         "analysisChallenge": challenge,
         **retained,
+        **retained_cost_sources,
         **panel,
         **standardize_endpoint_time(step_id, row),
         **standardize_cost_components(step_id, row),
