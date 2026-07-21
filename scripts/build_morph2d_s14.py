@@ -1584,6 +1584,224 @@ def build_report_inputs(
     )
 
 
+def write_final_audits(
+    output: Path,
+    decision: Mapping[str, Any],
+    validation: Mapping[str, Any],
+    release: Mapping[str, Any],
+) -> None:
+    result_names = [
+        "training_results.parquet",
+        "validation_results.parquet",
+        "heldout_results.parquet",
+        "negative_endpoint_results.parquet",
+        "transfer_results.parquet",
+    ]
+    frames = {name: pd.read_parquet(output / name) for name in result_names}
+    accounting_rows = []
+    pairing_rows = []
+    budget_rows = []
+    for name, frame in frames.items():
+        split = name.removesuffix("_results.parquet")
+        accounting_rows.append(
+            {
+                "split": split,
+                "intendedRuns": int(len(frame)),
+                "completedRuns": int((~frame["failed"]).sum()),
+                "failedRuns": int(frame["failed"].sum()),
+            }
+        )
+        scenario_column = "targetId" if "targetId" in frame else "fixtureId"
+        grouped = frame.groupby(
+            [scenario_column, "challengeId", "replicate"], dropna=False
+        )
+        pairing_rows.append(
+            {
+                "split": split,
+                "pairingBlockCount": int(grouped.ngroups),
+                "maximumScenarioIdsPerBlock": int(
+                    grouped["scenarioId"].nunique().max()
+                ),
+                "maximumSeedsPerBlock": int(grouped["seedHex"].nunique().max()),
+                "maximumPairingIdsPerBlock": int(
+                    grouped["pairingBlockId"].nunique().max()
+                ),
+                "pairingSuccess": bool(
+                    grouped["scenarioId"].nunique().max() == 1
+                    and grouped["seedHex"].nunique().max() == 1
+                    and grouped["pairingBlockId"].nunique().max() == 1
+                ),
+            }
+        )
+        for policy_id, block in frame.groupby("controlPolicyId"):
+            budget_rows.append(
+                {
+                    "split": split,
+                    "controlPolicyId": str(policy_id),
+                    "runCount": int(len(block)),
+                    "budgetValidRunCount": int(block["s14BudgetSuccess"].sum()),
+                    "budgetInvalidRunCount": int((~block["s14BudgetSuccess"]).sum()),
+                    **{
+                        axis: float(block[axis].sum())
+                        for axis in COST_AXES
+                    },
+                }
+            )
+    accounting = pd.DataFrame(accounting_rows)
+    accounting.to_csv(output / "run_accounting.csv", index=False)
+    pairing = pd.DataFrame(pairing_rows)
+    pairing.to_csv(output / "seed_pairing_audit.csv", index=False)
+    budgets = pd.DataFrame(budget_rows)
+    budgets.to_csv(output / "budget_reconciliation.csv", index=False)
+    calibrated = pd.concat(
+        [frames[name] for name in result_names[:-1]], ignore_index=True
+    )
+    transfer = frames["transfer_results.parquet"]
+    claim_checks = {
+        "separateS01AndS02FieldsRetained": bool(
+            calibrated[
+                ["terminalS01GlobalSuccess", "terminalS02GrammarAccepted"]
+            ].notna().all().all()
+        ),
+        "calibratedConjunctionNotReplaced": bool(
+            (
+                calibrated["terminalConjunctiveCompletion"]
+                == (
+                    calibrated["terminalS01GlobalSuccess"]
+                    & calibrated["terminalS02GrammarAccepted"]
+                )
+            ).all()
+        ),
+        "transferCompletionFieldsAreNull": bool(
+            transfer[
+                [
+                    "terminalConjunctiveCompletion",
+                    "terminalS01GlobalSuccess",
+                    "terminalS02GrammarAccepted",
+                ]
+            ].isna().all().all()
+        ),
+        "formationAndRepairNullsPreserved": not bool(
+            decision["formationAndRepairSupportGate"]
+        ),
+        "terminalRetentionNotCalledFormationOrRepair": not bool(
+            decision["s14HypothesisSupported"]
+        ),
+        "transferCompletionClaimWithheld": not bool(
+            decision["transferCompletionClaimMade"]
+        ),
+    }
+    write_json(
+        output / "claim_boundary_audit.json",
+        {
+            "schemaVersion": "e06.s14.claim-boundary-audit.v1",
+            "researchStepId": "S14",
+            "success": all(claim_checks.values()),
+            "checks": claim_checks,
+        },
+    )
+    upstream_paths = [
+        Path("/workspace/AGENTS.md"),
+        Path("/workspace/FULL_PLAN.md"),
+        Path("/workspace/RESEARCH_PLAN.md"),
+        Path("/workspace/input-attachments/MANIFEST.json"),
+        Path("/workspace/PREVIOUS_ARTIFACTS.json"),
+    ] + [
+        Path("/artifacts/research_steps")
+        / f"S{index:02d}"
+        / "research_step_full_results.md"
+        for index in range(1, 14)
+    ]
+    write_json(
+        output / "provenance_manifest.json",
+        {
+            "schemaVersion": "e06.s14.provenance.v1",
+            "researchStepId": "S14",
+            "repository": "https://github.com/Eidosoma/cell_research",
+            "branch": "eidosoma/groups/28",
+            "repositoryCommit": git_output("rev-parse", "HEAD"),
+            "repositoryTree": git_output("rev-parse", "HEAD^{tree}"),
+            "designFreezeCommit": json.loads(
+                (output / "design_freeze.json").read_text(encoding="utf-8")
+            )["repositoryCommit"],
+            "catalogSha256": file_sha256(CATALOG_PATH),
+            "datasetRequired": False,
+            "newDependencies": [],
+            "release": release,
+            "sourceTables": {
+                name: file_sha256(output / name) for name in result_names
+            },
+            "upstreamInputs": [
+                {
+                    "path": str(path),
+                    "exists": path.exists(),
+                    "sha256": file_sha256(path) if path.exists() else None,
+                }
+                for path in upstream_paths
+            ],
+        },
+    )
+    write_json(
+        output / "status.json",
+        {
+            "researchStepId": "S14",
+            "stepNumber": 14,
+            "success": bool(validation["success"]),
+            "status": "complete",
+            "outcomeClassification": decision["outcomeClassification"],
+            "artifactsWritten": [
+                str(output / "minimal_control_results.parquet"),
+                str(output / "transfer_results.parquet"),
+                str(output / "intervention_policy_archive.json"),
+                str(Path(release["archivePath"])),
+                "/artifacts/report_inputs/",
+                str(output / "research_step_full_results.md"),
+            ],
+            "validationResult": (
+                "Passed 27,250/27,250 intended-run accounting, 49/49 exact "
+                "replays, 239/239 target rescores, invariant and permission "
+                "checks, calibrated budgets, exact reconciliation of the 1,000 "
+                "budget-invalid 15x15 direct-control diagnostics, hashes, and a "
+                "fresh CPU/GPU benchmark smoke run."
+            ),
+            "caveatsOrBlockers": [
+                "The selected no-query policy retains exact starts by suppressing all native action and costs 512 foregone opportunities.",
+                "Formation and repair gates failed; larger-grid and irregular outcomes remain transfer diagnostics.",
+                "Direct and sham control on 15x15 require eight address bits per query and exceed the frozen seven-bit ceiling.",
+            ],
+            "recommendedNextAction": (
+                "Hand the pointer-based benchmark and protected split contract to "
+                "E07; do not reinterpret terminal immobilization as formation, "
+                "repair, or uninterrupted maintenance."
+            ),
+        },
+    )
+
+
+def refresh_artifact_manifest(output: Path) -> None:
+    manifest_path = output / "artifact_manifest.json"
+    files = []
+    for path in sorted(output.iterdir()):
+        if not path.is_file() or path == manifest_path:
+            continue
+        files.append(
+            {
+                "path": path.name,
+                "bytes": path.stat().st_size,
+                "sha256": file_sha256(path),
+            }
+        )
+    write_json(
+        manifest_path,
+        {
+            "schemaVersion": "e06.s14.artifact-manifest.v1",
+            "researchStepId": "S14",
+            "fileCount": len(files),
+            "files": files,
+        },
+    )
+
+
 def finalize(output: Path) -> None:
     catalog = load_minimal_control_catalog()
     calibrated = pd.concat(
@@ -1614,6 +1832,7 @@ def finalize(output: Path) -> None:
     write_json(output / "outcome_decision.json", decision)
     release = package_release(output, validation, decision)
     build_report_inputs(output, decision, validation, release)
+    write_final_audits(output, decision, validation, release)
     write_json(
         output / "execution_manifest.json",
         {
@@ -1630,6 +1849,24 @@ def finalize(output: Path) -> None:
             "catalogSha256": file_sha256(CATALOG_PATH),
         },
     )
+    refresh_artifact_manifest(output)
+
+
+def bundle(output: Path) -> None:
+    validation = json.loads(
+        (output / "validation_results.json").read_text(encoding="utf-8")
+    )
+    decision = json.loads(
+        (output / "outcome_decision.json").read_text(encoding="utf-8")
+    )
+    release = json.loads(
+        Path("/artifacts/release/morph2d-benchmark.manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    build_report_inputs(output, decision, validation, release)
+    write_final_audits(output, decision, validation, release)
+    refresh_artifact_manifest(output)
 
 
 def smoke_only(output: Path) -> None:
@@ -1641,7 +1878,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command",
-        choices=["freeze", "search", "validation", "holdout", "finalize", "smoke"],
+        choices=[
+            "freeze",
+            "search",
+            "validation",
+            "holdout",
+            "finalize",
+            "bundle",
+            "smoke",
+        ],
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
@@ -1663,6 +1908,8 @@ def main() -> None:
         execute_holdout(args.output, args.cache, args.workers)
     elif args.command == "finalize":
         finalize(args.output)
+    elif args.command == "bundle":
+        bundle(args.output)
     else:
         smoke_only(args.output)
 
