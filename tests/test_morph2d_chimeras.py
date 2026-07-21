@@ -5,7 +5,10 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import pandas as pd
 import yaml
+
+from scripts.build_morph2d_s11 import eligible_contrast_count
 
 from src.morph2d.chimeras import (
     CHIMERA_CATALOG_VERSION,
@@ -66,6 +69,30 @@ def test_catalog_freezes_exact_matrix_and_s10_constraint(assets) -> None:
     assert environment.boundary_mode == "bounded"
     assert len(environment.occupiable_sites) == 81
     assert len(environment.edges) == 144
+
+
+def test_promotion_eligibility_counts_any_frozen_metric(assets) -> None:
+    _context, _target, _grammar, _environment, catalogs = assets
+    catalog = catalogs["chimera"]
+    contrasts = pd.DataFrame(
+        [
+            {
+                "peakDifference": 0.0,
+                "positiveAreaDifference": 0.0,
+                "terminalMismatchDifference": 0.031,
+                "completionRiskDifference": 0.0,
+                "recoveryBeyondSham": 0.0,
+            },
+            {
+                "peakDifference": 0.0,
+                "positiveAreaDifference": 0.0,
+                "terminalMismatchDifference": 0.0,
+                "completionRiskDifference": 0.0,
+                "recoveryBeyondSham": 0.0,
+            },
+        ]
+    )
+    assert eligible_contrast_count(contrasts, catalog) == 1
 
 
 def test_relation_profiles_are_aligned_overlapping_and_exactly_opposed(assets) -> None:

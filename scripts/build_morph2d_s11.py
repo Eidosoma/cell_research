@@ -513,28 +513,13 @@ def select_promotions(
     definitions: Sequence[Mapping[str, Any]],
     catalog: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
-    thresholds = catalog["promotion"]["eligibilityAny"]
-    values = {
-        "peakDifference": float(thresholds["absolutePeakCorrectedHomotypyDifference"]),
-        "positiveAreaDifference": float(thresholds["absolutePositiveAreaDifference"]),
-        "terminalMismatchDifference": float(
-            thresholds["absoluteTerminalS01MismatchDifference"]
-        ),
-        "completionRiskDifference": float(
-            thresholds["absoluteConjunctiveCompletionRiskDifference"]
-        ),
-        "recoveryBeyondSham": float(
-            thresholds["absolutePostDeclusterRecoveryDifference"]
-        ),
-    }
+    values = _promotion_thresholds(catalog)
     scored = []
     for row in contrasts.to_dict(orient="records"):
         standardized = max(
             abs(float(row[key])) / threshold for key, threshold in values.items()
         )
-        eligible = any(
-            abs(float(row[key])) >= threshold for key, threshold in values.items()
-        )
+        eligible = _promotion_eligible(row, values)
         scored.append({**row, "eligible": eligible, "standardizedEffect": standardized})
     by_id = {item["contrastId"]: item for item in definitions}
     eligible = [item for item in scored if item["eligible"]]
@@ -569,6 +554,41 @@ def select_promotions(
             )
         )
     return [{**by_id[item["contrastId"]], "screen": item} for item in selected]
+
+
+def _promotion_thresholds(catalog: Mapping[str, Any]) -> dict[str, float]:
+    thresholds = catalog["promotion"]["eligibilityAny"]
+    return {
+        "peakDifference": float(thresholds["absolutePeakCorrectedHomotypyDifference"]),
+        "positiveAreaDifference": float(thresholds["absolutePositiveAreaDifference"]),
+        "terminalMismatchDifference": float(
+            thresholds["absoluteTerminalS01MismatchDifference"]
+        ),
+        "completionRiskDifference": float(
+            thresholds["absoluteConjunctiveCompletionRiskDifference"]
+        ),
+        "recoveryBeyondSham": float(
+            thresholds["absolutePostDeclusterRecoveryDifference"]
+        ),
+    }
+
+
+def _promotion_eligible(
+    row: Mapping[str, Any], thresholds: Mapping[str, float]
+) -> bool:
+    return any(
+        abs(float(row[key])) >= threshold for key, threshold in thresholds.items()
+    )
+
+
+def eligible_contrast_count(contrasts: pd.DataFrame, catalog: Mapping[str, Any]) -> int:
+    """Count screen contrasts meeting any frozen promotion threshold."""
+
+    thresholds = _promotion_thresholds(catalog)
+    return sum(
+        _promotion_eligible(row, thresholds)
+        for row in contrasts.to_dict(orient="records")
+    )
 
 
 def mandatory_anchor() -> dict[str, Any]:
@@ -1093,6 +1113,10 @@ def report_text(
 ) -> str:
     exploratory = frame[frame["phase"] == "exploratory"]
     completed = frame[~frame["failed"]]
+    terminal_completion_count = int(completed["terminalConjunctiveCompletion"].sum())
+    exact_formed = completed[completed["startFamily"] == "exact_formed"]
+    partially_correct = completed[completed["startFamily"] == "partially_correct"]
+    partial_censored = int(partially_correct["censored"].sum())
     best = (
         summary[summary["phase"] == "exploratory"]
         .sort_values("peakCompositionCorrectedHomotypy", ascending=False)
@@ -1105,6 +1129,7 @@ def report_text(
     caveat = (
         "The study uses one 9×9 bounded-square target, two fixed budgets, and two memory-free policy strategies. "
         "Grammar transformations are S05 actor-local projections, not new whole-grid S02 grammars. "
+        f"No run was conjunctively complete at its terminal state ({terminal_completion_count:,}/{len(completed):,}); the aligned-cooperation flag is comparative equivalence, not absolute maintenance or formation support. "
         "A flat or quiet state is not called convergence or dynamic equilibrium, and no S10 repair or count-changing conclusion is reopened."
     )
     return f"""# S11 — Create two-dimensional chimeras: full results
@@ -1184,7 +1209,9 @@ The run used eight worker processes and one numerical-library thread per worker.
 
 ## Results
 
-All {len(frame):,} intended outcome rows were retained; exploratory rows = {len(exploratory):,}, completed rows = {len(completed):,}, failed rows = {int(frame["failed"].sum()):,}. The largest mean exploratory peak was `{best.mixtureId}` / `{best.compositionId}` / `{best.startFamily}` / `{best.interventionArm}` at {best.peakCompositionCorrectedHomotypy:.4f}. Exact condition estimates are in `domain_metrics.csv`; run-level S02, S01, clustering, flux, kinetic, permission, and cost fields are in `chimera_results.parquet`.
+All {len(frame):,} intended outcome rows were retained; exploratory rows = {len(exploratory):,}, execution-completed rows = {len(completed):,}, failed rows = {int(frame["failed"].sum()):,}. The largest mean exploratory peak was `{best.mixtureId}` / `{best.compositionId}` / `{best.startFamily}` / `{best.interventionArm}` at {best.peakCompositionCorrectedHomotypy:.4f}. Exact condition estimates are in `domain_metrics.csv`; run-level S02, S01, clustering, flux, kinetic, permission, and cost fields are in `chimera_results.parquet`.
+
+**Absolute target endpoint audit:** {terminal_completion_count:,}/{len(completed):,} runs were conjunctively complete at the terminal state; both terminal S02 grammar acceptance and terminal S01 global success were false in every run. All {len(exact_formed):,} exact-formed runs counted completion by budget only because the initial checkpoint was already complete, and all {partial_censored:,}/{len(partially_correct):,} partially-correct runs were right-censored without completing. Consequently, `alignedCooperation = true` means only that the mandatory aligned candidate/reference contrast met the frozen comparative margins. It is not evidence of absolute maintenance, de-novo formation, convergence, or an attractor.
 
 ### Held-out contrasts
 
@@ -1216,6 +1243,7 @@ Overall validation: **{"PASS" if validation["success"] else "FAIL"}**.
 ## Caveats, blockers, failed assumptions, and limitations
 
 - S11 accepts S10's null repair result. It does not test wounds, recovery from damage, deletion, insertion, division, conversion, or adjusted targets.
+- The frozen aligned-cooperation endpoint was comparative and the completion-by-budget field includes the already-complete initial checkpoint. Every terminal state failed conjunctive completion, so the true aligned flag does not establish absolute maintenance or formation.
 - The primary morphology is one small fully occupied bounded-square layer target. Results do not generalize automatically to vacancy, hole, periodic, hexagonal, irregular, obstacle, or fixed-boundary worlds.
 - The overlapping and contradictory profiles are explicit transformations of S05 actor-local contact feedback. Only the unchanged canonical S02 grammar and independent S01 audit define completion.
 - Mobility matching is post-treatment and token conditioning can remove part of the mechanism. These are sensitivities, not automatically superior nulls.
@@ -1283,32 +1311,7 @@ def main() -> None:
             "schemaVersion": "e06.s11.promotion-decisions.v1",
             "researchStepId": "S11",
             "mandatoryAnchor": mandatory_anchor(),
-            "eligibleContrastCount": int(
-                sum(
-                    abs(float(row[key]))
-                    >= float(
-                        {
-                            "peakDifference": catalog["promotion"]["eligibilityAny"][
-                                "absolutePeakCorrectedHomotypyDifference"
-                            ],
-                            "positiveAreaDifference": catalog["promotion"][
-                                "eligibilityAny"
-                            ]["absolutePositiveAreaDifference"],
-                            "terminalMismatchDifference": catalog["promotion"][
-                                "eligibilityAny"
-                            ]["absoluteTerminalS01MismatchDifference"],
-                            "completionRiskDifference": catalog["promotion"][
-                                "eligibilityAny"
-                            ]["absoluteConjunctiveCompletionRiskDifference"],
-                            "recoveryBeyondSham": catalog["promotion"][
-                                "eligibilityAny"
-                            ]["absolutePostDeclusterRecoveryDifference"],
-                        }[key]
-                    )
-                    for row in contrasts.to_dict(orient="records")
-                    for key in ["peakDifference"]
-                )
-            ),
+            "eligibleContrastCount": eligible_contrast_count(contrasts, catalog),
             "selected": confirmation_contrast_definitions,
             "runtimeUsed": False,
             "writtenBeforeConfirmation": True,
