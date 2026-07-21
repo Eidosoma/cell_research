@@ -1,0 +1,376 @@
+schemaVersion: e07.s02.task-registry.v1
+suiteVersion: e07.s02.environment-suite.v1
+researchStepId: S02
+frozenAtUtc: '2026-07-21T00:00:00Z'
+frozenQuestion: One evaluation interface can expose sorting, faults, detours, chimeras, regeneration, changing targets, and representative 2D tasks without metric leakage.
+interface:
+  methods: [reset, observation, step, cost, event, outcome]
+  adapterStepMeaning: one complete predecessor-native evaluation unit
+  commonReward: null
+  commonCostTotal: null
+  commonNormalizedTime: null
+  outcomeVisibility: terminal_and_split_gated
+  confirmationMaterializersPresent: false
+communicationDelivery:
+  profile: recipient_activation_lag_lww_sum_u8_v1
+  observationTiming: before_current_native_action_and_emission
+  topologySnapshot: pre_transition_neighbors
+  persistence: until_recipient_next_activation
+  collisionRule: last_write_wins_per_sender_channel_before_recipient_activation
+  aggregation: deterministic_sender_sorted_saturating_sum_per_channel
+  senderIdentityVisible: false
+  sameEventRead: forbidden
+  selfDelivery: forbidden
+  consumption: all_pending_messages_consumed_on_recipient_activation
+  legalityEffect: none
+  nativeCostMutation: none
+  separateLedgerFields: [emittedSignalWrites, transmittedSignalBits, recipientDeliveries, bufferOverwrites, consumedDeliveries, observableAggregateReads]
+globalForbiddenObservationFields: &forbidden
+  - analysis_label
+  - split_label
+  - protected_confirmation_outcome
+  - outcome
+  - completion
+  - global_distance
+  - future_state
+  - future_random_draw
+  - conflict_priority
+  - raw_route
+  - occupant_identity
+  - target_membership
+tasks:
+  - taskId: e07_s02_sorting_1d
+    title: One-dimensional sorting baseline
+    family: sorting
+    predecessor: E01
+    runnerId: e01_sorting
+    environmentProfile: line1d.v1
+    legalityAuthority: E01-reference-v1 common validator and atomic commit
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      retry: no_retry
+      baselinePolicyIds: [bubble_native_v1]
+    observationContract:
+      profile: policy_native_local
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E01_reference_10_field_ledger]
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: E01.reference-event-pre-S06.v1
+      retainedProjection: digest_activation_count_stop
+    stoppingContract:
+      authority: E01_terminal_precedence
+      states: [invariant_error, complete, quiescent, event_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [completed, finalValues, finalStateHash]
+    claimBoundary: Sorting is measured only in the deterministic reconstructed simulator and is not biological morphogenesis or a historical-output identity claim.
+    horizon:
+      nativeUnit: charged_activation_opportunity
+      adapterStepGranularity: complete_native_episode
+      budgets: {activationOpportunities: 6400}
+      terminalPrecedence: [invariant_error, complete, quiescent, event_budget]
+      censoringRule: event_budget_is_failure_for_completion_and_right_censor_for_time
+      comparabilityGroup: e01_serial_activation
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [historical_backend_exact_output]
+
+  - taskId: e07_s02_faults_1d
+    title: One-dimensional matched permanent-fault baseline
+    family: faults
+    predecessor: E02
+    runnerId: e02_faults
+    environmentProfile: line1d.v1
+    legalityAuthority: E02 matched action, scheduler, and fault contracts over E01 validator
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      continuation: skip_and_continue
+      retry: no_retry
+      baselinePolicyIds: [bubble_stuck_native_v1]
+    observationContract:
+      profile: policy_native_local
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E01_reference_ledger, E02_complete_mechanism_ledger]
+      wallTimeExcludedFromDeterministicParity: true
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: E02.fault-run.v1
+      retainedProjection: digest_activation_fault_audit_count
+    stoppingContract:
+      authority: E02_inherited_E01_plus_blocking_failure
+      states: [invariant_error, complete, quiescent, event_budget, blocking_failure]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [completed, finalValues, faultProfile, comparability]
+    claimBoundary: Fault performance concerns engineered mobility, sensing, failure, continuation, and retry contracts; it is not biological robustness or universal architectural superiority.
+    horizon:
+      nativeUnit: charged_actor_policy_opportunity
+      adapterStepGranularity: complete_native_episode
+      budgets: {activationOpportunities: 6400}
+      terminalPrecedence: [invariant_error, complete, quiescent, blocking_failure, event_budget]
+      censoringRule: budget_exhaustion_is_failure_and_time_censor;_blocking_is_competing_failure
+      comparabilityGroup: e02_matched_uniform_activation
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [central_global_legacy_noncomparable]
+
+  - taskId: e07_s02_detour_1d
+    title: Empirical one-dimensional detour-metric task
+    family: detours
+    predecessor: E03
+    runnerId: e03_detour_metrics
+    environmentProfile: line1d.v1
+    legalityAuthority: E01 transition kernel; E03 metrics are offline outcome projections only
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      retry: no_retry
+      baselinePolicyIds: [bubble_detour_probe_v1]
+    observationContract:
+      profile: policy_native_local_without_E03_distances
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E01_reference_ledger, E03_separate_path_cost_profiles_when_applicable]
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: E01_event_plus_offline_E03_metric_overlay
+      retainedProjection: digest_activation_count_no_online_metric
+    stoppingContract:
+      authority: empirical_E01_terminal;_exact_graph_structural_terminals_remain_distinct
+      states: [invariant_error, complete, quiescent, event_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [initialDistanceProfile, finalDistanceProfile, necessaryDetourClaim]
+    claimBoundary: Distance regressions and structural detour witnesses are computational trajectory properties; they do not establish foresight, planning, or subjective intention.
+    horizon:
+      nativeUnit: charged_activation_opportunity
+      adapterStepGranularity: complete_native_episode
+      budgets: {empiricalActivationOpportunities: 2500}
+      terminalPrecedence: [invariant_error, complete, quiescent, event_budget]
+      censoringRule: empirical_budget_exhaustion_is_censor;_structural_graph_budget_is_not_a_terminal
+      comparabilityGroup: e03_empirical_line_replay
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [E03_seven_scenario_confirmation_archive, exact_graph_edge_step_adapter]
+
+  - taskId: e07_s02_chimera_1d
+    title: One-dimensional exact-composition chimera baseline
+    family: chimeras
+    predecessor: E04
+    runnerId: e04_chimera
+    environmentProfile: line1d.v1
+    legalityAuthority: E01 transition kernel with identity-owned native Algotypes
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      policyLabelsAvailableToActor: false
+      baselinePolicyIds: [bubble_insertion_exact_native_v1]
+    observationContract:
+      profile: Algotype_native_surface_without_analysis_labels
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E01_reference_ledger, E04_composition_and_null_metrics_not_costs]
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: E01_event_plus_offline_E04_composition_overlay
+      retainedProjection: digest_activation_composition_blindness
+    stoppingContract:
+      authority: E01_terminal_precedence
+      states: [invariant_error, complete, quiescent, event_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [completed, compositionCounts, initialAggregationMetrics, finalAggregationMetrics]
+    claimBoundary: Composition-corrected adjacency and clustering are simulated association summaries, not affinity, causal preference, attractor, biological aggregation, or agency.
+    horizon:
+      nativeUnit: charged_activation_opportunity
+      adapterStepGranularity: complete_native_episode
+      budgets: {activationOpportunities: 12800}
+      terminalPrecedence: [invariant_error, complete, quiescent, event_budget]
+      censoringRule: event_budget_is_failure_for_completion_and_time_censor
+      comparabilityGroup: e04_same_direction_exact_composition
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [E04_protected_confirmation_rows, reward_use_of_raw_adjacency_or_duration]
+
+  - taskId: e07_s02_regeneration_1d
+    title: Achieved-state lesion and native recovery baseline
+    family: regeneration
+    predecessor: E05
+    runnerId: e05_regeneration
+    environmentProfile: line1d.v1
+    legalityAuthority: E05 S01-S14 contracts over E02 distributed-local uniform scheduler
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      continuation: skip_and_continue
+      retry: no_retry
+      baselinePolicyIds: [pure_bubble_segment_reversal_native_v1]
+    observationContract:
+      profile: policy_native_local_with_phase_private_engine_state
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [development, stabilization, lesion, recovery, native_and_extension_ledgers]
+      phasesRetainedSeparately: true
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: E05-regeneration-benchmark-v1
+      retainedProjection: phase_boundaries_and_native_digests
+    stoppingContract:
+      authority: E05_competing_terminal_and_phase_contracts
+      states: [source_terminal, recovery_complete, quiescent, phase_event_budget, invariant_error]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [success, restrictedTime, initialDistance, finalDistance, lesionWindowLength, lesionPostDistance]
+    claimBoundary: Repair, regeneration, memory, and transfer are operational simulator terms only, not biological, wet-lab, clinical, or universal competency evidence.
+    horizon:
+      nativeUnit: phase_local_charged_opportunity
+      adapterStepGranularity: complete_multiphase_native_evaluation
+      budgets: {development: '100*n^2', stabilization: '20*n', recovery: '100*n^2'}
+      terminalPrecedence: [source_terminal, invariant_error, recovery_complete, quiescent, phase_event_budget]
+      censoringRule: phase_budget_is_failure_for_success_and_right_censor_for_time;_source_terminals_retained
+      comparabilityGroup: e05_achieved_repair_segment_reversal
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [count_changing_lesions, E05_protected_S12_and_S13_outcomes]
+
+  - taskId: e07_s02_target_change_1d
+    title: Collective target-change adaptation baseline
+    family: changing_targets
+    predecessor: E05
+    runnerId: e05_target_change
+    environmentProfile: line1d.v1
+    legalityAuthority: E05 S09 target overlay over unchanged E01/E02 action validator
+    actionContract:
+      nativePrimitives: [NoOp, Swap, MemoryUpdate]
+      proposalCountPerOpportunity: 1
+      continuation: skip_and_continue
+      retry: no_retry
+      baselinePolicyIds: [bubble_reverse_gradient_aware_native_v1]
+    observationContract:
+      profile: authorized_native_records_plus_declared_target_signal_projection
+      typedDslProfile: line1d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E01_reference_ledger_delta, E05_target_signal_process_ledger]
+      signalAndNativeCostsSeparate: true
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: e05.s09.target-change-run.v1
+      retainedProjection: start_end_clock_target_change_boundary_digest
+    stoppingContract:
+      authority: E05_S09_phase_and_post_hit_probe_contract
+      states: [post_adaptation_probe_complete, controller_quiescent, phase_event_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [targetCompleted, adaptationTime, adaptationCensored, restrictedAdaptationTime, overshootCensored, postHitAnyDeparture]
+    claimBoundary: Target changes, relays, gradients, broadcasts, adaptation, and stability are engineered computational constructs, not biological goals, learning, agency, or physical signaling.
+    horizon:
+      nativeUnit: phase_local_charged_opportunity_after_target_change
+      adapterStepGranularity: complete_target_change_and_probe_evaluation
+      budgets: {adaptation: '100*n^2', postHitProbe: '20*n'}
+      terminalPrecedence: [post_adaptation_probe_complete, controller_quiescent, phase_event_budget]
+      censoringRule: nonadaptation_is_right_censored_at_adaptation_budget;_overshoot_separately_censored
+      comparabilityGroup: e05_target_change_reverse_gradient
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [target_signal_as_generic_DSL_communication, E05_protected_target_change_outcomes]
+
+  - taskId: e07_s02_spatial2d_local
+    title: Representative 2D local relational episode
+    family: spatial2d
+    predecessor: E06
+    runnerId: e06_spatial
+    environmentProfile: spatial2d.v1
+    legalityAuthority: E06 S03-S07 graph, movement, policy, channel, and CPU-oracle contracts
+    actionContract:
+      nativePrimitives: [adjacent_swap, vacancy_move, short_exchange, rotation]
+      deferredPrimitives: [long_range_exchange, division, removal]
+      retry: no_retry
+      baselinePolicyIds: [spatial_greedy_local_native_v1]
+    observationContract:
+      profile: E06_S05_masked_local_candidate_surface
+      typedDslProfile: spatial2d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E06_24_field_movement, E06_observation, E06_16_field_channel]
+      configurationChargedOnceUnamortized: true
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: e06.s07.cpu-episode-result.v1
+      retainedProjection: episode_hash_transition_summaries_permission_audit
+    stoppingContract:
+      authority: E06_fixed_transition_S07_validation_episode
+      states: [fixed_transition_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [fixedBudgetCompleted, finalStateSha256, evaluationSeparation, formationOrRepairClaim]
+    claimBoundary: Local relational movement on a calibrated graph is a computational proxy; fixed-budget activity is not formation, repair, convergence, biological morphology, or agency.
+    horizon:
+      nativeUnit: synchronous_graph_transition_with_four_actor_slots
+      adapterStepGranularity: complete_fixed_transition_episode
+      budgets: {graphTransitions: 32, actorSlotsPerTransition: 4}
+      terminalPrecedence: [invariant_error, fixed_transition_budget]
+      censoringRule: fixed_budget_noncompletion_is_censored_only_when_a_calibrated_completion_endpoint_is_defined
+      comparabilityGroup: e06_s07_fixed32_batch4
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [online_S01_global_completion, non_square_completion_claims]
+
+  - taskId: e07_s02_spatial2d_memory
+    title: Representative 2D identity-memory episode
+    family: spatial2d
+    predecessor: E06
+    runnerId: e06_spatial
+    environmentProfile: spatial2d.v1
+    legalityAuthority: E06 S03-S07 graph, movement, policy-memory, and CPU-oracle contracts
+    actionContract:
+      nativePrimitives: [adjacent_swap, vacancy_move, short_exchange, rotation]
+      deferredPrimitives: [long_range_exchange, division, removal]
+      retry: no_retry
+      baselinePolicyIds: [spatial_memory_local_native_v1]
+    observationContract:
+      profile: E06_S05_identity_owned_memory_and_masked_local_candidates
+      typedDslProfile: spatial2d.v1
+      forbiddenFields: *forbidden
+    costContract:
+      nativeFamilies: [E06_24_field_movement, E06_observation, E06_16_field_channel]
+      memoryBitsRetainedSeparately: true
+      scalarTotalPermitted: false
+      normalization: none
+    eventContract:
+      authority: e06.s07.cpu-episode-result.v1
+      retainedProjection: episode_hash_transition_summaries_permission_audit
+    stoppingContract:
+      authority: E06_fixed_transition_S07_validation_episode
+      states: [fixed_transition_budget]
+    outcomeContract:
+      policyVisibleOnline: false
+      fields: [fixedBudgetCompleted, finalStateSha256, evaluationSeparation, formationOrRepairClaim]
+    claimBoundary: Identity-owned engineered memory and local movement do not establish biological memory, repair, formation, convergence, cognition, or agency.
+    horizon:
+      nativeUnit: synchronous_graph_transition_with_four_actor_slots
+      adapterStepGranularity: complete_fixed_transition_episode
+      budgets: {graphTransitions: 32, actorSlotsPerTransition: 4}
+      terminalPrecedence: [invariant_error, fixed_transition_budget]
+      censoringRule: fixed_budget_noncompletion_is_censored_only_when_a_calibrated_completion_endpoint_is_defined
+      comparabilityGroup: e06_s07_fixed32_batch4
+      comparableOnlyWithinGroup: true
+      crossTaskNormalization: forbidden
+    optionalExclusions: [formal_E06_repair_claim, protected_negative_audit_and_transfer_outcomes]

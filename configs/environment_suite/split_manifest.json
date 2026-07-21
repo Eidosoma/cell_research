@@ -1,0 +1,261 @@
+{
+  "schemaVersion": "e07.s02.split-manifest.v1",
+  "suiteVersion": "e07.s02.environment-suite.v1",
+  "researchStepId": "S02",
+  "frozenAtUtc": "2026-07-21T00:00:00Z",
+  "assignmentProfile": "predecessor_partition_first_then_outcome_blind_fixture_identity_v1",
+  "assignmentUsesOutcomes": false,
+  "confirmationOutcomeAccess": "sealed",
+  "confirmationMaterializersPresent": false,
+  "confirmationScenarioPayloadsPresent": false,
+  "candidateLockRequiredBeforeFutureConfirmation": true,
+  "rules": [
+    "E03 B01-B07 remain confirmation-only and are represented only by an opaque set commitment",
+    "E04 rows marked e07_protected_confirmation remain sealed",
+    "E05 S12 holdouts and S13 replicate ordinals 4-7 remain sealed",
+    "E06 heldout, negative-audit, and spatial-transfer partitions remain sealed",
+    "new S02 smoke fixtures are assigned from task ID and ordinal before execution",
+    "no success, terminal, cost, distance, aggregation, or other outcome enters membership"
+  ],
+  "scenarios": [
+    {
+      "scenarioId": "e07s02:sorting:train:000",
+      "taskId": "e07_s02_sorting_1d",
+      "split": "train",
+      "materializerId": "e01_sorting_train_000",
+      "publicParameters": {"baselinePolicyId": "bubble_native_v1", "nativePolicy": "Bubble", "direction": "ascending", "values": [0,1,2,3,4,5,6,7], "seed": 459521, "eventBudget": 6400, "permute": true},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E01_reference_new_outcome_blind_fixture"
+    },
+    {
+      "scenarioId": "e07s02:sorting:validation:000",
+      "taskId": "e07_s02_sorting_1d",
+      "split": "validation",
+      "materializerId": "e01_sorting_validation_000",
+      "publicParameters": {"baselinePolicyId": "bubble_native_v1", "nativePolicy": "Bubble", "direction": "descending", "values": [0,1,2,3,4,5,6,7], "seed": 459522, "eventBudget": 6400, "permute": true},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E01_reference_new_outcome_blind_fixture"
+    },
+    {
+      "scenarioId": "e07s02:sorting:confirmation:opaque",
+      "taskId": "e07_s02_sorting_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "27b2537f36abdf0320c8b3820667125d476f717201c484070d30ec49a3847d3e", "scenarioCount": 1000},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E01_E07_fresh_confirmation_reserved"
+    },
+
+    {
+      "scenarioId": "e07s02:faults:train:000",
+      "taskId": "e07_s02_faults_1d",
+      "split": "train",
+      "materializerId": "e02_faults_train_000",
+      "publicParameters": {"baselinePolicyId": "bubble_stuck_native_v1", "nativePolicy": "Bubble", "direction": "ascending", "values": [0,1,2,3,4,5,6,7], "seed": 459537, "eventBudget": 6400, "permute": true, "faultIndex": 3, "faultMode": "stuck"},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E02_new_matched_fault_fixture"
+    },
+    {
+      "scenarioId": "e07s02:faults:validation:000",
+      "taskId": "e07_s02_faults_1d",
+      "split": "validation",
+      "materializerId": "e02_faults_validation_000",
+      "publicParameters": {"baselinePolicyId": "bubble_stuck_native_v1", "nativePolicy": "Bubble", "direction": "descending", "values": [0,1,2,3,4,5,6,7], "seed": 459538, "eventBudget": 6400, "permute": true, "faultIndex": 4, "faultMode": "stuck"},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E02_new_matched_fault_fixture"
+    },
+    {
+      "scenarioId": "e07s02:faults:confirmation:opaque",
+      "taskId": "e07_s02_faults_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "c8b5e1cc56c7d99b81fe805ab80b733c5351579983e4084c9fb817cdf5e71885", "scenarioCount": 1000},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E02_E07_fresh_confirmation_reserved"
+    },
+
+    {
+      "scenarioId": "e07s02:detour:train:000",
+      "taskId": "e07_s02_detour_1d",
+      "split": "train",
+      "materializerId": "e03_detour_train_000",
+      "publicParameters": {"baselinePolicyId": "bubble_detour_probe_v1", "nativePolicy": "Bubble", "direction": "ascending", "values": [0,1,2,3,4], "seed": 459553, "eventBudget": 2500, "permute": true},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E03_public_exact_small_calibration_not_B01_B07"
+    },
+    {
+      "scenarioId": "e07s02:detour:validation:000",
+      "taskId": "e07_s02_detour_1d",
+      "split": "validation",
+      "materializerId": "e03_detour_validation_000",
+      "publicParameters": {"baselinePolicyId": "bubble_detour_probe_v1", "nativePolicy": "Bubble", "direction": "descending", "values": [0,1,2,3,4], "seed": 459554, "eventBudget": 2500, "permute": true},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E03_public_exact_small_calibration_not_B01_B07"
+    },
+    {
+      "scenarioId": "e07s02:detour:confirmation:opaque",
+      "taskId": "e07_s02_detour_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "6546cc966894373d7440393670ddca20cd92e6f1491d71733e95cc89c82a9463", "scenarioCount": 7},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E03_B01_B07_confirmation_only"
+    },
+
+    {
+      "scenarioId": "e07s02:chimera:train:000",
+      "taskId": "e07_s02_chimera_1d",
+      "split": "train",
+      "materializerId": "e04_chimera_train_000",
+      "publicParameters": {"baselinePolicyId": "bubble_insertion_exact_native_v1", "n": 8, "portfolioId": "chimera_bubble_insertion", "direction": "ascending", "replicate": 0, "placementMap": 0, "eventBudget": 12800},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E04_new_exact_composition_fixture"
+    },
+    {
+      "scenarioId": "e07s02:chimera:validation:000",
+      "taskId": "e07_s02_chimera_1d",
+      "split": "validation",
+      "materializerId": "e04_chimera_validation_000",
+      "publicParameters": {"baselinePolicyId": "bubble_insertion_exact_native_v1", "n": 8, "portfolioId": "chimera_bubble_insertion", "direction": "descending", "replicate": 1, "placementMap": 0, "eventBudget": 12800},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E04_new_exact_composition_fixture"
+    },
+    {
+      "scenarioId": "e07s02:chimera:confirmation:opaque",
+      "taskId": "e07_s02_chimera_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "dbcb494a1be735fa003943819bb02f5cf54e8f3cfe29ff5a3bd60b694f10b80c", "scenarioCount": 16},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E04_e07_protected_confirmation_rows"
+    },
+
+    {
+      "scenarioId": "e07s02:regeneration:train:000",
+      "taskId": "e07_s02_regeneration_1d",
+      "split": "train",
+      "materializerId": "e05_regeneration_train_000",
+      "publicParameters": {"baselinePolicyId": "pure_bubble_segment_reversal_native_v1", "source": "E05_S14_fresh_core_smoke", "replicateOrdinal": 0},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E05_S13_development_ordinal_0"
+    },
+    {
+      "scenarioId": "e07s02:regeneration:validation:000",
+      "taskId": "e07_s02_regeneration_1d",
+      "split": "validation",
+      "materializerId": "e05_regeneration_validation_000",
+      "publicParameters": {"baselinePolicyId": "pure_bubble_segment_reversal_native_v1", "source": "E05_S14_fresh_core_smoke", "replicateOrdinal": 1},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E05_S13_development_ordinal_1"
+    },
+    {
+      "scenarioId": "e07s02:regeneration:confirmation:opaque",
+      "taskId": "e07_s02_regeneration_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "7a043d28d01dac5e678ff8a1ba3a66f2612803ae2c9214c908ff1743763c0324", "scenarioCount": 2256},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E05_S12_holdouts_and_S13_ordinals_4_7"
+    },
+
+    {
+      "scenarioId": "e07s02:target-change:train:000",
+      "taskId": "e07_s02_target_change_1d",
+      "split": "train",
+      "materializerId": "e05_target_change_train_000",
+      "publicParameters": {"baselinePolicyId": "bubble_reverse_gradient_aware_native_v1", "n": 8, "seed": 459585, "targetChangeId": "reverse_total_order_v1", "signalPermissionId": "gradient_target_code_v1", "adaptationBudget": 6400, "probeBudget": 160},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E05_new_public_contract_smoke"
+    },
+    {
+      "scenarioId": "e07s02:target-change:validation:000",
+      "taskId": "e07_s02_target_change_1d",
+      "split": "validation",
+      "materializerId": "e05_target_change_validation_000",
+      "publicParameters": {"baselinePolicyId": "bubble_reverse_gradient_aware_native_v1", "n": 8, "seed": 459586, "targetChangeId": "reverse_total_order_v1", "signalPermissionId": "local_boundary_relay_v1", "adaptationBudget": 6400, "probeBudget": 160},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E05_new_public_contract_smoke"
+    },
+    {
+      "scenarioId": "e07s02:target-change:confirmation:opaque",
+      "taskId": "e07_s02_target_change_1d",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "6dcb343594557f7508deffcd6d02650d211941f50711fe696bc1c0c1c58df39b", "scenarioCount": 1152},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E05_protected_target_change_and_transfer_rows"
+    },
+
+    {
+      "scenarioId": "e07s02:spatial-local:train:000",
+      "taskId": "e07_s02_spatial2d_local",
+      "split": "train",
+      "materializerId": "e06_spatial_local_train_000",
+      "publicParameters": {"baselinePolicyId": "spatial_greedy_local_native_v1", "nativeScenarioId": "s07-greedy-local", "targetId": "stripes_alternating_three_band", "challengeId": "one_swap_local_probe"},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E06_S07_public_engine_smoke_assigned_to_E07_train"
+    },
+    {
+      "scenarioId": "e07s02:spatial-local:validation:000",
+      "taskId": "e07_s02_spatial2d_local",
+      "split": "validation",
+      "materializerId": "e06_spatial_local_validation_000",
+      "publicParameters": {"baselinePolicyId": "spatial_greedy_local_native_v1", "nativeScenarioId": "s07-greedy-local", "targetId": "stripes_alternating_three_band", "challengeId": "one_swap_local_probe"},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E06_S07_public_engine_smoke_assigned_to_E07_validation"
+    },
+    {
+      "scenarioId": "e07s02:spatial-local:confirmation:opaque",
+      "taskId": "e07_s02_spatial2d_local",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "dfaa150e8882daf55899641c946ced7b468b8e38e29ba8542f1b3ee9fb83be2e", "scenarioCount": 2000},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E06_s14_heldout_ring_and_separated"
+    },
+
+    {
+      "scenarioId": "e07s02:spatial-memory:train:000",
+      "taskId": "e07_s02_spatial2d_memory",
+      "split": "train",
+      "materializerId": "e06_spatial_memory_train_000",
+      "publicParameters": {"baselinePolicyId": "spatial_memory_local_native_v1", "nativeScenarioId": "s07-memory-local", "targetId": "layers_three_ordered_tissues", "challengeId": "one_swap_memory_probe"},
+      "protected": false,
+      "outcomeAccess": "development",
+      "predecessorPartition": "E06_S07_public_engine_smoke"
+    },
+    {
+      "scenarioId": "e07s02:spatial-memory:validation:000",
+      "taskId": "e07_s02_spatial2d_memory",
+      "split": "validation",
+      "materializerId": "e06_spatial_memory_validation_000",
+      "publicParameters": {"baselinePolicyId": "spatial_memory_local_native_v1", "nativeScenarioId": "s07-memory-local", "targetId": "stripes_alternating_three_band", "challengeId": "one_swap_memory_probe"},
+      "protected": false,
+      "outcomeAccess": "validation_after_selection",
+      "predecessorPartition": "E06_S07_public_engine_smoke"
+    },
+    {
+      "scenarioId": "e07s02:spatial-memory:confirmation:opaque",
+      "taskId": "e07_s02_spatial2d_memory",
+      "split": "confirmation",
+      "publicParameters": {"opaqueSetCommitmentSha256": "6414fb55e8d978c9bacc8533283204833fccdd3159495094805f0abc01f4b3a1", "scenarioCount": 2500},
+      "protected": true,
+      "outcomeAccess": "sealed",
+      "predecessorPartition": "E06_s14_negative_audit_and_spatial_transfer"
+    }
+  ]
+}
