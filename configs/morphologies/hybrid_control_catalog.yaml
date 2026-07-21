@@ -1,0 +1,239 @@
+schemaVersion: e06.s12.hybrid-control-catalog.v1
+researchStepId: S12
+title: Frozen bounded hybrid-control factorial
+frozenQuestion: Does target-relational local control plus the frozen lagged-summary, one-query, one-action controller improve absolute terminal formation or maintenance and the morphology-cost trade-off relative to local-only, controller-only, gradient-only, and target-agnostic sparse-direct control?
+claimBoundary: Computational control of two calibrated bounded-square targets only. Relative morphology improvement is not robustness, maintenance, formation, repair, convergence, or an attractor when the corresponding absolute conjunctive endpoint fails.
+
+canonicalContracts:
+  target: e06.s01.target-catalog.v1
+  grammar: e06.s02.grammar-catalog.v1
+  environment: e06.s03.environment-catalog.v1
+  movement: e06.s04.movement-batch-result.v1
+  policy: e06.s05.policy-catalog.v1
+  channels: e06.s06.control-channel-catalog.v1
+  cpuEpisode: e06.s07.cpu-episode-result.v1
+  gpuParity: e06.s08.parity-report.v1
+  noDamageBaseline: e06.s09.baseline-catalog.v1
+  perturbations: e06.s10.perturbation-catalog.v1
+  chimeraConstraint: e06.s11.chimera-run.v1
+
+seedContract:
+  masterSeedHex: "0xe0612000000000000000000000000001"
+  domain: E06/S12/seed/v1
+  derivation: first_128_bits_sha256_domain_master_and_canonical_address
+  workerOrderInfluence: none
+  mutablePrngState: forbidden
+
+topologyAndFeasibility:
+  allowedCompletionCalibration: unobstructed_bounded_square_rectangles_matching_s01_target_shape
+  targets:
+    - {targetId: stripes_alternating_three_band, grammarId: stripes_axis_relations_v1, gradientAxis: first, gradientDirection: up}
+    - {targetId: layers_three_ordered_tissues, grammarId: layers_ordered_contacts_v1, gradientAxis: first, gradientDirection: up}
+  countChangingConditions: forbidden
+  simulatedPerturbations: [compact_wound, formed_structure_displacement]
+  severity: mild
+  perturbationSemantics: Reuse S10 exactly; every lesion is count-, kind-, token-, identity-, and site-preserving and begins outside the conjunctive target.
+  forbiddenSemanticWidening: [removal, insertion, conversion, division, vacancy_adjusted_target, count_adjusted_target, long_range_policy_exchange]
+
+controlArms:
+  - armId: local_only
+    primary: true
+    nativePolicyId: greedy_neighbor_satisfaction_v1
+    nativeActuation: enabled
+    channelMode: none
+    directController: false
+    interpretation: Target-relational S05 local feedback only.
+  - armId: central_only
+    primary: true
+    nativePolicyId: greedy_neighbor_satisfaction_v1
+    nativeActuation: disabled
+    channelMode: direct_intervention
+    directController: true
+    interpretation: Controller-only actuation. The controller may inspect one state-blind recipient's priced greedy S05 payload after one lagged epoch and act once; all native batches are disabled and foregone slots are charged.
+  - armId: gradient_only
+    primary: true
+    nativePolicyId: gradient_following_v1
+    nativeActuation: enabled
+    channelMode: static_gradient
+    directController: false
+    actorBatchSize: 1
+    interpretation: Authored static-gradient advice with the frozen S05 gradient follower; no relational feedback or direct action.
+  - armId: sparse_direct
+    primary: true
+    nativePolicyId: exploration_v1
+    nativeActuation: enabled
+    channelMode: direct_intervention
+    directController: true
+    interpretation: Target-agnostic counter-addressed exploration plus the frozen sparse direct controller.
+  - armId: combined
+    primary: true
+    nativePolicyId: greedy_neighbor_satisfaction_v1
+    nativeActuation: enabled
+    channelMode: direct_intervention
+    directController: true
+    interpretation: Target-relational local control plus the frozen lagged-summary, state-blind-recipient, one-query, one-action controller.
+scenarioFactorial:
+  factors:
+    target: [stripes_alternating_three_band, layers_three_ordered_tissues]
+    challenge:
+      - exact_maintenance
+      - partially_correct_formation
+      - compact_wound_mild
+      - formed_displacement_mild
+    controlArm: [local_only, central_only, gradient_only, sparse_direct, combined]
+  challengeContracts:
+    exact_maintenance:
+      initialState: exact_target
+      absoluteEndpointFamily: terminal_maintenance
+      censoring: not_censored
+    partially_correct_formation:
+      initialState: s09_partially_correct_generator
+      absoluteEndpointFamily: formation
+      censoring: right_censored_if_no_conjunctive_completion_by_budget
+    compact_wound_mild:
+      initialState: s10_compact_wound_mild
+      absoluteEndpointFamily: post_perturbation_restoration
+      censoring: right_censored_if_no_conjunctive_completion_by_budget
+    formed_displacement_mild:
+      initialState: s10_formed_structure_displacement_mild
+      absoluteEndpointFamily: post_perturbation_restoration
+      censoring: right_censored_if_no_conjunctive_completion_by_budget
+  pairingUnit: target_challenge_split_replicate
+  sharedAcrossArms: [initial_occupant_projection, perturbation_mask, scheduler_key, channel_noise_key, transition_budget, allocated_actor_opportunities]
+  runIdentityAdds: controlArm
+
+simulation:
+  allocatedActorSlotsPerTransition: 4
+  epochLengthTransitions: 16
+  exploratoryBudgetTransitions: 64
+  confirmationBudgetTransitions: 128
+  exploratoryReplicatesPerCondition: 250
+  confirmationReplicatesPerArmBlock: 1000
+  exploratoryScenarioBlockCount: 8
+  exploratoryConditionCount: 40
+  exploratoryRunCount: 10000
+  mandatoryConfirmationBlocks: 1
+  maximumOutcomeSelectedConfirmationBlocks: 1
+  maximumConfirmationRunCount: 10000
+  stopping: fixed_event_budget_only
+  earlyStopping: forbidden
+  activityOrQuiescenceAsOutcome: forbidden
+  cpuWorkers: 8
+  backend: canonical_s07_cpu_oracle_fallback
+  backendReason: Five-arm condition batches are below the S07 material GPU crossover and S04 authentication, S05 observations, S06 control, target audits, pairing, and ledgers remain CPU-owned.
+
+budgetEnvelope:
+  rule: Every arm has the same declared ceiling vector and actor-opportunity allocation. Actual use and unused/foregone opportunity are reported component-wise; semantic and causal authority are never declared matched merely because ceilings or bits match.
+  perScenarioConfigurationBits: 649
+  perEpochPolicyDeliveryBits: 1600
+  perEligibleDirectEpochControllerInputBits: 352
+  perEligibleDirectEpochAddressBits: 7
+  perEligibleDirectEpochActuationAttempts: 1
+  perEligibleDirectEpochOverrideActionUnits: 1
+  perEligibleDirectEpochMovementGraphDisplacement: 6
+  firstDirectEpoch: 1
+  directWarmupReason: The frozen S06 controller requires an exactly one-epoch-lagged summary.
+  configurationTreatment: charged_once_in_full_never_amortized
+  separatelyReportedFamilies:
+    information: [observationCommunicatedBitsUpperBound, configurationBits, controllerInputBits, policyDeliveryBits, addressBits, totalInformationBits]
+    action: [acceptedMovements, totalGraphDisplacement, actuationAttempts, actuationSuccesses, overrideActionUnits, directMovementGraphDisplacement]
+    intervention: [externalDisplacedEntities, externalGraphDisplacement, lesionMask]
+    sourceWork: [policyLogicalSourceReads, sourceScalarReads, controllerStateReads]
+    computation: [policyUtilityEvaluations, policyComparisonOperations, controllerComputeUnits]
+    opportunity: [allocatedNativeActorSlots, usedNativeActorSlots, foregoneNativeActorSlots, suppressedNativeActions, channelOpportunityCostUnits]
+  centralComputationRule: Controller compute units are reported separately from communication, movement, and wall time; no central search or full-state planner exists.
+  matchingLimits: Actual bits, useful semantics, source work, computation, and direct causal authority cannot all be equalized without changing an arm; those asymmetries are prespecified report fields, not residual confounding hidden by a scalar cost.
+
+outcomes:
+  absolutePrimary:
+    - terminalConjunctiveCompletion
+    - conjunctiveCompletionByBudget
+  completionRule: terminal or first-passage success always requires S02 grammar acceptance AND independent S01 equivalence, component, and topology success.
+  familyRules:
+    terminal_maintenance: Only terminalConjunctiveCompletion counts; initial completion and completionByBudget do not establish maintenance.
+    formation: Report first-passage and terminal conjunction separately; terminal success is required for absolute terminal formation.
+    post_perturbation_restoration: Preserve S10 eligibility and first-passage semantics, but require terminal conjunction for the S12 absolute terminal endpoint.
+  comparativePrimary:
+    - pairedTerminalConjunctiveRiskDifference
+    - pairedTerminalS01MismatchDifference
+    - pairedMinimumS01MismatchDifference
+    - pairedTerminalS02RelationalScoreDifference
+  secondary: [firstCompletionTransition, localGlobalDiscordance, acceptedMovements, totalGraphDisplacement, all_separate_budget_families]
+  zeroTerminalRule: A comparative morphology effect remains comparative only when every arm fails terminal conjunction; it cannot be described as robustness, maintenance, successful formation, or successful restoration.
+
+factorialInteractions:
+  primary: controlArm_by_challenge interaction on terminal S01 mismatch and terminal conjunction
+  secondary: controlArm_by_target interaction on the same outcomes
+  estimator: paired difference_of_differences relative to local_only with deterministic paired bootstrap intervals
+  multiplicity: bonferroni_within_confirmation_family
+  noContinuousCostCollapse: true
+
+censoring:
+  exactMaintenance: not_censored; terminal failure is maintenance loss
+  incompleteFormationOrRestoration: right_censored_at_fixed_budget
+  invariantViolation: failed_release_critical_not_censored
+  executionError: failed_not_censored
+  exclusions: none
+  allIntendedRunsRequired: true
+
+promotion:
+  mandatoryBlock: {targetId: layers_three_ordered_tissues, challengeId: partially_correct_formation, reason: independent holdout audit of the S11 zero-terminal-completion constraint}
+  eligibleAnyCombinedVersusComparator:
+    absolutePairedTerminalCompletionRiskDifference: 0.05
+    absolutePairedTerminalMismatchDifference: 0.02
+    absolutePairedMinimumMismatchDifference: 0.02
+  comparators: [local_only, central_only, gradient_only]
+  ranking: maximum_threshold_standardized_combined_effect_then_block_id
+  maximumOutcomeSelectedBlocks: 1
+  runtimeAndWallClockForbiddenFromSelection: true
+  freezeRequirement: promotion_decisions_written_and_hashed_before_holdout_scenario_ids_are_constructed
+
+confirmation:
+  pairedBootstrapReplicates: 10000
+  familywiseAlpha: 0.05
+  intervalAdjustment: bonferroni_over_confirmed_block_comparator_metric_family
+  practicalThresholds:
+    terminalCompletionRiskDifference: 0.05
+    terminalMismatchReduction: 0.02
+    minimumMismatchReduction: 0.02
+    nonExactAbsoluteTerminalCompletionFraction: 0.20
+    nonExactAbsoluteTerminalWilsonLower95: 0.15
+  combinedComparativeRule: In at least one independently confirmed non-exact block, combined improves terminal completion by at least 0.05 or reduces terminal S01 mismatch by at least 0.02 versus each of local-only, central-only, and gradient-only, with adjusted paired intervals excluding zero in the frozen direction.
+  combinedAbsoluteRule: In the same or another confirmed non-exact block, combined terminal conjunctive completion is at least 0.20 with Wilson lower 0.15; first-passage without terminal completion is insufficient.
+  s12SupportRule: combinedComparativeRule AND combinedAbsoluteRule AND combined_is_on_the_prespecified_pareto_frontier AND all_validation_gates_pass
+
+pareto:
+  population: confirmation rows only, summarized within each confirmed scenario block
+  morphologyAxes:
+    terminalConjunctiveCompletion: maximize
+    terminalS01MismatchFraction: minimize
+  costAxesMinimize:
+    - totalInformationBitsIncludingObservation
+    - totalGraphDisplacementPlusDirect
+    - externalInterventionGraphDisplacement
+    - totalSourceWorkUnits
+    - totalComputationUnits
+    - totalOpportunityCostUnits
+  equivalenceMargins: {terminalCompletion: 0.02, terminalMismatch: 0.01}
+  dominanceRule: An arm is dominated only when another arm is no worse outside both morphology margins and no greater on every cost axis, with at least one morphology or cost axis strictly better. No semantic-authority score is collapsed into this numeric frontier.
+
+traceAndReplay:
+  traceSampleFraction: 0.01
+  traceSelection: lowest_sha256_run_ids_within_each_condition_before_outcomes
+  failuresAlwaysSelected: true
+  exactReplay: lexicographically_first_run_per_target_challenge_arm_and_phase
+  replayRequirement: byte_exact_episode_metric_budget_intervention_and_run_identity
+
+validationRequirements:
+  - complete_run_accounting
+  - exact_pairing_and_cross_split_disjointness
+  - permission_and_authority_isolation
+  - budget_ceiling_and_component_reconciliation
+  - central_computation_separate_from_action_and_information
+  - exact_sampled_cpu_replay
+  - independent_target_rescoring
+  - censoring_consistency
+  - identity_token_kind_site_and_perturbation_invariants
+  - separate_s02_local_and_s01_global_fields
+  - zero_terminal_claim_boundary
+  - artifact_hash_coverage

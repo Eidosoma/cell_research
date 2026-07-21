@@ -123,6 +123,7 @@ ProposalGate = Callable[
     [int, Environment, MovementState, Sequence[MovementProposal]],
     Sequence[MovementProposal],
 ]
+NativeBatchGate = Callable[[int], bool]
 
 ActorPolicyAssignments = Mapping[str, str]
 ActorRelationProfiles = Mapping[str, RelationProfile | None]
@@ -401,6 +402,7 @@ def run_cpu_episode(
     transition_audit: TransitionAudit | None = None,
     state_audit: StateAudit | None = None,
     proposal_gate: ProposalGate | None = None,
+    native_batch_gate: NativeBatchGate | None = None,
     actor_policy_assignments: ActorPolicyAssignments | None = None,
     actor_relation_profiles: ActorRelationProfiles | None = None,
     actor_assignment_switches: ActorAssignmentSwitches | None = None,
@@ -423,6 +425,12 @@ def run_cpu_episode(
     only decision/actuation path.  Heterogeneous assignments are intentionally
     restricted to the no-channel, memory-free S11 scope so that no S05/S06
     state-transfer semantics are invented.
+
+    S12 may disable an entire native batch before actor scheduling.  The gate
+    receives only the public transition index and cannot inspect or edit state,
+    observations, proposals, or random addresses.  The transition still runs
+    through the canonical empty S04 batch and remains visible in summaries;
+    callers must price foregone actor opportunities separately.
     """
 
     environment = context.environments[definition.environment_id]
@@ -758,11 +766,15 @@ def run_cpu_episode(
                 )
             continue
 
-        scheduled_actors = _state_blind_actor_schedule(
-            definition.scenario_id,
-            transition_index,
-            actor_ids,
-            definition.actor_batch_size,
+        scheduled_actors = (
+            _state_blind_actor_schedule(
+                definition.scenario_id,
+                transition_index,
+                actor_ids,
+                definition.actor_batch_size,
+            )
+            if native_batch_gate is None or native_batch_gate(transition_index)
+            else ()
         )
         builds: list[ObservationBuild] = []
         decision_payloads: list[Mapping[str, Any]] = []
