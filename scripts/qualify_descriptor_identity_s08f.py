@@ -624,7 +624,12 @@ def execute(output: Path) -> None:
         for mode in MODES
     ]
     branch_rows = [
-        row
+        {
+            **row,
+            "schemaVersion": "e07.s08f.e05-branch-mode-qualification-row.v1",
+            "researchStepId": "S08F",
+            "inheritedFixtureContract": "e07.s08d.e05-configuration-qualification-row.v1",
+        }
         for definition in representatives
         for row in qualify_definition(definition, by_hash, by_id)
     ]
