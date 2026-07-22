@@ -128,7 +128,7 @@ taskObjectives:
       - {id: regeneration_success, field: success, direction: maximize, bounds: [0, 1]}
       - {id: regeneration_restricted_time, field: restrictedTime, direction: minimize, lowerBound: 0, censorAware: true}
       - {id: regeneration_final_distance, field: finalDistance, direction: minimize, lowerBound: 0}
-    bindingStatus: unavailable_for_arbitrary_dsl_until_e05_gate
+    bindingStatus: available_after_S04A_train_adapter_qualification
   e07_s02_target_change_1d:
     predecessor: E05
     objectiveSubset: [plasticity_target_adaptation]
@@ -136,7 +136,7 @@ taskObjectives:
       - {id: target_completion, field: targetCompleted, direction: maximize, bounds: [0, 1]}
       - {id: restricted_adaptation_time, field: restrictedAdaptationTime, direction: minimize, lowerBound: 0, censorAware: true}
       - {id: post_hit_departure, field: postHitAnyDeparture, direction: minimize, bounds: [0, 1]}
-    bindingStatus: unavailable_for_arbitrary_dsl_until_e05_gate
+    bindingStatus: available_after_S04A_train_adapter_qualification
   e06_bounded_square:
     predecessor: E06
     performance:
@@ -154,7 +154,7 @@ taskObjectives:
     claimBoundary: Calibrated computational pattern criteria only; not biological formation, repair, convergence, memory, agency, or topology-general success.
   e07_s02_spatial2d_local:
     objectiveReference: e06_bounded_square
-    bindingStatus: unavailable_for_arbitrary_dsl_until_e06_gate
+    bindingStatus: available_after_S04A_train_adapter_qualification
   e07_s02_spatial2d_memory:
     objectiveReference: e06_bounded_square
-    bindingStatus: unavailable_for_arbitrary_dsl_until_e06_gate
+    bindingStatus: available_after_S04A_train_adapter_qualification

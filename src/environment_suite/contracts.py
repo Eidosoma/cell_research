@@ -8,7 +8,7 @@ cross-task scalar reward, cost total, or standardized time coordinate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import hashlib
 import json
@@ -236,6 +236,8 @@ class EvaluationAction:
     policy_id: str
     policy_sha256: str
     mode: str = "native_baseline"
+    policy_documents: tuple[Mapping[str, Any], ...] = ()
+    native_policy_bindings: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.policy_id:
@@ -244,8 +246,41 @@ class EvaluationAction:
             ch not in "0123456789abcdef" for ch in self.policy_sha256
         ):
             raise SuiteValidationError("policy hash must be lowercase SHA-256")
-        if self.mode != "native_baseline":
-            raise SuiteValidationError("S02 validates native_baseline actions only")
+        if self.mode not in {"native_baseline", "dsl_episode"}:
+            raise SuiteValidationError("unsupported evaluation action mode")
+        if self.mode == "native_baseline":
+            if self.policy_documents or self.native_policy_bindings:
+                raise SuiteValidationError(
+                    "native baseline actions cannot contain DSL payloads"
+                )
+            return
+        if not self.policy_documents:
+            raise SuiteValidationError("dsl_episode requires policy documents")
+        from src.policy_dsl import compile_policy
+
+        compiled = tuple(compile_policy(item) for item in self.policy_documents)
+        if len({item.policy_id for item in compiled}) != len(compiled):
+            raise SuiteValidationError("dsl_episode policy IDs must be unique")
+        if self.policy_id != (
+            compiled[0].policy_id if len(compiled) == 1 else "dsl_portfolio"
+        ):
+            raise SuiteValidationError("dsl_episode policy ID mismatch")
+        expected_hash = (
+            compiled[0].policy_sha256
+            if len(compiled) == 1
+            else canonical_sha256(
+                "E07/S04A/dsl-portfolio/v1",
+                {
+                    "bindings": dict(self.native_policy_bindings),
+                    "policies": [item.policy_sha256 for item in compiled],
+                },
+            )
+        )
+        if self.policy_sha256 != expected_hash:
+            raise SuiteValidationError("dsl_episode policy hash mismatch")
+        identifiers = {item.policy_id for item in compiled}
+        if set(self.native_policy_bindings.values()) - identifiers:
+            raise SuiteValidationError("binding references an absent DSL policy")
 
 
 @dataclass(frozen=True, slots=True)

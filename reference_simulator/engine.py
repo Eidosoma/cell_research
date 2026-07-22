@@ -109,6 +109,18 @@ class ProposalValidationFilter(Protocol):
     ) -> ValidationDecision: ...
 
 
+class TerminalEvaluator(Protocol):
+    """Optional adapter-owned terminal projection over the native run state.
+
+    The default remains :func:`evaluate_terminal`.  A typed policy adapter may
+    supply this hook when its private finite memory or message buffers are part
+    of the quiescence decision.  Mechanical invariants, completion, and the
+    native opportunity clock remain properties of ``Scenario``/``RunState``.
+    """
+
+    def __call__(self, scenario: Scenario, state: RunState) -> str | None: ...
+
+
 def initial_state(scenario: Scenario) -> RunState:
     return RunState(
         occupancy=list(scenario.initial_occupancy),
@@ -124,7 +136,11 @@ def invariant_error(scenario: Scenario, state: RunState) -> str | None:
         return "negative_activation_count"
     for cell_id, cursor in state.selection_cursors.items():
         cell = scenario.cell_map.get(cell_id)
-        if cell is None or cell.policy != Policy.SELECTION or not isinstance(cursor, int):
+        if (
+            cell is None
+            or cell.policy != Policy.SELECTION
+            or not isinstance(cursor, int)
+        ):
             return "invalid_selection_cursor"
     if any(value < 0 for value in state.stream_counters.values()):
         return "negative_stream_counter"
@@ -181,10 +197,9 @@ def evaluate_terminal(scenario: Scenario, state: RunState) -> str | None:
         return "invariant_error"
     if is_complete(scenario, state):
         return "complete"
-    if (
-        not _incomplete_state_has_progress_witness(scenario)
-        and not has_admissible_change(scenario, state)
-    ):
+    if not _incomplete_state_has_progress_witness(
+        scenario
+    ) and not has_admissible_change(scenario, state):
         return "quiescent"
     if state.activation_count >= scenario.max_activations:
         return "event_budget"
@@ -227,7 +242,10 @@ def _proposal_for_slot(
             _update_counter(snapshot, stream, count)
     actor = scenario.cell_map[actor_id]
     side = None
-    if scheduled_opportunity is not None and scheduled_opportunity.bubble_side is not None:
+    if (
+        scheduled_opportunity is not None
+        and scheduled_opportunity.bubble_side is not None
+    ):
         if actor.policy != Policy.BUBBLE:
             raise ValueError("external Bubble side supplied for a non-Bubble actor")
         side = scheduled_opportunity.bubble_side
@@ -274,7 +292,11 @@ def _proposal_for_slot(
 def _event_actor_fields(scenario: Scenario, proposal: Proposal) -> tuple[str, str]:
     cell = scenario.cell_map.get(proposal.actor_id)
     if cell is None:
-        policy = scenario.traditional_policy.value if scenario.traditional_policy else "controller"
+        policy = (
+            scenario.traditional_policy.value
+            if scenario.traditional_policy
+            else "controller"
+        )
         return f"Traditional:{policy}", "controller"
     return cell.policy.value, cell.direction.value
 
@@ -289,6 +311,7 @@ def execute_batch(
     schedule_factory: ScheduleFactory | None = None,
     execution_interceptor: BatchExecutionInterceptor | None = None,
     proposal_validation_filter: ProposalValidationFilter | None = None,
+    terminal_evaluator: TerminalEvaluator | None = None,
 ) -> tuple[list[dict[str, Any]], list[bytes]]:
     """Generate from one snapshot, validate, resolve, and commit atomically.
 
@@ -320,12 +343,17 @@ def execute_batch(
     for ordinal in range(width):
         event_index = state.activation_count + ordinal
         proposal = _proposal_for_slot(
-                scenario, snapshot, event_index, ordinal,
-                capture_random_draws=emit_event_records,
-                proposal_factory=proposal_factory,
-                scheduled_opportunity=(scheduled[ordinal] if scheduled is not None else None),
-                actual_batch_width=width,
-            )
+            scenario,
+            snapshot,
+            event_index,
+            ordinal,
+            capture_random_draws=emit_event_records,
+            proposal_factory=proposal_factory,
+            scheduled_opportunity=(
+                scheduled[ordinal] if scheduled is not None else None
+            ),
+            actual_batch_width=width,
+        )
         if execution_interceptor is not None:
             proposal, consumption = execution_interceptor.prepare(proposal, event_index)
             for stream, count in consumption:
@@ -376,7 +404,7 @@ def execute_batch(
 
     state.activation_count += width
     state.stream_counters = snapshot.stream_counters
-    state.terminal = evaluate_terminal(scenario, state)
+    state.terminal = (terminal_evaluator or evaluate_terminal)(scenario, state)
     if execution_interceptor is not None:
         execution_interceptor.after_batch(
             scenario,
@@ -385,6 +413,13 @@ def execute_batch(
             decisions,
             snapshot.activation_count,
         )
+    # Adapter-owned state (identity memory, rejection feedback, or peer-message
+    # buffers) is committed by ``after_batch``. Re-evaluate only custom
+    # terminal projections after that commit so quiescence cannot be decided
+    # from stale adapter state. Native evaluator ordering is unchanged when no
+    # adapter hook is supplied.
+    if terminal_evaluator is not None:
+        state.terminal = terminal_evaluator(scenario, state)
     post_hash = state_hash(scenario.scenario_id, state) if emit_event_records else None
 
     if not emit_event_records:
@@ -462,7 +497,11 @@ def execute_serial_summary_activation(
     changed = False
     if validation.eligible_for_commit:
         changed = commit_proposal(state, snapshot, proposal, "accepted")
-        if changed and proposal.kind == ProposalKind.SWAP and on_accepted_swap is not None:
+        if (
+            changed
+            and proposal.kind == ProposalKind.SWAP
+            and on_accepted_swap is not None
+        ):
             assert proposal.target_pos is not None
             on_accepted_swap(state, proposal.actor_pos, proposal.target_pos)
     for key, value in delta.items():
@@ -481,12 +520,20 @@ def run(
     schedule_factory: ScheduleFactory | None = None,
     execution_interceptor: BatchExecutionInterceptor | None = None,
     proposal_validation_filter: ProposalValidationFilter | None = None,
+    terminal_evaluator: TerminalEvaluator | None = None,
+    initial_state_override: RunState | None = None,
 ) -> RunResult:
     scenario.validate()
     if scenario.architecture == Architecture.TRADITIONAL and scenario.batch_width != 1:
         raise ValueError("traditional controller currently requires batch_width=1")
-    state = initial_state(scenario)
-    state.terminal = evaluate_terminal(scenario, state)
+    state = (
+        initial_state(scenario)
+        if initial_state_override is None
+        else initial_state_override.clone()
+    )
+    if invariant_error(scenario, state) is not None:
+        raise ValueError("initial-state override violates the scenario invariants")
+    state.terminal = (terminal_evaluator or evaluate_terminal)(scenario, state)
     initial_hash = state_hash(scenario.scenario_id, state)
     retained: list[Mapping[str, Any]] = []
     digest = bytes.fromhex(EMPTY_DIGEST)
@@ -499,9 +546,12 @@ def run(
             schedule_factory=schedule_factory,
             execution_interceptor=execution_interceptor,
             proposal_validation_filter=proposal_validation_filter,
+            terminal_evaluator=terminal_evaluator,
         )
         if not encoded_events and state.terminal is None:
-            state.terminal = evaluate_terminal(scenario, state) or "event_budget"
+            state.terminal = (terminal_evaluator or evaluate_terminal)(
+                scenario, state
+            ) or "event_budget"
         for encoded in encoded_events:
             digest = hashlib.sha256(digest + encoded).digest()
         retained.extend(events)

@@ -28,6 +28,14 @@ from .contracts import (
     load_split_manifest,
     load_task_registry,
 )
+from .dsl_adapters import (
+    ADAPTER_VERSION,
+    dsl_action,
+    run_e05_regeneration_dsl,
+    run_e05_target_change_dsl,
+    run_line_dsl_episode,
+    run_spatial_dsl_episode,
+)
 from .runners import RUNNERS, baseline_policy_hash
 from .suite import EnvironmentSuite, UnifiedEnvironment
 
@@ -41,6 +49,7 @@ __all__ = [
     "AccessDeniedError",
     "AccessGrant",
     "AccessPhase",
+    "ADAPTER_VERSION",
     "EnvironmentSuite",
     "EvaluationAction",
     "HorizonContract",
@@ -59,6 +68,11 @@ __all__ = [
     "baseline_policy_hash",
     "canonical_json_bytes",
     "canonical_sha256",
+    "dsl_action",
     "load_split_manifest",
     "load_task_registry",
+    "run_e05_regeneration_dsl",
+    "run_e05_target_change_dsl",
+    "run_line_dsl_episode",
+    "run_spatial_dsl_episode",
 ]

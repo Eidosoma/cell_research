@@ -12,7 +12,7 @@ archivePolicy:
   e06SyntheticTypedFixturesUsedAsDescriptor: false
   confirmationOutcomesUsed: false
   validationOutcomesUsed: false
-  requiredEligibilityGate: e07.s04.s05-eligibility-gate.v1
+  requiredEligibilityGate: e07.s04a.s05-eligibility-gate.v2
 commonArchive:
   id: native_movement_behavior_v1
   applicability: one archive per task after validated native episode binding

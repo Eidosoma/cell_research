@@ -76,17 +76,16 @@ def test_descriptor_registry_excludes_s03_and_unbound_fixture_shortcuts():
     assert not policy["confirmationOutcomesUsed"]
 
 
-def test_s05_gate_requires_e05_e06_and_is_currently_blocked():
+def test_s05_gate_requires_e05_e06_and_is_qualified_by_s04a():
     gate = load_yaml(CONFIG / "s04_s05_eligibility_gate.yaml")
     assert gate["e05AdapterRequiredBeforeS05"]
     assert gate["e06AdapterRequiredBeforeS05"]
     assert not gate["fieldNameSimilarityCanWaiveAdapter"]
-    assert not gate["s05SearchEligible"]
+    assert gate["s05SearchEligible"]
     statuses = {row["id"]: row["currentStatus"] for row in gate["requirements"]}
-    assert statuses["G03_E05_arbitrary_DSL_binding"] == "fail"
-    assert statuses["G04_E06_arbitrary_DSL_binding"] == "fail"
-    with pytest.raises(RuntimeError, match="S05 search eligibility gate is blocked"):
-        require_s05_eligible(gate)
+    assert statuses["G03_E05_arbitrary_DSL_binding"] == "pass"
+    assert statuses["G04_E06_arbitrary_DSL_binding"] == "pass"
+    require_s05_eligible(gate)
 
 
 def test_training_only_evidence_and_adversarial_coverage(evidence):
@@ -130,7 +129,7 @@ def test_correlations_are_non_efficacy_and_task_weights_do_not_rank(evidence):
     assert weights["passed"]
     assert not weights["policyRankingComputed"]
     assert not weights["weightedPerformanceScoreComputed"]
-    assert set(weights["s05EligibilityByProfile"].values()) == {False}
+    assert set(weights["s05EligibilityByProfile"].values()) == {True}
 
 
 def test_evidence_rebuild_is_deterministic(evidence):

@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 from .access import AccessBroker
 from .contracts import (
+    AccessDeniedError,
     AccessGrant,
     EvaluationAction,
     NativeEpisodeResult,
@@ -183,6 +184,34 @@ class EnvironmentSuite:
         if record.task_id != task_id:
             raise SuiteValidationError("scenario/task mismatch")
         return UnifiedEnvironment(task, record, grant, self.broker)
+
+    def open_for_action(
+        self,
+        task_id: str,
+        scenario_id: str,
+        grant: AccessGrant,
+        action: EvaluationAction,
+    ) -> UnifiedEnvironment:
+        """Authorize an action/split pair before scenario materialization.
+
+        S04A DSL adapters are deliberately train-only.  Callers that possess a
+        policy action use this entry point so a protected or validation record
+        is rejected before the broker increments its materializer counter.
+        ``UnifiedEnvironment.step`` retains a second train-only check as
+        defense in depth.
+        """
+
+        try:
+            public_record = self.records[scenario_id]
+        except KeyError as exc:
+            raise SuiteValidationError("unknown scenario ID") from exc
+        if action.mode == "dsl_episode" and public_record.split.value != "train":
+            self.broker.audit.scenario_requests += 1
+            self.broker.audit.scenario_denials += 1
+            raise AccessDeniedError(
+                "S04A DSL adapter scenarios are restricted to the frozen training split"
+            )
+        return self.open(task_id, scenario_id, grant)
 
     def public_registry(self) -> dict[str, Any]:
         return {

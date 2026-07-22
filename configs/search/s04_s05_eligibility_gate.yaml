@@ -1,36 +1,45 @@
-schemaVersion: e07.s04.s05-eligibility-gate.v1
-researchStepId: S04
-decision: blocked
-s05SearchEligible: false
+schemaVersion: e07.s04a.s05-eligibility-gate.v2
+researchStepId: S04A
+originatingGateResearchStepId: S04
+supersedes: /artifacts/research_steps/S04/s05_eligibility_gate.json
+decision: pass
+s05SearchEligible: true
 enforcementFunction: src.objective_design.require_s05_eligible
 e05AdapterRequiredBeforeS05: true
 e06AdapterRequiredBeforeS05: true
 fieldNameSimilarityCanWaiveAdapter: false
 structuralCoverageCanWaiveAdapter: false
 finiteCorpusEquivalenceCanWaiveAdapter: false
+proposalShadowCanWaiveAdapter: false
+typedFixturesCanWaiveAdapter: false
 requirements:
   - id: G01_protected_split_access
     currentStatus: pass
-    evidence: S02/S03 access audits; no validation or confirmation outcome materialization
+    evidence: /artifacts/research_steps/S04A/leakage_replay_validation.json
   - id: G02_line_E01_E04_arbitrary_DSL_episode_binding
-    currentStatus: fail
-    requiredEvidence: train-only full-episode parity for faithful policies plus legality/rejection/cost/event/terminal/censor checks for adversarial arbitrary DSL policies
-    reason: S03 validates proposal shadows only and reports no seed episode outcomes
+    currentStatus: pass
+    evidence: /artifacts/research_steps/S04A/predecessor_parity.json; /artifacts/research_steps/S04A/train_episode_results.jsonl; /artifacts/research_steps/S04A/failure_handling_validation.json
   - id: G03_E05_arbitrary_DSL_binding
-    currentStatus: fail
+    currentStatus: pass
     nonWaivable: true
-    requiredEvidence: preserve phase-local clocks, five nonaggregated competencies, target-signal authority, identity/cardinality, source terminals, censors, stopped rows, pairing, and native/extension cost ledgers on train-only fixtures
-    reason: S03 E05 rows are unbound_preserved; generic peer communication is not an E05 target signal
+    evidence: /artifacts/research_steps/S04A/e05_native_contract_validation.json; /artifacts/research_steps/S04A/train_episode_results.jsonl
   - id: G04_E06_arbitrary_DSL_binding
-    currentStatus: fail
+    currentStatus: pass
     nonWaivable: true
-    requiredEvidence: engine-owned opaque candidate enumeration, S04 authentication, native legality, conflict resolution, atomic commit, identity-memory ownership, channel authority, separate cost ledgers, fixed transition clock, and offline S01/S02 conjunction on train-only calibrated fixtures
-    reason: S03 spatial results are synthetic typed fixtures, not authenticated native episodes
+    evidence: /artifacts/research_steps/S04A/e06_native_contract_validation.json; /artifacts/research_steps/S04A/train_episode_results.jsonl
   - id: G05_objective_descriptor_extraction
-    currentStatus: fail
-    requiredEvidence: every active objective and descriptor extracted from bound native train episodes with metric-bound, censor, and anti-gaming checks
+    currentStatus: pass
+    evidence: /artifacts/research_steps/S04A/objective_descriptor_extraction.json
   - id: G06_deterministic_replay_and_leakage
-    currentStatus: fail
-    requiredEvidence: exact replay, worker-order independence, zero validation/confirmation outcomes, and denial before materialization for every new adapter
+    currentStatus: pass
+    evidence: /artifacts/research_steps/S04A/leakage_replay_validation.json; /artifacts/research_steps/S04A/throughput_budget_accounting.json
+computedRequirementStatus:
+  G01_protected_split_access: pass
+  G02_line_E01_E04_arbitrary_DSL_episode_binding: pass
+  G03_E05_arbitrary_DSL_binding: pass
+  G04_E06_arbitrary_DSL_binding: pass
+  G05_objective_descriptor_extraction: pass
+  G06_deterministic_replay_and_leakage: pass
 passRule: all_requirements_pass_on_authorized_training_evidence_before_any_S05_mutation_or_archive_search
-recommendedRemediation: Authorize a bounded adapter-integration prerequisite before S05; do not begin quality-diversity search while this gate is blocked.
+validationResult: 'PASS: G01-G06 pass; S05 remains unstarted and requires separate authorization'
+recommendedNextAction: Chief Scientist review; if accepted, separately authorize S05 while validation and confirmation remain sealed

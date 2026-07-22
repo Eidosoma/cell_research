@@ -16,7 +16,10 @@ from reference_simulator.model import (
     canonical_json_bytes,
 )
 from reference_simulator.rng import u64
-from reference_simulator.transition_primitives import ValidationDecision, ledger_identity
+from reference_simulator.transition_primitives import (
+    ValidationDecision,
+    ledger_identity,
+)
 
 from .action_interface import (
     ActionEnvelope,
@@ -24,7 +27,6 @@ from .action_interface import (
     CommonActionInterface,
     InformationPermission,
     ObservationRecord,
-    VisibleCell,
 )
 from .architectures import (
     ArchitectureExecutionContract,
@@ -105,7 +107,9 @@ class FaultExecutionContract:
             raise ValueError("S05 cannot change policy information permission")
         if self.proposal_candidates_per_opportunity != 1:
             raise ValueError("S05 forbids free proposal candidates")
-        observed = {cell.fault for cell in scenario.cells if cell.fault != FaultMode.NORMAL}
+        observed = {
+            cell.fault for cell in scenario.cells if cell.fault != FaultMode.NORMAL
+        }
         if self.mobility == MobilityProfile.NORMAL and observed:
             raise ValueError("normal mobility profile requires a no-fault scenario")
         if self.mobility != MobilityProfile.NORMAL:
@@ -378,7 +382,9 @@ class FaultProposalRouter:
             return
         if proposal.actor_id in self.pending:
             self.audits.append(
-                RetryAudit(event_index, proposal.actor_id, "queue_collision", next_attempt)
+                RetryAudit(
+                    event_index, proposal.actor_id, "queue_collision", next_attempt
+                )
             )
             return
         base_reason = proposal.reason
@@ -386,7 +392,9 @@ class FaultProposalRouter:
             marker = f"retry_later_bounded_attempt_{prior_attempt}:"
             if base_reason.startswith(marker):
                 base_reason = base_reason[len(marker) :]
-        eligible = event_index + self.contract.retry_minimum_intervening_opportunities + 1
+        eligible = (
+            event_index + self.contract.retry_minimum_intervening_opportunities + 1
+        )
         stripped = replace(
             proposal,
             reason=base_reason,
@@ -404,8 +412,12 @@ class FaultProposalRouter:
     def ledger(self) -> dict[str, int]:
         return {
             "retryQueued": sum(item.disposition == "queued" for item in self.audits),
-            "retryAttempts": sum(item.disposition == "attempted" for item in self.audits),
-            "retryExhausted": sum(item.disposition == "exhausted" for item in self.audits),
+            "retryAttempts": sum(
+                item.disposition == "attempted" for item in self.audits
+            ),
+            "retryExhausted": sum(
+                item.disposition == "exhausted" for item in self.audits
+            ),
             "retryQueueCollisions": sum(
                 item.disposition == "queue_collision" for item in self.audits
             ),
@@ -645,10 +657,9 @@ class FaultRun:
                     for stream in (BERNOULLI_FAILURE_STREAM, TRANSIENT_FAILURE_STREAM)
                 ),
                 "actionFailureClassification": fault["actionFailures"]
-                == sum(
-                    item.applied for item in self.action_failure_audit
-                ),
-                "retryAttemptsAreCharged": fault["retryAttempts"] <= native["activations"],
+                == sum(item.applied for item in self.action_failure_audit),
+                "retryAttemptsAreCharged": fault["retryAttempts"]
+                <= native["activations"],
                 "retryDelayRespected": all(
                     item.eligible_event_index is not None
                     and item.event_index >= item.eligible_event_index
@@ -669,7 +680,9 @@ class FaultRun:
             "contract": self.contract.to_dict(),
             "schedulerRun": self.scheduler_run.to_dict(),
             "sensingAudit": [item.to_dict() for item in self.sensing_audit],
-            "actionFailureAudit": [item.to_dict() for item in self.action_failure_audit],
+            "actionFailureAudit": [
+                item.to_dict() for item in self.action_failure_audit
+            ],
             "retryAudit": [item.to_dict() for item in self.retry_audit],
             "blockingFailureAudit": [
                 item.to_dict() for item in self.blocking_failure_audit
@@ -690,6 +703,8 @@ def run_faulted_architecture(
     fault_contract: FaultExecutionContract,
     *,
     trace_mode: Literal["full", "digest", "none"] = "digest",
+    action_interface: CommonActionInterface | None = None,
+    after_batch_observer: Any | None = None,
 ) -> FaultRun:
     fault_contract.validate(scenario, architecture_contract, scheduler_contract)
     controller = FrozenSchedulerController(
@@ -699,26 +714,57 @@ def run_faulted_architecture(
         actor_ids=tuple(cell.cell_id for cell in scenario.cells),
     )
     sensing = FrozenSensingTransformer(fault_contract, scenario)
-    interface = CommonActionInterface(
-        None
-        if fault_contract.sensing == SensingProfile.EXACT
-        else sensing
+    if action_interface is not None and fault_contract.sensing != SensingProfile.EXACT:
+        raise ValueError(
+            "custom action interfaces cannot bypass the frozen sensing transformer"
+        )
+    interface = action_interface or CommonActionInterface(
+        None if fault_contract.sensing == SensingProfile.EXACT else sensing
     )
     architecture_router = ArchitectureProposalRouter(
         architecture_contract, action_interface=interface
     )
-    proposal_router = FaultProposalRouter(
-        fault_contract, architecture_router, sensing
+    proposal_router = FaultProposalRouter(fault_contract, architecture_router, sensing)
+    interceptor = FaultExecutionInterceptor(fault_contract, scenario, proposal_router)
+
+    class _ObservedInterceptor:
+        def prepare(self, proposal, event_index):
+            return interceptor.prepare(proposal, event_index)
+
+        def outcome(self, proposal, validation, event_index):
+            return interceptor.outcome(proposal, validation, event_index)
+
+        def after_batch(
+            self, active_scenario, state, proposals, decisions, batch_start_index
+        ):
+            interceptor.after_batch(
+                active_scenario, state, proposals, decisions, batch_start_index
+            )
+            if after_batch_observer is not None:
+                after_batch_observer.after_batch(
+                    active_scenario, state, proposals, decisions, batch_start_index
+                )
+
+    active_interceptor = (
+        interceptor if after_batch_observer is None else _ObservedInterceptor()
     )
-    interceptor = FaultExecutionInterceptor(
-        fault_contract, scenario, proposal_router
-    )
+
+    def _adapter_terminal(active_scenario, state):
+        # The fault interceptor may set a native competing terminal during its
+        # after-batch commit.  Adapter quiescence must never overwrite it.
+        if state.terminal == "blocking_failure":
+            return "blocking_failure"
+        return after_batch_observer.evaluate_terminal(active_scenario, state)
+
     result = run(
         scenario,
         trace_mode=trace_mode,
         proposal_factory=proposal_router.proposal_for,
         schedule_factory=controller,
-        execution_interceptor=interceptor,
+        execution_interceptor=active_interceptor,
+        terminal_evaluator=(
+            None if after_batch_observer is None else _adapter_terminal
+        ),
     )
     architecture_run = ArchitectureRun(
         architecture_contract,

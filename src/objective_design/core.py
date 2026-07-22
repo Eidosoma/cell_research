@@ -722,7 +722,12 @@ def build_s04_evidence(
         "adversarialAudit": adversarial["passed"],
         "validationOutcomeEvaluationsZero": True,
         "confirmationOutcomeEvaluationsZero": True,
-        "S05CurrentlyBlocked": eligibility["s05SearchEligible"] is False,
+        "eligibilityDecisionConsistent": (
+            eligibility["s05SearchEligible"]
+            == all(
+                row["currentStatus"] == "pass" for row in eligibility["requirements"]
+            )
+        ),
     }
     return {
         "schemaVersion": S04_SCHEMA_VERSION,
