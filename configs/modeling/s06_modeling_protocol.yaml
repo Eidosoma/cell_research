@@ -1,0 +1,173 @@
+schemaVersion: e07.s06.modeling-protocol.v1
+researchStepId: S06
+title: Train GPU surrogate and trajectory models
+frozenAtUtc: '2026-07-22T00:00:00Z'
+frozenBeforeAnyFit: true
+frozenQuestion: Learned task-specific outcome distributions and event-summary trajectory embeddings can reduce expensive evaluations without distorting archive quality.
+
+authorizedPopulation:
+  evaluationLedger: /artifacts/research_steps/S05/evaluation_ledger.jsonl
+  evaluationLedgerSha256: 93b4cafb73471936fbfe81c618ce8d50e2f1576dcc93e342bfa8ff2cad50e4ee
+  selectedFlag: selectedForCanonicalSearch
+  selectedValue: true
+  expectedPrimaryRows: 2248
+  recoveryOrphanSelectedValue: false
+  expectedRecoveryOrphanRows: 189
+  recoveryOrphanUse: frozen_model_sensitivity_only
+  recoveryOrphanForbiddenUses: [fit, tuning, early_stopping, calibration, feature_selection, embedding_training]
+  permittedSplit: train
+  validationOutcomeAccess: forbidden
+  confirmationOutcomeAccess: forbidden
+
+s05Freeze:
+  artifactManifest: /artifacts/research_steps/S05/artifact_manifest.json
+  artifactManifestSha256: 5531c6131182f98dc990e72a3e439ac9c936f923502d6bdcb8a9c79d2535f7b6
+  searchProtocolSha256: 9c1e60f4d983e8af7984f6e043b96d47f791d17818e908a2c23d439a1a09699e
+  generationPlanLedgerSha256: 8b32fcfe98ead1f1e1207d3d5b43cda57ae13432f4daf2575dcc2a2a79496e28
+  lineageLedgerSha256: 53aafd25a5c9d2162799756c8e666c5e52f7d716e14dee956cc6c3ccc8eccb42
+  policyCatalogSha256: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655
+  archiveManifestSha256: 006beaa9beb6f07e02229b18ba238961a9ef184ee5d7f4c167a02c722434598e
+  persistedGenerationPlanIsAuthoritative: true
+  expectedGenerationPlans: 40
+  failClosedOnAnyHashOrPopulationChange: true
+
+splitDesign:
+  outcomesUsedForAssignment: false
+  lineageComponent: transitive_ancestral_root_set_with_missing_native_parent_id_retained_as_root_token
+  lineageAssignment: deterministic_group_size_balanced_60_20_20_with_sha256_tie_break
+  lineageFractions: {fit: 0.60, calibration: 0.20, test: 0.20}
+  scenarioFamilies:
+    default: {fit: [0, 1, 2], calibration: [3], test: [4]}
+    e07_s02_regeneration_1d: {fit: [0, 1], calibration: [2], test: [3]}
+  primaryAudit: lineage_test_on_scenario_fit
+  scenarioAudit: scenario_test_on_lineage_fit
+  jointStressAudit: lineage_test_and_scenario_test
+  calibrationPanels:
+    lineage: lineage_calibration_on_scenario_fit
+    scenario: scenario_calibration_on_lineage_fit
+  rowIdentityOverlapAcrossLineagePartitionsPermitted: false
+  policyLineageOverlapAcrossLineagePartitionsPermitted: false
+  scenarioFamilyOverlapAcrossScenarioPartitionsPermitted: false
+
+surrogates:
+  taskSpecificModels: true
+  universalScore: forbidden
+  crossTaskTargetPooling: forbidden
+  inputs:
+    allowed: [policy_structure, typed_permissions, licensed_capability_flags, mutation_metadata, outcome_blind_scenario_ordinal]
+    forbidden: [policy_hash_bytes, policy_id_tokens, scenario_id_tokens, event_summaries, native_costs, terminal_fields, outcomes, elapsed_seconds]
+  targets:
+    performance: all_frozen_S04_task_objectives
+    costs: every_fully_qualified_numeric_S05_native_and_extension_ledger_field
+    licensedCapabilities: separately_named_cost_targets_never_summed_into_native_cost
+    explicitOutcomes: [failed, censored]
+    structurallyMissingCost: explicit_presence_head_and_masked_value_loss
+    operational: [elapsedSeconds]
+    universalCostTotal: forbidden
+  transformations:
+    continuous: train_panel_z_score
+    costs: signed_log1p_then_train_panel_z_score
+    elapsedSeconds: log1p_then_train_panel_z_score
+    binary: untransformed_probability
+  simpleBaselines:
+    - train_mean_or_prevalence
+    - ridge_or_logistic_with_fixed_regularization
+  gpuCandidate:
+    architecture: task_specific_residual_mlp_ensemble
+    hiddenWidths: [192, 128, 64]
+    activation: SiLU
+    dropout: 0.10
+    ensembleMembers: 3
+    optimizer: AdamW
+    learningRate: 0.001
+    weightDecay: 0.0001
+    batchSize: 64
+    maximumEpochs: 400
+    earlyStoppingPatience: 50
+    minimumEpochs: 80
+    device: cuda:0
+    deterministicAlgorithms: true
+    seeds: [706001, 706002, 706003]
+    lossWeights: {performance: 0.45, cost: 0.25, operational: 0.05, binary: 0.25}
+  uncertainty:
+    ensembleStandardDeviation: report
+    conformalNominalCoverage: 0.90
+    conformalMethod: split_absolute_residual_finite_sample_quantile
+    calibrationPanelsSeparate: true
+  ablations:
+    - policy_only_gpu
+    - policy_plus_scenario_gpu
+    - ridge_or_logistic
+    - constant
+
+trajectorySummaryModel:
+  evidenceBoundary: S05_persisted_event_and_sequence_summaries_only_no_full_trace_reconstruction_claim
+  primaryRows: canonical_selected_S05_only
+  rawUnionAblation: task_specific_union_fields_autoencoder
+  deploymentCandidate: shared_semantic_event_summary_adversarial_autoencoder
+  embeddingDimension: 6
+  encoderWidths: [96, 48]
+  decoderWidths: [48, 96]
+  adversaries: [task_identity, within_task_log_length]
+  adversaryWeights: {task: 0.35, length: 0.20}
+  optimizer: AdamW
+  learningRate: 0.001
+  weightDecay: 0.0001
+  batchSize: 128
+  maximumEpochs: 500
+  earlyStoppingPatience: 60
+  minimumEpochs: 100
+  seed: 706101
+  baseline: PCA_same_dimension
+  shortcutTests:
+    taskProbe: grouped_5_fold_logistic_balanced_accuracy
+    lengthProbe: grouped_5_fold_ridge_R2
+    groups: task_plus_lineage_component
+
+frozenThresholds:
+  minimumAuditRowsPerTarget: 12
+  surrogateUtility:
+    taskObjectiveLossRatioVsRidgeMaximum: 0.98
+    tasksRequiredBothLineageAndScenario: 6
+    maximumAnyTaskObjectiveLossRatio: 1.10
+    constantBaselineImprovementTasksRequired: 6
+  continuousCalibration:
+    nominalCoverage: 0.90
+    minimumCoverage: 0.80
+    maximumMedianIntervalWidthInTrainStandardDeviations: 4.0
+    tasksRequiredBothLineageAndScenario: 7
+  binaryCalibration:
+    maximumECE: 0.15
+    brierNoWorseThanConstantTolerance: 0.01
+    tasksRequiredBothLineageAndScenario: 6
+  failureAndCensoring:
+    nonconstantHeadBrierNoWorseThanConstantTolerance: 0.01
+    heavyTailE05CoverageMinimum: 0.75
+  embeddingDeployment:
+    maximumTaskBalancedAccuracy: 0.35
+    maximumWithinTaskLengthR2: 0.25
+    maximumReconstructionMseRatioVsPCA: 1.05
+  deploymentRule: all_surrogate_calibration_utility_failure_censoring_and_embedding_threshold_families_must_pass
+  failureAction: reject_models_for_S07_allocation_or_archive_mutation
+
+subgroups:
+  required:
+    - task
+    - failed
+    - censored
+    - e05_runtime_tail_quartile
+    - e05_native_event_length_tail_quartile
+  e05HeavyTailDefinition: within_E05_task_top_quartile_of_primary_fit_log1p_elapsed_or_native_event_length_threshold_applied_to_audit_rows
+
+validation:
+  requireCanonicalHashes: true
+  requireNoProtectedOutcomeRows: true
+  requirePrimaryAndOrphanDisjoint: true
+  requireAllFailuresAndCensorsRetained: true
+  requireDeterministicReplay: true
+  requireIdentifierLeakageAudit: true
+  requireTaskLengthShortcutTests: true
+  requireModelAndEmbeddingHashes: true
+  requireInferenceReloadParity: true
+
+claimBoundary: S06 models are exploratory train-derived computational surrogates and event-summary embeddings. They are not held-out predecessor validation, confirmation, causal or biological evidence, full-trajectory representations, or a universal task score.
