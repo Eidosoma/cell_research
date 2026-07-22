@@ -1,0 +1,201 @@
+schemaVersion: e07.s06a.remediation-protocol.v1
+researchStepId: S06A
+title: Remediate surrogate and event-summary models
+frozenAtUtc: '2026-07-22T00:00:00Z'
+frozenBeforeAnyRemediationFit: true
+frozenBeforeAddedScenarioEvaluation: true
+frozenQuestion: Additional independent training-only scenario families, simpler task-specific heads, and stronger task/length deconfounding can pass the unchanged S06 deployment gates without protected access or S05 mutation.
+
+immutablePredecessors:
+  s05ArtifactManifest: /artifacts/research_steps/S05/artifact_manifest.json
+  s05ArtifactManifestSha256: 5531c6131182f98dc990e72a3e439ac9c936f923502d6bdcb8a9c79d2535f7b6
+  s06ArtifactManifest: /artifacts/research_steps/S06/artifact_manifest.json
+  s06ArtifactManifestSha256: d94e57249edabd522ae2b5eabe1649d89eab05e8339a70abe73b3ad0c26853d3
+  rejectedS06Decision: /artifacts/research_steps/S06/deployment_decision.json
+  rejectedS06DecisionSha256: d751ca4b4c34e1a5bca58f1eef2b50e17b5e82c57d8443b79e0a9e5c1d2b3b30
+  rejectedS06ModelsPermittedUses: [hash_verification_only]
+  rejectedS06ModelsForbiddenUses: [prediction, allocation, archive_mutation, warm_start, distillation, pseudo_labeling, feature_selection]
+  s05ArchiveMutation: forbidden
+  s05LedgerMutation: forbidden
+
+authorizedPopulation:
+  baseEvaluationLedger: /artifacts/research_steps/S05/evaluation_ledger.jsonl
+  baseEvaluationLedgerSha256: 93b4cafb73471936fbfe81c618ce8d50e2f1576dcc93e342bfa8ff2cad50e4ee
+  baseSelectedFlag: selectedForCanonicalSearch
+  baseSelectedValue: true
+  expectedBaseRows: 2248
+  expectedPoliciesPerTask: 64
+  taskCount: 8
+  recoveryOrphanRows: 189
+  recoveryOrphanUse: post_freeze_sensitivity_only
+  recoveryOrphanForbiddenUses: [scenario_generation, fit, tuning, early_stopping, calibration, feature_selection, embedding_training]
+  permittedSplit: train
+  validationOutcomeAccess: forbidden
+  confirmationOutcomeAccess: forbidden
+
+additionalScenarioPlan:
+  source: outcome_blind_counter_derivation_from_each_S02_nonprotected_train_record
+  familyOrdinals: [100, 101, 102, 103, 104]
+  fitFamilies: [100, 101, 102]
+  calibrationFamilies: [103]
+  testFamilies: [104]
+  existingDefaultFamilies: {fit: [0, 1, 2], calibration: [3], test: [4]}
+  existingRegenerationFamilies: {fit: [0, 1], calibration: [2], test: [3]}
+  e05ProtectedOrdinalsExcluded: [4, 5, 6, 7]
+  policiesPerTask: 64
+  expectedTopLevelEvaluations: 2560
+  maximumParallelWorkers: 8
+  threadsPerWorker: 1
+  nativeInternalReplayIsAdditional: true
+  runtimeDrivenWeakeningPermitted: false
+  wallClockStoppingPermitted: false
+  counterDomain: E07/S06A/additional-training-scenarios/v1
+  generationRules:
+    lineAndTargetSeed: sha256_counter_u31
+    faultIndex: sha256_counter_modulo_n
+    chimeraReplicate: family_ordinal
+    regenerationReplicate: family_ordinal_in_100_104_only
+    spatialCounterScheduleKey: task_and_family_ordinal
+  evidenceBoundary: New scenario families are E07-created nonprotected training fixtures, not predecessor validation or confirmation rows.
+
+splitDesign:
+  outcomesUsedForAssignment: false
+  lineageComponent: frozen_S06_transitive_ancestral_root_set
+  lineageAssignment: deterministic_group_size_balanced_60_20_20_with_sha256_tie_break
+  lineageFractions: {fit: 0.60, calibration: 0.20, test: 0.20}
+  scenarioFamilies:
+    default: {fit: [0, 1, 2, 100, 101, 102], calibration: [3, 103], test: [4, 104]}
+    e07_s02_regeneration_1d: {fit: [0, 1, 100, 101, 102], calibration: [2, 103], test: [3, 104]}
+  primaryAudit: lineage_test_on_scenario_fit
+  scenarioAudit: scenario_test_on_lineage_fit
+  jointStressAudit: lineage_test_and_scenario_test
+  calibrationPanels:
+    lineage: lineage_calibration_on_scenario_fit
+    scenario: scenario_calibration_on_lineage_fit
+  rowIdentityOverlapAcrossLineagePartitionsPermitted: false
+  policyLineageOverlapAcrossLineagePartitionsPermitted: false
+  scenarioFamilyOverlapAcrossScenarioPartitionsPermitted: false
+
+surrogates:
+  taskSpecificModels: true
+  universalScore: forbidden
+  crossTaskTargetPooling: forbidden
+  architecture:
+    label: targetwise_extra_trees_ridge_logistic_blend_v1
+    implementation: independent_sklearn_target_heads_no_neural_residual_connections
+    mismatchCorrected: true
+  inputs:
+    allowed: [policy_structure, typed_permissions, licensed_capability_flags, mutation_metadata, outcome_blind_within_source_family_index, outcome_blind_source_generation]
+    forbidden: [policy_hash_bytes, policy_id_tokens, scenario_id_tokens, raw_seed, split_label, event_summaries, native_costs, terminal_fields, outcomes, elapsed_seconds]
+  targets:
+    performance: all_frozen_S04_task_objectives
+    costs: every_fully_qualified_numeric_native_and_extension_ledger_field
+    licensedCapabilities: separately_named_cost_targets_never_summed_into_native_cost
+    explicitOutcomes: [failed, censored]
+    structurallyMissingCost: explicit_presence_head_and_masked_value_loss
+    operational: [elapsedSeconds]
+    universalCostTotal: forbidden
+  transformations:
+    continuous: fit_panel_z_score
+    costs: signed_log1p_then_fit_panel_z_score
+    elapsedSeconds: log1p_then_fit_panel_z_score
+    binary: untransformed_probability
+  simpleBaselines:
+    - fit_mean_or_prevalence
+    - targetwise_ridge_alpha_10
+    - targetwise_logistic_C_1
+    - policy_only_ridge_or_logistic
+  nonlinearHead:
+    estimator: ExtraTrees
+    nEstimators: 128
+    maximumDepth: 10
+    minimumSamplesLeaf: 3
+    maximumFeatures: 0.8
+    bootstrap: false
+    nJobsPerFit: 1
+    randomSeedBase: 706500
+    continuousUse: performance_only
+    binaryUse: all_nonconstant_binary_heads
+    otherContinuousUse: ridge_only
+  calibrationBlend:
+    nonlinearWeights: [0.0, 0.25, 0.5, 0.75, 1.0]
+    binaryConstantShrinkage: [0.0, 0.25, 0.5, 0.75, 1.0]
+    selectionPanels: [lineage_calibration, scenario_calibration]
+    continuousCriterion: minimize_max_panel_RMSE_then_mean_RMSE
+    binaryCriterion: minimize_max_panel_Brier_plus_ECE_excess_then_mean_Brier
+    ties: prefer_more_constant_shrinkage_then_less_nonlinear_weight
+    testPanelsUsedForSelection: false
+  uncertainty:
+    nominalCoverage: 0.90
+    method: separate_split_absolute_residual_finite_sample_quantile
+    calibrationPanelsSeparate: true
+    e05HeavyTailModeledExplicitly: true
+    e05TailDefinition: fit_panel_top_quartile_of_elapsed_or_native_event_length_for_subgroup_audit_and_balanced_status_weights
+  ablations: [constant, ridge_or_logistic, policy_only_ridge_or_logistic, unblended_extra_trees, remediated_blend]
+
+eventSummaryModel:
+  label: fit_only_task_length_residualized_pca_v1
+  implementation: deterministic_linear_nuisance_residualization_then_six_component_PCA
+  fullTraceRepresentation: false
+  evidenceBoundary: persisted_event_and_sequence_summaries_only
+  primaryRows: combined_base_selected_and_added_training_rows
+  recoveryOrphans: post_freeze_sensitivity_only
+  sharedSemanticFeatures: frozen_S06_shared_event_features
+  vectorizerFit: joint_fit_panel_only
+  nuisanceFit: joint_fit_panel_only
+  nuisanceVariables: [task_one_hot, within_task_standardized_log_event_length]
+  taskWithinScaling: fit_panel_only
+  embeddingDimension: 6
+  reconstructionTarget: task_and_length_residualized_shared_semantic_features
+  reconstructionBaseline: PCA_same_dimension_same_residualized_target
+  shortcutTests:
+    taskProbe: lineage_grouped_5_fold_logistic_balanced_accuracy_with_fold_local_standardization
+    lengthProbe: lineage_grouped_5_fold_ridge_R2_with_fold_local_standardization
+  rawUnionAblation: none_due_prior_convergence_failure
+
+frozenThresholds:
+  inheritedVerbatimFrom: /artifacts/research_steps/S06/modeling_preregistration.yaml
+  inheritedSha256: 06c13d208d62d3e03e2bc93d8047d5cec4d41a4702dac2f8b096bd2343f790d7
+  minimumAuditRowsPerTarget: 12
+  surrogateUtility:
+    taskObjectiveLossRatioVsRidgeMaximum: 0.98
+    tasksRequiredBothLineageAndScenario: 6
+    maximumAnyTaskObjectiveLossRatio: 1.10
+    constantBaselineImprovementTasksRequired: 6
+  continuousCalibration:
+    nominalCoverage: 0.90
+    minimumCoverage: 0.80
+    maximumMedianIntervalWidthInTrainStandardDeviations: 4.0
+    tasksRequiredBothLineageAndScenario: 7
+  binaryCalibration:
+    maximumECE: 0.15
+    brierNoWorseThanConstantTolerance: 0.01
+    tasksRequiredBothLineageAndScenario: 6
+  failureAndCensoring:
+    nonconstantHeadBrierNoWorseThanConstantTolerance: 0.01
+    heavyTailE05CoverageMinimum: 0.75
+  embeddingDeployment:
+    maximumTaskBalancedAccuracy: 0.35
+    maximumWithinTaskLengthR2: 0.25
+    maximumReconstructionMseRatioVsPCA: 1.05
+  deploymentRule: all_surrogate_calibration_utility_failure_censoring_and_embedding_threshold_families_must_pass
+  failureAction: reject_S06A_models_and_request_preregistered_non_surrogate_S07_redesign
+
+validation:
+  requireCanonicalHashes: true
+  requireS05AndS06Immutable: true
+  requireNoRejectedS06ModelUse: true
+  requireNoProtectedOutcomeRows: true
+  requireExactAddedEvaluationCount: true
+  requirePrimaryAndOrphanDisjoint: true
+  requireAllFailuresAndCensorsRetained: true
+  requireGroupedLineageAndScenarioAudits: true
+  requireDeterministicEvaluationReplay: true
+  requireDeterministicModelReplay: true
+  requireIdentifierLeakageAudit: true
+  requireTaskLengthShortcutTests: true
+  requireModelAndEmbeddingHashes: true
+  requireFreshLoadInferenceParity: true
+  requireCompleteBudgetAccounting: true
+
+claimBoundary: S06A remains exploratory train-derived computational remediation. Passing unchanged gates would authorize only these remediated bundles for S07 allocation; it would not validate rejected S06 bundles, open protected outcomes, establish held-out efficacy, create a universal score, or support causal, biological, full-trajectory, clinical, or civic claims.
