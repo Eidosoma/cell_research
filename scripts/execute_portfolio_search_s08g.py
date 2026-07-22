@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Execute fresh S08G under the byte-frozen S08P design and S08F gate."""
+"""Execute a fresh, approved S08 continuation under the frozen S08P design.
+
+S08G remains the default for historical reproducibility. A thin continuation
+entry point may set the three ``E07_PORTFOLIO_*`` environment variables before
+import so the same audited engine can write a distinct step and cache namespace.
+"""
 
 from __future__ import annotations
 
@@ -46,12 +51,22 @@ from src.portfolio_search.execution import (
 )
 
 
-S08G_CONTROL_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "configs/portfolio/s08g_execution_continuation.yaml"
+STEP_ID = os.environ.get("E07_PORTFOLIO_STEP_ID", "S08G")
+STEP_LOWER = STEP_ID.lower()
+S08G_CONTROL_PATH = Path(
+    os.environ.get(
+        "E07_PORTFOLIO_CONTROL_PATH",
+        str(
+            Path(__file__).resolve().parents[1]
+            / "configs/portfolio/s08g_execution_continuation.yaml"
+        ),
+    )
 )
-S08G_CACHE_ROOT = Path("/cache/e07-s08g")
+S08G_CACHE_ROOT = Path(
+    os.environ.get("E07_PORTFOLIO_CACHE_ROOT", "/cache/e07-s08g")
+)
 S08F = ARTIFACT_ROOT / "S08F"
+S08H = ARTIFACT_ROOT / "S08H"
 IMMUTABLE_STEPS = (
     "S05",
     "S08P",
@@ -67,7 +82,7 @@ IMMUTABLE_STEPS = (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=ARTIFACT_ROOT / "S08G")
+    parser.add_argument("--output", type=Path, default=ARTIFACT_ROOT / STEP_ID)
     parser.add_argument(
         "--phase", choices=("preflight", "smoke", "full"), default="full"
     )
@@ -107,7 +122,7 @@ def ledger_frame(rows: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
 
 def work_digest(rows: Sequence[Mapping[str, Any]]) -> str:
     return canonical_hash(
-        "E07/S08G/work-order-independent/v1",
+        f"E07/{STEP_ID}/work-order-independent/v1",
         sorted(
             (
                 str(row["logicalSlotId"]),
@@ -121,7 +136,7 @@ def work_digest(rows: Sequence[Mapping[str, Any]]) -> str:
 
 def result_digest(rows: Sequence[Mapping[str, Any]]) -> str:
     return canonical_hash(
-        "E07/S08G/result-order-independent/v1",
+        f"E07/{STEP_ID}/result-order-independent/v1",
         sorted(
             (str(row["logicalSlotId"]), str(row["logicalExpansionSha256"]))
             for row in rows
@@ -190,14 +205,132 @@ def s08f_contract_revalidation() -> dict[str, Any]:
         and len(set(identity.get("logicalStableEvaluationSha256", []))) == 2,
     }
     return {
-        "schemaVersion": "e07.s08g.s08f-contract-revalidation.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.s08f-contract-revalidation.v1",
+        "researchStepId": STEP_ID,
         "checks": checks,
         "descriptorAvailabilityVersion": descriptor.get(
             "descriptorAvailabilityVersion"
         ),
         "s08fForwardPhysicalPlanSha256": accounting.get("forwardPlanSha256"),
         "success": all(checks.values()),
+    }
+
+
+def s08h_contract_revalidation() -> dict[str, Any]:
+    """Revalidate the outcome-independent S08H domain and state-machine freeze."""
+
+    gate = _read_json(S08H / "s08_execution_eligibility_gate.json")
+    domain_spec = _read_json(S08H / "descriptor_domain_spec.json")
+    domain = _read_json(S08H / "descriptor_domain_qualification.json")
+    target_spec = _read_json(S08H / "target_change_semantics_spec.json")
+    target = _read_json(S08H / "target_change_branch_qualification.json")
+    native = _read_json(S08H / "native_contract_validation.json")
+    checks = {
+        "g01ToG06": bool(gate.get("success"))
+        and not gate.get("blockedGateIds")
+        and [row.get("gateId") for row in gate.get("rows", [])]
+        == ["G01", "G02", "G03", "G04", "G05", "G06"]
+        and all(row.get("status") == "pass" for row in gate.get("rows", [])),
+        "rawRepairDomain": domain_spec.get("nativeDefinition")
+        == "r=(initialDistance-finalDistance)/initialDistance"
+        and domain_spec.get("completeFiniteDomain", {}).get("nondegenerate")
+        == [-495, 1]
+        and domain.get("globalFiniteDomain") == [-495, 1]
+        and domain.get("rawCoordinatePreserved") is True
+        and domain.get("clippingApplied") is False
+        and domain.get("imputationApplied") is False
+        and domain.get("silentExclusions") == 0,
+        "zeroInitialDistanceUnavailable": domain_spec.get(
+            "completeFiniteDomain", {}
+        ).get("degenerateZeroInitialDistance")
+        == "undefined_and_explicitly_unavailable"
+        and domain.get("zeroInitialDistancePanel", {}).get("supportState")
+        == "unavailable"
+        and domain.get("zeroInitialDistancePanel", {}).get("values") is None,
+        "targetDeadlineProbe": target_spec.get("version")
+        == "e07.s08h.e05-target-deadline-probe.v1"
+        and target_spec.get("phaseEventBudgetClassification")
+        == "valid retained nonadaptation right-censor only"
+        and target.get("phaseEventBudgetRuling")
+        == "valid retained nonadaptation right-censor only"
+        and target.get("partialPostHitProbeRuling")
+        == "adapter defect; never a valid phase_event_budget outcome"
+        and target.get("authoritativeAdaptationBudget") == 6400
+        and target.get("authoritativePostHitProbeBudget") == 160,
+        "nativeEstimandUnchanged": bool(native.get("success"))
+        and native.get("determination", {}).get("scientificEstimandChanged")
+        is False
+        and native.get("determination", {}).get("frozenDescriptorMeaningChanged")
+        is False,
+    }
+    return {
+        "schemaVersion": f"e07.{STEP_LOWER}.s08h-contract-revalidation.v1",
+        "researchStepId": STEP_ID,
+        "checks": checks,
+        "repairDescriptorDomainVersion": domain_spec.get("version"),
+        "repairRawFiniteDomain": [-495, 1],
+        "zeroInitialDistanceRule": "explicitly_unavailable",
+        "targetChangeSemanticsVersion": target_spec.get("version"),
+        "success": all(checks.values()),
+    }
+
+
+def s08h_runtime_integrity_audit(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Fail closed on any executed target row that violates the S08H machine."""
+
+    target_rows = [
+        row for row in rows if row["taskId"] == "e07_s02_target_change_1d"
+    ]
+    errors = []
+    phase_budget_censors = 0
+    completed_probe_rows = 0
+    for row in target_rows:
+        outcome = row["outcome"]
+        audit = outcome.get("targetChangeSemanticAudit", {})
+        stop = str(row.get("stopReason"))
+        completed = bool(outcome.get("targetCompleted"))
+        retained = bool(outcome.get("postHitProbeRetained"))
+        adaptation_time = outcome.get("adaptationTime")
+        row_errors = []
+        if outcome.get("targetChangeSemanticsVersion") != (
+            "e07.s08h.e05-target-deadline-probe.v1"
+        ):
+            row_errors.append("semantic_version")
+        if not audit.get("validNativeContract") or audit.get("adapterFailure"):
+            row_errors.append("semantic_audit")
+        if stop == "phase_event_budget":
+            phase_budget_censors += 1
+            if completed or adaptation_time is not None or not retained:
+                row_errors.append("phase_budget_not_no_hit_right_censor")
+        if completed:
+            completed_probe_rows += 1
+            if (
+                stop != "post_adaptation_probe_complete"
+                or not retained
+                or int(outcome.get("postHitProbeOpportunities", -1)) != 160
+            ):
+                row_errors.append("hit_without_exact_post_hit_probe")
+        if row_errors:
+            errors.append(
+                {
+                    "logicalSlotId": row["logicalSlotId"],
+                    "configurationId": row["configurationId"],
+                    "scenarioFamilyOrdinal": row["scenarioFamilyOrdinal"],
+                    "stopReason": stop,
+                    "errors": row_errors,
+                }
+            )
+    return {
+        "schemaVersion": f"e07.{STEP_LOWER}.s08h-runtime-integrity-audit.v1",
+        "researchStepId": STEP_ID,
+        "logicalRowsAudited": len(rows),
+        "targetChangeRowsAudited": len(target_rows),
+        "phaseEventBudgetRightCensorsRetained": phase_budget_censors,
+        "completedExactProbeRows": completed_probe_rows,
+        "errorRows": errors,
+        "success": not errors,
     }
 
 
@@ -224,8 +357,8 @@ def initial_physical_accounting_revalidation(
         == reverse_digest,
     }
     return work, {
-        "schemaVersion": "e07.s08g.initial-physical-accounting-revalidation.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.initial-physical-accounting-revalidation.v1",
+        "researchStepId": STEP_ID,
         "checks": checks,
         "configurationRows": len(definitions),
         "logicalRows": len(work),
@@ -257,6 +390,13 @@ def descriptor_availability_audit(
         for key, front in archive.items()
         for item in front
     }
+    repair_domain_records = [
+        domain
+        for row in e05
+        for item in row["descriptors"]
+        if item.get("archiveId") == "phenotype:e05:repair"
+        for domain in item.get("support", {}).get("repairDomainRecords", [])
+    ]
     checks = {
         "tenRecordsPerConfiguration": all(len(row["descriptors"]) == 10 for row in e05),
         "unavailableRetained": bool(unavailable),
@@ -276,15 +416,42 @@ def descriptor_availability_audit(
             == "e07.s08f.e05-descriptor-availability.v1"
             for item in records
         ),
+        "repairDomainVersion": bool(repair_domain_records)
+        and all(
+            item.get("version") == "e07.s08h.e05-repair-domain.v1"
+            for item in repair_domain_records
+        ),
+        "rawRepairDomainUnchanged": all(
+            item.get("status") != "valid"
+            or -495.0 <= float(item["coordinate"]) <= 1.0
+            for item in repair_domain_records
+        ),
+        "zeroInitialDistanceExplicitlyUnavailable": all(
+            item.get("initialDistance") != 0 or item.get("status") == "unavailable"
+            for item in repair_domain_records
+        ),
+        "noInvalidPresentRepairRecords": all(
+            item.get("status") in {"valid", "unavailable"}
+            for item in repair_domain_records
+        ),
     }
     return {
-        "schemaVersion": "e07.s08g.e05-descriptor-availability-audit.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.e05-descriptor-availability-audit.v1",
+        "researchStepId": STEP_ID,
         "configurationAggregates": len(e05),
         "descriptorRecords": len(records),
         "completeRecords": len(records) - len(unavailable),
         "unavailableRecordsRetained": len(unavailable),
         "unavailableArchivePairIntersections": len(unavailable_pairs & archive_pairs),
+        "repairDomainRecords": len(repair_domain_records),
+        "finiteNegativeRepairDomainRecords": sum(
+            item.get("status") == "valid" and float(item["coordinate"]) < 0.0
+            for item in repair_domain_records
+        ),
+        "zeroInitialDistanceUnavailableRecords": sum(
+            item.get("initialDistance") == 0 and item.get("status") == "unavailable"
+            for item in repair_domain_records
+        ),
         "checks": checks,
         "success": bool(e05) and all(checks.values()),
     }
@@ -312,8 +479,8 @@ def logical_identity_audit(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         ),
     }
     return {
-        "schemaVersion": "e07.s08g.logical-identity-audit.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.logical-identity-audit.v1",
+        "researchStepId": STEP_ID,
         "logicalRows": len(rows),
         "uniquePhysicalKeys": len(by_physical),
         "legallyReusedPhysicalKeys": len(reused),
@@ -337,7 +504,7 @@ def configuration_hash_validation(
                 "mode": definition["mode"],
                 "portfolioSize": definition["portfolioSize"],
                 "configurationDefinitionSha256": canonical_hash(
-                    "E07/S08G/configuration-definition/v1", definition
+                    f"E07/{STEP_ID}/configuration-definition/v1", definition
                 ),
                 "actionSha256": action.policy_sha256,
                 "memberPolicySha256": [
@@ -352,8 +519,8 @@ def configuration_hash_validation(
             }
         )
     return {
-        "schemaVersion": "e07.s08g.configuration-hash-validation.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.configuration-hash-validation.v1",
+        "researchStepId": STEP_ID,
         "success": all(
             not row["s07ArmMembershipUsed"]
             and not row["rejectedModelOrEmbeddingUsed"]
@@ -381,7 +548,7 @@ def validation_support_audit(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any
         # Count distinct native result projections, not logical labels.
         support = {
             canonical_hash(
-                "E07/S08G/native-validation-support/v1",
+                f"E07/{STEP_ID}/native-validation-support/v1",
                 {
                     "outcome": row["outcome"],
                     "nativeEvent": row["nativeEvent"],
@@ -399,8 +566,8 @@ def validation_support_audit(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any
             "independenceClaim": "not_made",
         }
     return {
-        "schemaVersion": "e07.s08g.validation-support-audit.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.validation-support-audit.v1",
+        "researchStepId": STEP_ID,
         "nativeSupportsRemainTaskSpecific": True,
         "universalScenarioNormalizationApplied": False,
         "byTask": result,
@@ -416,7 +583,7 @@ def main() -> int:
     output = args.output
     if args.phase != "preflight" and S08G_CACHE_ROOT.exists():
         raise SystemExit(
-            f"fresh S08G cache namespace already exists: {S08G_CACHE_ROOT}"
+            f"fresh {STEP_ID} cache namespace already exists: {S08G_CACHE_ROOT}"
         )
     output.mkdir(parents=True, exist_ok=True)
     control = yaml.safe_load(S08G_CONTROL_PATH.read_text(encoding="utf-8"))
@@ -424,8 +591,8 @@ def main() -> int:
     _write_json(
         output / "input_hash_freeze.json",
         {
-            "schemaVersion": "e07.s08g.input-hash-freeze.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.input-hash-freeze.v1",
+            "researchStepId": STEP_ID,
             "controlPath": str(S08G_CONTROL_PATH),
             "controlSha256": sha256_file(S08G_CONTROL_PATH),
             "expectedTrees": immutable_expected,
@@ -439,8 +606,8 @@ def main() -> int:
     _write_json(
         output / "preregistration_freeze.json",
         {
-            "schemaVersion": "e07.s08g.preregistration-freeze.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.preregistration-freeze.v1",
+            "researchStepId": STEP_ID,
             "sourceDesign": control["sourceDesign"],
             "sourceDesignSha256": sha256_file(Path(control["sourceDesign"])),
             "frozenExecution": control["frozenExecution"],
@@ -451,10 +618,12 @@ def main() -> int:
             "runtimeDrivenWeakening": False,
             "reuseS08cOutcomes": False,
             "reuseS08eOutcomes": False,
+            "reuseS08gOutcomes": False,
         },
     )
     preflight = run_preflight(S08G_CONTROL_PATH)
     s08f_contract = s08f_contract_revalidation()
+    s08h_contract = s08h_contract_revalidation()
     budget = pd.read_parquet(S08P / "budget_slot_ledger.parquet")
     initial_definitions = read_jsonl(S08P / "portfolio_seed_registry.jsonl")
     definitions: dict[str, dict[str, Any]] = {
@@ -467,6 +636,10 @@ def main() -> int:
         for row in preflight["gateRows"]:
             if row["gateId"] == "G04":
                 row["status"] = "blocked"
+    if not s08h_contract["success"]:
+        for row in preflight["gateRows"]:
+            if row["gateId"] in {"G01", "G04"}:
+                row["status"] = "blocked"
     if not initial_accounting_revalidation["success"]:
         for row in preflight["gateRows"]:
             if row["gateId"] == "G06":
@@ -475,6 +648,7 @@ def main() -> int:
         row["gateId"] for row in preflight["gateRows"] if row["status"] != "pass"
     ]
     preflight["s08fContractRevalidationPass"] = s08f_contract["success"]
+    preflight["s08hContractRevalidationPass"] = s08h_contract["success"]
     preflight["initialPhysicalAccountingPass"] = initial_accounting_revalidation[
         "success"
     ]
@@ -490,6 +664,7 @@ def main() -> int:
     )
     _write_json(output / "preflight_hash_and_gate_revalidation.json", preflight)
     _write_json(output / "s08f_contract_revalidation.json", s08f_contract)
+    _write_json(output / "s08h_contract_revalidation.json", s08h_contract)
     _write_json(
         output / "initial_physical_accounting_revalidation.json",
         initial_accounting_revalidation,
@@ -500,8 +675,8 @@ def main() -> int:
     _write_json(
         output / "access_control_preflight.json",
         {
-            "schemaVersion": "e07.s08g.access-control-preflight.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.access-control-preflight.v1",
+            "researchStepId": STEP_ID,
             "success": all(
                 row["deniedBeforeMaterialization"] for row in preflight["accessRows"]
             ),
@@ -514,7 +689,7 @@ def main() -> int:
         _write_json(
             output / "execution_stop_status.json",
             {
-                "researchStepId": "S08G",
+                "researchStepId": STEP_ID,
                 "status": "blocked_before_smoke",
                 "success": False,
                 "blockedGateIds": preflight["blockedGateIds"],
@@ -541,7 +716,7 @@ def main() -> int:
         _write_json(
             output / "execution_stop_status.json",
             {
-                "researchStepId": "S08G",
+                "researchStepId": STEP_ID,
                 "status": "blocked_at_frozen_smoke",
                 "success": False,
                 "failureAccountingPath": str(smoke_failure_accounting),
@@ -553,23 +728,30 @@ def main() -> int:
             },
         )
         return 3
+    smoke_runtime_integrity = s08h_runtime_integrity_audit(smoke_rows)
+    _write_json(output / "smoke_s08h_runtime_integrity.json", smoke_runtime_integrity)
     smoke_validation = validate_rows(smoke_rows, 40)
     smoke_validation.update(
         {
-            "schemaVersion": "e07.s08g.frozen-smoke-validation.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.frozen-smoke-validation.v1",
+            "researchStepId": STEP_ID,
             "withinFrozenTrainingBudget": True,
             "physicalAccounting": smoke_physical,
             "substantiveSearchAuthorized": smoke_validation["success"],
+            "s08hRuntimeIntegrityPass": smoke_runtime_integrity["success"],
         }
     )
+    smoke_validation["success"] = (
+        smoke_validation["success"] and smoke_runtime_integrity["success"]
+    )
+    smoke_validation["substantiveSearchAuthorized"] = smoke_validation["success"]
     _write_json(output / "frozen_smoke_validation.json", smoke_validation)
     if not smoke_validation["success"]:
         _write_json(
             smoke_failure_accounting,
             {
-                "schemaVersion": "e07.s08g.smoke-forensic-accounting.v1",
-                "researchStepId": "S08G",
+                "schemaVersion": f"e07.{STEP_LOWER}.smoke-forensic-accounting.v1",
+                "researchStepId": STEP_ID,
                 "success": False,
                 "failureClass": "post_execution_integrity_validation",
                 "physicalAccounting": smoke_physical,
@@ -580,7 +762,7 @@ def main() -> int:
         _write_json(
             output / "execution_stop_status.json",
             {
-                "researchStepId": "S08G",
+                "researchStepId": STEP_ID,
                 "status": "blocked_at_frozen_smoke",
                 "success": False,
                 "trainingLogicalRowsExecuted": 40,
@@ -598,6 +780,26 @@ def main() -> int:
     training_rows, initial_physical = execute_work(
         initial_work, workers=args.workers, cache_dir=S08G_CACHE_ROOT / "evaluations"
     )
+    initial_runtime_integrity = s08h_runtime_integrity_audit(training_rows)
+    _write_json(
+        output / "generation_0_s08h_runtime_integrity.json",
+        initial_runtime_integrity,
+    )
+    if not initial_runtime_integrity["success"]:
+        _write_json(
+            output / "execution_stop_status.json",
+            {
+                "researchStepId": STEP_ID,
+                "status": "quarantined_at_generation_0_integrity",
+                "success": False,
+                "trainingLogicalRowsExecuted": len(training_rows),
+                "adaptiveGenerationsCompleted": 0,
+                "archivePublished": False,
+                "validationLogicalRowsExecuted": 0,
+                "confirmationLogicalRowsExecuted": 0,
+            },
+        )
+        return 4
     initial_aggregates = aggregate_panel(definitions, training_rows)
     aggregates = list(initial_aggregates)
     archive = build_archive(aggregates)
@@ -635,6 +837,26 @@ def main() -> int:
         rows, physical = execute_work(
             works, workers=args.workers, cache_dir=S08G_CACHE_ROOT / "evaluations"
         )
+        generation_runtime_integrity = s08h_runtime_integrity_audit(rows)
+        _write_json(
+            output / f"generation_{generation}_s08h_runtime_integrity.json",
+            generation_runtime_integrity,
+        )
+        if not generation_runtime_integrity["success"]:
+            _write_json(
+                output / "execution_stop_status.json",
+                {
+                    "researchStepId": STEP_ID,
+                    "status": f"quarantined_at_generation_{generation}_integrity",
+                    "success": False,
+                    "trainingLogicalRowsExecuted": len(training_rows) + len(rows),
+                    "adaptiveGenerationsCompleted": generation - 1,
+                    "archivePublished": False,
+                    "validationLogicalRowsExecuted": 0,
+                    "confirmationLogicalRowsExecuted": 0,
+                },
+            )
+            return 4
         training_rows.extend(rows)
         all_work.extend(works)
         lineage_rows.extend(generation_lineage)
@@ -671,8 +893,8 @@ def main() -> int:
     descriptor_audit = descriptor_availability_audit(aggregates, archive)
     identity_audit = logical_identity_audit(training_rows)
     initial_execution_accounting = {
-        "schemaVersion": "e07.s08g.initial-execution-physical-accounting.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.initial-execution-physical-accounting.v1",
+        "researchStepId": STEP_ID,
         "initialLogicalRows": len(initial_work),
         "initialUniquePhysicalRows": initial_physical["uniquePhysicalRows"],
         "smokePhysicalRowsExecuted": smoke_physical["physicalRowsExecutedNow"],
@@ -713,14 +935,17 @@ def main() -> int:
     training_validation = validate_rows(training_rows, 11008)
     training_validation.update(
         {
-            "schemaVersion": "e07.s08g.training-validation.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.training-validation.v1",
+            "researchStepId": STEP_ID,
             "generationsCompleted": 6,
             "runtimeDrivenWeakening": False,
             "efficacyEarlyStopUsed": False,
             "initialPhysicalAccountingPass": initial_execution_accounting["success"],
             "descriptorAvailabilityPass": descriptor_audit["success"],
             "logicalIdentityRestorationPass": identity_audit["success"],
+            "s08hRuntimeIntegrityPass": s08h_runtime_integrity_audit(
+                training_rows
+            )["success"],
         }
     )
     training_validation["success"] = training_validation["success"] and all(
@@ -728,6 +953,7 @@ def main() -> int:
             initial_execution_accounting["success"],
             descriptor_audit["success"],
             identity_audit["success"],
+            training_validation["s08hRuntimeIntegrityPass"],
         )
     )
     if not training_validation["success"]:
@@ -785,8 +1011,8 @@ def main() -> int:
         validation_definitions,
     )
     gate = s09_gate(shortlist, endpoint_rows, guard_rows, validation_rows)
-    gate["schemaVersion"] = "e07.s08g.s09-eligibility-gate.v1"
-    gate["researchStepId"] = "S08G"
+    gate["schemaVersion"] = f"e07.{STEP_LOWER}.s09-eligibility-gate.v1"
+    gate["researchStepId"] = STEP_ID
 
     # Compact canonical artifacts.
     ledger_frame(training_rows).to_parquet(
@@ -810,8 +1036,8 @@ def main() -> int:
     _write_json(
         output / "convergence_and_stopping.json",
         {
-            "schemaVersion": "e07.s08g.convergence.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.convergence.v1",
+            "researchStepId": STEP_ID,
             "rows": convergence,
             "stoppingRule": "exactly_six_generations_or_integrity_failure",
             "generationsCompleted": 6,
@@ -821,8 +1047,8 @@ def main() -> int:
     _write_json(
         output / "training_shortlist.json",
         {
-            "schemaVersion": "e07.s08g.training-shortlist.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.training-shortlist.v1",
+            "researchStepId": STEP_ID,
             "byTask": shortlist,
             "singleFrontierObjectiveLeadersByTask": single_leaders,
             "maximumPortfoliosPerTask": 8,
@@ -833,8 +1059,8 @@ def main() -> int:
     _write_json(
         output / "validation_plan_and_accounting.json",
         {
-            "schemaVersion": "e07.s08g.validation-plan-accounting.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.validation-plan-accounting.v1",
+            "researchStepId": STEP_ID,
             "candidateLockSha256": lock_sha,
             "logicalRows": len(validation_work),
             "logicalCeiling": 3072,
@@ -852,8 +1078,8 @@ def main() -> int:
     _write_json(
         output / "uncertainty_and_multiplicity.json",
         {
-            "schemaVersion": "e07.s08g.uncertainty-multiplicity.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.uncertainty-multiplicity.v1",
+            "researchStepId": STEP_ID,
             "pairedScenarioBlockBootstrapReplicates": 2000,
             "confidenceLevel": 0.95,
             "seed": 708004,
@@ -872,7 +1098,7 @@ def main() -> int:
     semantic_groups = defaultdict(list)
     for aggregate in aggregates:
         signature = canonical_hash(
-            "E07/S08G/finite-panel-equivalence/v1",
+            f"E07/{STEP_ID}/finite-panel-equivalence/v1",
             aggregate["evaluationHashes"],
         )
         semantic_groups[(aggregate["taskId"], signature)].append(
@@ -881,8 +1107,8 @@ def main() -> int:
     _write_json(
         output / "duplicate_detection_audit.json",
         {
-            "schemaVersion": "e07.s08g.duplicate-audit.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.duplicate-audit.v1",
+            "researchStepId": STEP_ID,
             "canonicalConfigurationDuplicates": len(definitions)
             - len(set(definitions)),
             "actionHashGroupsWithMultipleConfigurations": [
@@ -899,8 +1125,8 @@ def main() -> int:
         },
     )
     order_validation = {
-        "schemaVersion": "e07.s08g.replay-worker-order-validation.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.replay-worker-order-validation.v1",
+        "researchStepId": STEP_ID,
         "forwardWorkDigest": work_digest(all_work),
         "reverseWorkDigest": work_digest(list(reversed(all_work))),
         "forwardResultDigest": result_digest(training_rows),
@@ -920,8 +1146,8 @@ def main() -> int:
         int(row["scenarioFamilyOrdinal"]) for row in training_rows
     )
     budget_accounting = {
-        "schemaVersion": "e07.s08g.complete-budget-accounting.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.complete-budget-accounting.v1",
+        "researchStepId": STEP_ID,
         "trainingLogicalRows": len(training_rows),
         "trainingLogicalRowsExpected": 11008,
         "smokeLogicalRows": 40,
@@ -945,8 +1171,8 @@ def main() -> int:
     _write_json(
         output / "access_control_validation.json",
         {
-            "schemaVersion": "e07.s08g.access-control-validation.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.access-control-validation.v1",
+            "researchStepId": STEP_ID,
             "preflightNontrainingDenials": 16,
             "absentCandidateLockEntryDenied": denied_absent,
             "validationAccessAfterCandidateLockOnly": True,
@@ -960,8 +1186,8 @@ def main() -> int:
     _write_json(
         output / "dependency_exclusion_audit.json",
         {
-            "schemaVersion": "e07.s08g.dependency-exclusion-audit.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.dependency-exclusion-audit.v1",
+            "researchStepId": STEP_ID,
             "loadedProhibitedModules": preflight["loadedProhibitedModules"],
             "rejectedModelArtifactsOpened": 0,
             "rejectedEmbeddingArtifactsOpened": 0,
@@ -971,16 +1197,17 @@ def main() -> int:
             "s07ArmPromotionUses": 0,
             "s08cQuarantineOutcomeRowsLoaded": 0,
             "s08eQuarantineOutcomeRowsLoaded": 0,
+            "s08gQuarantineOutcomeRowsLoaded": 0,
             "success": not preflight["loadedProhibitedModules"],
         },
     )
-    final_trees = immutable_tree_hashes(IMMUTABLE_STEPS)
+    final_trees = immutable_tree_hashes(tuple(control["immutableSteps"]))
     no_mutation = final_trees == immutable_expected
     _write_json(
         output / "no_mutation_audit.json",
         {
-            "schemaVersion": "e07.s08g.no-mutation-audit.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.no-mutation-audit.v1",
+            "researchStepId": STEP_ID,
             "expectedTrees": immutable_expected,
             "observedTrees": final_trees,
             "unchanged": no_mutation,
@@ -993,8 +1220,8 @@ def main() -> int:
     _write_json(
         output / "provenance.json",
         {
-            "schemaVersion": "e07.s08g.provenance.v1",
-            "researchStepId": "S08G",
+            "schemaVersion": f"e07.{STEP_LOWER}.provenance.v1",
+            "researchStepId": STEP_ID,
             "controlPath": str(S08G_CONTROL_PATH),
             "controlSha256": sha256_file(S08G_CONTROL_PATH),
             "s08pProtocolSha256": sha256_file(S08P / "s08p_portfolio_protocol.yaml"),
@@ -1009,8 +1236,8 @@ def main() -> int:
         },
     )
     summary = {
-        "schemaVersion": "e07.s08g.validation-summary.v1",
-        "researchStepId": "S08G",
+        "schemaVersion": f"e07.{STEP_LOWER}.validation-summary.v1",
+        "researchStepId": STEP_ID,
         "checks": {
             "preflight": preflight["success"],
             "g01ToG06": not preflight["blockedGateIds"],
@@ -1019,6 +1246,10 @@ def main() -> int:
             "sixGenerations": len(convergence) == 7,
             "initialPhysical4864": initial_execution_accounting["success"],
             "e05DescriptorAvailability": descriptor_audit["success"],
+            "s08hContract": s08h_contract["success"],
+            "s08hRuntimeIntegrity": training_validation[
+                "s08hRuntimeIntegrityPass"
+            ],
             "logicalIdentityRestoration": identity_audit["success"],
             "replay": order_validation["success"],
             "configurationHashes": config_hashes["success"],

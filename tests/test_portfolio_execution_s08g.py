@@ -31,7 +31,7 @@ def test_s08g_control_preserves_frozen_design_and_uses_fresh_namespace() -> None
     assert control["validationBoundary"]["confirmationLogicalRows"] == 0
 
 
-def test_completed_s08g_preflight_rejects_postexecution_plan_update_only() -> None:
+def test_completed_s08g_preflight_rejects_postexecution_plan_and_code_updates() -> None:
     result = run_preflight(S08G_CONTROL_PATH)
 
     assert result["researchStepId"] == "S08G"
@@ -49,11 +49,15 @@ def test_completed_s08g_preflight_rejects_postexecution_plan_update_only() -> No
     assert result["gateRows"][0]["status"] == "blocked"
     assert all(row["status"] == "pass" for row in result["gateRows"][1:])
     failed_files = [row for row in result["fileChecks"] if not row["pass"]]
-    assert len(failed_files) == 1
-    assert failed_files[0]["path"] == "/workspace/RESEARCH_PLAN.md"
-    assert (
-        failed_files[0]["expectedSha256"]
-        == "defda3af4cb8c88ca345e8068be486bac929ce704a44290af1eee1914dbf7c5c"
+    failed_by_path = {row["path"]: row for row in failed_files}
+    assert set(failed_by_path) == {
+        "/workspace/RESEARCH_PLAN.md",
+        "/workspace/cell-research/scripts/execute_portfolio_search_s08g.py",
+        "/workspace/cell-research/src/environment_suite/dsl_adapters.py",
+        "/workspace/cell-research/src/portfolio_search/execution.py",
+    }
+    assert failed_by_path["/workspace/RESEARCH_PLAN.md"]["expectedSha256"] == (
+        "defda3af4cb8c88ca345e8068be486bac929ce704a44290af1eee1914dbf7c5c"
     )
     assert result["qualificationGatePath"].endswith(
         "/S08F/s08_execution_eligibility_gate.json"
