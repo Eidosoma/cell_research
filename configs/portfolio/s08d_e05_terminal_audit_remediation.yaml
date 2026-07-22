@@ -46,6 +46,12 @@ minimalRepairs:
     cachePublicationOnWorkerFailure: zero_new_rows
     forensicAccounting: exact_position_indexed_terminal_status
 qualification:
+  actualOuterBranchQualification:
+    developmentSourceTerminal: full_native_s02_training_qualification_action
+    completedPanel: full_native_s02_training_qualification_action
+    stabilizationSourceTerminal: controlled_training_phase_return_no_native_commit
+    nativeOutcomeFieldsPersisted: 0
+    outcomeEndpointCalls: 0
   e05Modes:
     - single_policy
     - fixed_balanced_identity

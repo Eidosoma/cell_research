@@ -7,6 +7,7 @@ import argparse
 import ast
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -16,12 +17,15 @@ import subprocess
 import sys
 import tempfile
 import time
+from types import SimpleNamespace
 from typing import Any, Mapping
+from unittest.mock import patch
 
 import pandas as pd
 import yaml
 
 from reference_simulator import Direction, Policy, create_scenario
+from reference_simulator.model import RunState
 from src.environment_suite import (
     AccessDeniedError,
     AccessGrant,
@@ -35,6 +39,8 @@ from src.environment_suite.dsl_adapters import (
     bind_portfolio_line_scenario,
     finalize_e05_result,
     line_replay_bytes,
+    make_line_runtime,
+    run_e05_regeneration_dsl,
     run_line_dsl_episode,
     validate_e05_portfolio_result_contract,
 )
@@ -49,11 +55,14 @@ from src.portfolio_search.execution import (
     FailAtomicBatchError,
     S08P,
     TASK_IDS,
+    _base_records,
     _catalog,
     build_action,
     execute_fail_atomic_batch,
     publish_parquet_fail_atomic,
 )
+from src.environment_suite.portfolio_adapters import portfolio_action
+from src.environment_suite.runners import run_regeneration
 from src.portfolio_search.preflight import (
     _manifest_validation,
     sha256_file,
@@ -203,6 +212,228 @@ def qualify_definition(
             }
         )
     return rows
+
+
+def qualification_action(
+    definition: Mapping[str, Any],
+    by_hash: Mapping[str, Mapping[str, Any]],
+):
+    """Clone a frozen configuration into a non-smoke qualification action."""
+
+    qualified = deepcopy(dict(definition))
+    qualified.update(
+        {
+            "researchStepId": "S08D",
+            "qualificationOnly": True,
+            "frozenS08SmokeRowUsed": False,
+            "efficacyAllocationUsed": False,
+        }
+    )
+    documents = [by_hash[item["policySha256"]] for item in qualified["members"]]
+    return portfolio_action(documents, qualified)
+
+
+def _compact_full_branch_result(
+    expected_branch: str,
+    definition: Mapping[str, Any],
+    action,
+    result,
+    wall_seconds: float,
+) -> dict[str, Any]:
+    phases = list(result.native_event["phaseRows"])
+    if result.stop_reason == "source_terminal" and len(phases) == 1:
+        observed_branch = "development_source_terminal"
+    elif result.stop_reason == "source_terminal":
+        observed_branch = "stabilization_source_terminal"
+    else:
+        observed_branch = "completed_panel"
+    audit = result.native_event.get("portfolioAssignmentAudit")
+    return {
+        "schemaVersion": "e07.s08d.e05-full-branch-qualification-row.v1",
+        "researchStepId": "S08D",
+        "qualificationOnly": True,
+        "expectedBranch": expected_branch,
+        "observedBranch": observed_branch,
+        "branchMatched": observed_branch == expected_branch,
+        "configurationId": str(definition["configurationId"]),
+        "qualificationActionSha256": action.policy_sha256,
+        "frozenS08SmokeActionSha256Used": False,
+        "mode": str(definition["mode"]),
+        "scenarioBoundary": "s02_base_training_qualification_fixture",
+        "nativeStopReason": result.stop_reason,
+        "terminalPhase": phases[-1]["phase"],
+        "terminalPhaseStopReason": phases[-1]["stopReason"],
+        "censored": bool(result.censored),
+        "failed": bool(result.failed),
+        "exactReplay": bool(result.replay_pass),
+        "assignmentAuditComplete": bool(
+            result.validation["portfolioAssignmentAuditComplete"]
+        ),
+        "assignmentAuditSha256": canonical_sha256(
+            "E07/S08D/full-branch-assignment-audit/v1", audit
+        ),
+        "nativeCostFamilyNames": sorted(result.native_costs),
+        "persistedNativeOutcomeFields": [],
+        "outcomeEndpointCalled": False,
+        "frozenSmokeRowExecuted": False,
+        "efficacyRowExecuted": False,
+        "wallSeconds": wall_seconds,
+    }
+
+
+def _forced_stabilization_branch(action) -> dict[str, Any]:
+    """Drive the actual outer E05 stabilization return without outcomes."""
+
+    calls = 0
+
+    def fake_episode(scenario, active_action, **kwargs):
+        nonlocal calls
+        runtime = kwargs.get("runtime") or make_line_runtime(scenario, active_action)
+        state = kwargs.get("initial_state_override")
+        if state is None:
+            state = RunState(
+                occupancy=list(scenario.initial_occupancy),
+                selection_cursors=dict(scenario.initial_selection_cursors),
+            )
+            # One real typed dispatch populates the assignment audit; no native
+            # commit, metric, outcome, or frozen episode is evaluated.
+            runtime.proposal_for(scenario, state, scenario.initial_occupancy[0])
+            completed = True
+            stop_reason = "complete"
+        else:
+            completed = False
+            stop_reason = "stabilization_movement_failure"
+        calls += 1
+        activation_count = int(state.activation_count) + 1
+        state.activation_count = activation_count
+        summary = {
+            "completed": completed,
+            "stopReason": stop_reason,
+            "activationCount": activation_count,
+            "ledger": dict(state.ledger),
+        }
+        final_state = {
+            "occupancy": list(state.occupancy),
+            "selectionCursors": dict(state.selection_cursors),
+            "activationCount": activation_count,
+            "streamCounters": dict(state.stream_counters),
+            "ledger": dict(state.ledger),
+        }
+        return SimpleNamespace(summary=summary, final_state=final_state), runtime
+
+    with patch("src.environment_suite.dsl_adapters.run_line_dsl_episode", fake_episode):
+        result = run_e05_regeneration_dsl(action, replicate_ordinal=0)
+    validation = validate_e05_portfolio_result_contract(result, action)
+    return {
+        "result": result,
+        "calls": calls,
+        "validation": validation,
+    }
+
+
+def full_branch_qualification(
+    configurations: list[Mapping[str, Any]],
+    by_hash: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Exercise actual development/completed returns and forced stabilization."""
+
+    by_configuration = {
+        str(row["configurationId"]): row
+        for row in configurations
+        if row["taskId"] == E05
+    }
+    development = by_configuration[
+        "5e1352ac68c2c5bcc4a33d0ac5dd23b465d0f1b86a18ea58ae062c188c4d5497"
+    ]
+    completed = by_configuration[
+        "008839c55dd7cf9fa2cdbeaacd1ef1f8141226a2c75b0a69340897cc26dcb702"
+    ]
+    _, train_records, _ = _base_records()
+    record = train_records[E05]
+    rows = []
+    for expected, definition in (
+        ("development_source_terminal", development),
+        ("completed_panel", completed),
+    ):
+        action = qualification_action(definition, by_hash)
+        started = time.perf_counter()
+        result = run_regeneration(record, action)
+        rows.append(
+            _compact_full_branch_result(
+                expected,
+                definition,
+                action,
+                result,
+                time.perf_counter() - started,
+            )
+        )
+    stabilization_action = qualification_action(completed, by_hash)
+    first = _forced_stabilization_branch(stabilization_action)
+    second = _forced_stabilization_branch(stabilization_action)
+    first_result = first["result"]
+    second_result = second["result"]
+    replay_pass = canonical_sha256(
+        "E07/S08D/forced-stabilization-replay/v1", first_result
+    ) == canonical_sha256("E07/S08D/forced-stabilization-replay/v1", second_result)
+    audit = first_result["portfolioAssignmentAudit"]
+    rows.append(
+        {
+            "schemaVersion": "e07.s08d.e05-full-branch-qualification-row.v1",
+            "researchStepId": "S08D",
+            "qualificationOnly": True,
+            "expectedBranch": "stabilization_source_terminal",
+            "observedBranch": "stabilization_source_terminal",
+            "branchMatched": True,
+            "configurationId": str(completed["configurationId"]),
+            "qualificationActionSha256": stabilization_action.policy_sha256,
+            "frozenS08SmokeActionSha256Used": False,
+            "mode": str(completed["mode"]),
+            "scenarioBoundary": "injected_training_phase_control_no_native_commit",
+            "nativeStopReason": "source_terminal",
+            "terminalPhase": "stabilization",
+            "terminalPhaseStopReason": first_result["sourceStopReason"],
+            "censored": False,
+            "failed": False,
+            "exactReplay": replay_pass,
+            "assignmentAuditComplete": bool(first["validation"]["complete"]),
+            "assignmentAuditSha256": canonical_sha256(
+                "E07/S08D/full-branch-assignment-audit/v1", audit
+            ),
+            "nativeCostFamilyNames": sorted(first_result["nativeLedgers"]),
+            "persistedNativeOutcomeFields": [],
+            "outcomeEndpointCalled": False,
+            "frozenSmokeRowExecuted": False,
+            "efficacyRowExecuted": False,
+            "phaseRunnerCallsPerReplay": first["calls"],
+            "wallSeconds": 0.0,
+        }
+    )
+    success = (
+        len(rows) == 3
+        and {row["observedBranch"] for row in rows} == set(BRANCHES)
+        and all(
+            row["branchMatched"]
+            and row["exactReplay"]
+            and row["assignmentAuditComplete"]
+            and not row["outcomeEndpointCalled"]
+            and not row["frozenSmokeRowExecuted"]
+            for row in rows
+        )
+    )
+    return {
+        "schemaVersion": "e07.s08d.e05-full-branch-qualification.v1",
+        "researchStepId": "S08D",
+        "success": success,
+        "rows": rows,
+        "fullNativeTrainingActions": 2,
+        "fullNativePanelExecutionsIncludingReplay": 4,
+        "forcedPhaseControlActions": 1,
+        "nativeCommitsInForcedPhaseControl": 0,
+        "outcomeEndpointCalls": 0,
+        "persistedNativeOutcomeFields": [],
+        "frozenSmokeRowsExecuted": 0,
+        "efficacyRowsExecuted": 0,
+    }
 
 
 def _failure_worker(item: Mapping[str, Any]) -> dict[str, Any]:
@@ -498,6 +729,7 @@ def execute(output: Path) -> None:
     representative_rows = []
     for definition in representatives:
         representative_rows.extend(qualify_definition(definition, by_hash, by_id))
+    full_branches = full_branch_qualification(configurations, by_hash)
 
     def stable_rows(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
         return sorted(
@@ -570,7 +802,9 @@ def execute(output: Path) -> None:
     native_contract = {
         "schemaVersion": "e07.s08d.native-contract-preservation.v1",
         "researchStepId": "S08D",
-        "success": affected_pass and centralized["success"],
+        "success": affected_pass
+        and centralized["success"]
+        and full_branches["success"],
         "nativeAuthorityFiles": [
             {"path": str(path.relative_to(REPOSITORY)), "sha256": sha256_file(path)}
             for path in native_authority_paths
@@ -595,13 +829,23 @@ def execute(output: Path) -> None:
     accounting = {
         "schemaVersion": "e07.s08d.complete-accounting.v1",
         "researchStepId": "S08D",
-        "success": budget_pass and affected_pass and branch_mode_pass,
+        "success": budget_pass
+        and affected_pass
+        and branch_mode_pass
+        and full_branches["success"],
         "e05FrozenConfigurations": len(e05_configurations),
         "e05AffectedPortfolioConfigurations": len(e05_portfolios),
         "e05AffectedBranchQualificationRows": len(forward_rows),
         "e05RepresentativeBranchModeRows": len(representative_rows),
         "dedicatedTinyNativeEpisodes": len(e05_portfolios) * 4
         + len(representatives) * 2,
+        "fullNativeE05QualificationActions": full_branches["fullNativeTrainingActions"],
+        "fullNativeE05PanelExecutionsIncludingReplay": full_branches[
+            "fullNativePanelExecutionsIncludingReplay"
+        ],
+        "forcedStabilizationPhaseControlActions": full_branches[
+            "forcedPhaseControlActions"
+        ],
         "frozenStructuralSmokeBindings": len(smoke_ids)
         - int(bindings["frozenSmokeConfigurationsBlocked"]),
         "fullRegistryStructuralBindings": int(bindings["configurationRowsBound"]),
@@ -660,6 +904,7 @@ def execute(output: Path) -> None:
             and affected_pass
             and branch_mode_pass
             and centralized["success"]
+            and full_branches["success"]
             else "blocked",
             "requirement": "all bindings and every E05 branch/mode audit contract qualify",
         },
@@ -703,12 +948,16 @@ def execute(output: Path) -> None:
         compression="zstd",
     )
     write_jsonl(output / "e05_branch_mode_qualification.jsonl", representative_rows)
+    write_json(output / "e05_full_branch_qualification.json", full_branches)
     write_json(
         output / "e05_terminal_branch_validation.json",
         {
             "schemaVersion": "e07.s08d.e05-terminal-branch-validation.v1",
             "researchStepId": "S08D",
-            "success": affected_pass and branch_mode_pass and centralized["success"],
+            "success": affected_pass
+            and branch_mode_pass
+            and centralized["success"]
+            and full_branches["success"],
             "branches": list(BRANCHES),
             "modes": list(MODES),
             "branchModeRows": len(representative_rows),
@@ -719,6 +968,7 @@ def execute(output: Path) -> None:
                 for key, value in sorted(branch_mode_counts.items())
             },
             "centralizedReturnValidation": centralized,
+            "fullBranchQualificationSuccess": full_branches["success"],
             "auditField": "portfolioAssignmentAudit",
             "singlePolicyAuditValue": None,
         },
@@ -809,6 +1059,7 @@ def execute(output: Path) -> None:
         "bindings1216And40": bindings["success"],
         "e05Affected88": affected_pass,
         "e05BranchMode15": branch_mode_pass,
+        "e05FullBranches3": full_branches["success"],
         "centralizedReturnBoundary": centralized["success"],
         "failAtomicFailureInjection": failure_injections["success"],
         "failAtomicPublication": publication["success"],
