@@ -1,0 +1,100 @@
+schemaVersion: e07.s08h.descriptor-target-semantics.v1
+researchStepId: S08H
+title: Preregister and qualify descriptor-domain validity and target-change failure/censor semantics
+frozenQuestion: >-
+  Can outcome-independent native algebra represent the complete finite E05
+  repair coordinate domain, and can the E05 target-change deadline/probe state
+  machine retain genuine failures and censors while rejecting partial-probe
+  adapter defects, without changing either task-native estimand?
+scope:
+  qualificationOnly: true
+  authorizedEvidence: native contracts, authoritative registries, algebra, and dedicated train-only fixtures
+  s08gAccess: documented_integrity_metadata_only
+  s08gObjectiveOrEfficacyValuesLoaded: 0
+  freshFrozenSmokeRows: 0
+  portfolioExecutionRows: 0
+  efficacyRows: 0
+  archiveConstructionCalls: 0
+  validationOutcomeAccesses: 0
+  confirmationOutcomeAccesses: 0
+  s09Calls: 0
+  archiveMutations: 0
+preservation:
+  immutableArtifactSteps: [S05, S08P, S08A, S08, S08B, S08C, S08D, S08E, S08F, S08G]
+  quarantinesExcluded: [S08C, S08E, S08G]
+  rejectedDependenciesExcluded: [S06, S06A]
+  s07ArmMembershipPermitted: false
+descriptorDomain:
+  version: e07.s08h.e05-repair-domain.v1
+  taskId: e07_s02_regeneration_1d
+  archiveId: phenotype:e05:repair
+  coordinate: distanceRestorationFraction
+  nativeDefinition: r=(initialDistance-finalDistance)/initialDistance
+  fixedIdentityCount: 32
+  maximumInversionDistance: 496
+  completeFiniteDomain:
+    nondegenerate: [-495, 1]
+    degenerateZeroInitialDistance: undefined_and_explicitly_unavailable
+  binningRule: >-
+    Preserve the raw coordinate and its order. Preserve frozen [0,1] decile
+    edges. Add outcome-independent dyadic deterioration edges 1-q for
+    q in {496,256,128,64,32,16,8,4,2,1}; q=finalDistance/initialDistance.
+  clipping: forbidden
+  imputation: forbidden
+  silentExclusion: forbidden
+  availabilityAsNovelty: forbidden
+  universalScore: forbidden
+  outcomeTunedBounds: forbidden
+  archiveRule: >-
+    A complete like-for-like panel is cell-eligible only when every raw row is
+    finite, algebraically consistent with its native initial/final distances,
+    and inside the fixed task-local domain. Missing native support remains
+    unavailable under S08F; zero initial distance is retained as an explicit
+    undefined-coordinate support state; invalid present support fails closed.
+targetChangeSemantics:
+  version: e07.s08h.e05-target-deadline-probe.v1
+  taskId: e07_s02_target_change_1d
+  adaptationDeadline: 100*n^2 charged opportunities after target change
+  postHitProbe: exactly 20*n charged opportunities after an on-time first hit
+  terminalRules:
+    - invariant_error has precedence and is an adapter failure
+    - an on-time hit at elapsed <= adaptationBudget continues to a complete post-hit probe
+    - a no-hit quiescent state is retained as controller_quiescent with adaptation and overshoot censors
+    - a no-hit adaptation deadline is retained as phase_event_budget with adaptation and overshoot censors
+    - a hit with postHitProbeRetained=false is invalid partial-probe adapter output
+  phaseEventBudgetClassification: valid retained nonadaptation right-censor only
+  relabeling: forbidden
+  dropping: forbidden
+  promotion: forbidden
+qualification:
+  descriptor:
+    exhaustiveInitialDistances: [1, 496]
+    exhaustiveFinalDistances: [0, 496]
+    includeDegenerateZeroInitialDistance: true
+    requireOrdering: true
+    requireExtremeAndTerminalCases: true
+    requirePanelArchiveEligibility: true
+  targetChange:
+    branches:
+      - on_time_hit_full_probe
+      - exact_deadline_hit_full_probe
+      - controller_quiescent_no_hit
+      - phase_event_budget_no_hit
+      - invariant_error
+      - partial_probe_injected_invalid
+      - late_hit_injected_invalid
+    requireExplicitFailureCensorStatus: true
+  registryBindings: 1216
+  protectedDenials: 16
+  workerOrders: [forward, reverse, even_then_odd, odd_then_even]
+gates:
+  G01: immutable hashes and protocol freeze
+  G02: algebraic descriptor-domain validity and archive rule
+  G03: target-change deadline/probe and failure/censor semantics
+  G04: all frozen portfolio bindings remain structurally legal
+  G05: replay, worker-order, access, dependency, and accounting controls
+  G06: zero mutation and zero execution/protected/archive/S09 work
+decisionRule: >-
+  Clear S08H only if every G01-G06 row passes without changing the raw E05
+  repair estimand or the frozen target-change primary endpoint. Otherwise fail
+  closed and request human approval before any execution.

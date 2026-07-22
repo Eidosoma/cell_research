@@ -78,6 +78,18 @@ HASH_LIKE_KEYS = {
 }
 
 E05_DESCRIPTOR_AVAILABILITY_VERSION = "e07.s08f.e05-descriptor-availability.v1"
+E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION = "e07.s08h.e05-repair-domain.v1"
+E05_REPAIR_IDENTITY_COUNT = 32
+E05_REPAIR_MAXIMUM_DISTANCE = (
+    E05_REPAIR_IDENTITY_COUNT * (E05_REPAIR_IDENTITY_COUNT - 1) // 2
+)
+# The nonnegative deciles are frozen S04 edges. Negative edges are derived
+# without outcome values from dyadic deterioration ratios F/I and the exact
+# finite maximum F=choose(32, 2). The raw coordinate r=1-F/I is unchanged.
+E05_REPAIR_DISTANCE_EDGES = tuple(
+    float(1 - ratio)
+    for ratio in (496, 256, 128, 64, 32, 16, 8, 4, 2, 1)
+) + tuple(index / 10 for index in range(1, 11))
 E05_REGENERATION_DESCRIPTOR_SPECS: dict[str, dict[str, Any]] = {
     **{
         f"common:e07_s02_regeneration_1d:{phase}": {
@@ -934,9 +946,25 @@ def _edges_for(kind: str, fields: Sequence[str]) -> dict[str, tuple[float, ...]]
         }
         return {
             field: (
-                (-1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0)
-                if field in signed
-                else (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+                E05_REPAIR_DISTANCE_EDGES
+                if kind == "e05:repair" and field == "distanceRestorationFraction"
+                else (
+                    (-1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0)
+                    if field in signed
+                    else (
+                        0.0,
+                        0.1,
+                        0.2,
+                        0.3,
+                        0.4,
+                        0.5,
+                        0.6,
+                        0.7,
+                        0.8,
+                        0.9,
+                        1.0,
+                    )
+                )
             )
             for field in fields
             if not field.lower().endswith("censored")
@@ -1019,6 +1047,83 @@ def _e05_native_status(
     }
 
 
+def e05_repair_descriptor_domain_record(
+    outcome: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate one raw E05 repair coordinate from native finite algebra.
+
+    This function never clips or imputes. I=0 has no restoration ratio and is
+    retained as an explicit unavailable support state rather than assigned a
+    manufactured archive coordinate. Present but inconsistent metadata is
+    invalid and must fail archive construction closed.
+    """
+
+    try:
+        initial = outcome["initialDistance"]
+        final = outcome["finalDistance"]
+        coordinate = outcome["descriptorsByAxis"]["repair"][
+            "distanceRestorationFraction"
+        ]
+    except (KeyError, TypeError) as exc:
+        return {
+            "version": E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION,
+            "status": "invalid",
+            "reason": "missing_native_distance_provenance",
+            "detail": str(exc),
+        }
+    if (
+        isinstance(initial, bool)
+        or isinstance(final, bool)
+        or not isinstance(initial, int)
+        or not isinstance(final, int)
+        or isinstance(coordinate, bool)
+        or not isinstance(coordinate, (int, float))
+        or not math.isfinite(float(coordinate))
+    ):
+        return {
+            "version": E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION,
+            "status": "invalid",
+            "reason": "nonfinite_or_nonnumeric_native_repair_record",
+        }
+    maximum = E05_REPAIR_MAXIMUM_DISTANCE
+    if not 0 <= initial <= maximum or not 0 <= final <= maximum:
+        return {
+            "version": E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION,
+            "status": "invalid",
+            "reason": "native_distance_outside_fixed_inversion_domain",
+            "initialDistance": initial,
+            "finalDistance": final,
+        }
+    if initial == 0:
+        return {
+            "version": E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION,
+            "status": "unavailable",
+            "reason": "zero_initial_distance_undefined_repair_coordinate",
+            "initialDistance": initial,
+            "finalDistance": final,
+            "rawAdapterValueRetained": float(coordinate),
+        }
+    expected = (initial - final) / initial
+    lower = 1.0 - maximum / initial
+    valid = (
+        math.isclose(float(coordinate), expected, rel_tol=0.0, abs_tol=1e-12)
+        and lower - 1e-12 <= float(coordinate) <= 1.0 + 1e-12
+        and E05_REPAIR_DISTANCE_EDGES[0] <= float(coordinate) <= 1.0
+    )
+    return {
+        "version": E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION,
+        "status": "valid" if valid else "invalid",
+        "reason": "algebraically_valid" if valid else "repair_coordinate_inconsistent",
+        "initialDistance": initial,
+        "finalDistance": final,
+        "coordinate": float(coordinate),
+        "expectedCoordinate": expected,
+        "rowLowerBound": lower,
+        "globalLowerBound": E05_REPAIR_DISTANCE_EDGES[0],
+        "globalUpperBound": 1.0,
+    }
+
+
 def _aggregate_e05_descriptors(
     rows: Sequence[Mapping[str, Any]],
     observed_by_family: Mapping[str, Mapping[str, Mapping[str, Any]]],
@@ -1050,6 +1155,7 @@ def _aggregate_e05_descriptors(
         reasons: set[str] = set()
         items: list[Mapping[str, Any]] = []
         native_status: list[dict[str, Any]] = []
+        domain_records: list[dict[str, Any]] = []
         for family in families:
             item = observed_by_family[family].get(archive_id)
             available = item is not None
@@ -1064,6 +1170,18 @@ def _aggregate_e05_descriptors(
                 continue
             observed_families.append(family)
             items.append(item)
+            if archive_id == "phenotype:e05:repair":
+                domain = e05_repair_descriptor_domain_record(
+                    row_by_family[family]["outcome"]
+                )
+                domain_records.append(domain)
+                if domain["status"] == "invalid":
+                    raise ValueError(
+                        "invalid present E05 repair coordinate: "
+                        f"{domain['reason']} family={family}"
+                    )
+                if domain["status"] == "unavailable":
+                    reasons.add(str(domain["reason"]))
             if item["kind"] != spec["kind"]:
                 reasons.add("descriptor_kind_mismatch")
             values = item["values"]
@@ -1089,12 +1207,22 @@ def _aggregate_e05_descriptors(
             "sourceTerminalRows": sum(item["sourceTerminal"] for item in native_status),
             "failedRows": sum(item["failed"] for item in native_status),
             "censoredRows": sum(item["censored"] for item in native_status),
+            **(
+                {"repairDomainRecords": domain_records}
+                if archive_id == "phenotype:e05:repair"
+                else {}
+            ),
         }
         base = {
             "archiveId": archive_id,
             "kind": str(spec["kind"]),
             "fields": list(expected_fields),
             "descriptorAvailabilityVersion": E05_DESCRIPTOR_AVAILABILITY_VERSION,
+            "descriptorDomainVersion": (
+                E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION
+                if archive_id == "phenotype:e05:repair"
+                else None
+            ),
             "supportState": "complete" if complete else "unavailable",
             "cellEligible": complete,
             "availabilityIsNoveltyCoordinate": False,
@@ -1126,6 +1254,11 @@ def _aggregate_e05_descriptors(
             "taskId": "e07_s02_regeneration_1d",
             "archiveId": archive_id,
             "descriptorAvailabilityVersion": E05_DESCRIPTOR_AVAILABILITY_VERSION,
+            "descriptorDomainVersion": (
+                E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION
+                if archive_id == "phenotype:e05:repair"
+                else None
+            ),
             "coordinateFields": list(expected_fields),
             "scenarioFamilyOrdinals": list(families),
             "edges": {field: list(edges[field]) for field in expected_fields},

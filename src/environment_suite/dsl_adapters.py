@@ -62,6 +62,10 @@ from src.policy_dsl import CompiledPolicy, compile_policy, execute_policy
 
 from .communication import RecipientActivationMessageBus, SignalEmission
 from .contracts import EvaluationAction, SuiteValidationError, canonical_sha256
+from .e05_semantics import (
+    TARGET_CHANGE_SEMANTICS_VERSION,
+    validate_target_change_result_semantics,
+)
 from .portfolio_adapters import PortfolioDispatcher
 
 
@@ -1634,15 +1638,16 @@ def run_e05_target_change_dsl(
     def target_terminal(active_scenario: Scenario, state: RunState):
         if invariant_error(active_scenario, state) is not None:
             return "invariant_error"
+        elapsed = state.activation_count - start
         distance = definition.distance(state.occupancy)
-        if distance == 0 and first_hit[0] is None:
-            first_hit[0] = state.activation_count
+        if distance == 0 and first_hit[0] is None and elapsed <= adaptation_budget:
+            first_hit[0] = elapsed
         if first_hit[0] is not None:
-            if state.activation_count - int(first_hit[0]) >= probe_budget:
+            if elapsed - int(first_hit[0]) >= probe_budget:
                 return "post_adaptation_probe_complete"
         elif runtime.is_quiescent(active_scenario, state):
             return "controller_quiescent"
-        if state.activation_count - start >= adaptation_budget + probe_budget:
+        elif elapsed >= adaptation_budget:
             return "phase_event_budget"
         return None
 
@@ -1667,9 +1672,15 @@ def run_e05_target_change_dsl(
     final_distance = definition.distance(occupancy)
     adapted = first_hit[0] is not None
     phase = int(run_result.summary["activationCount"])
+    post_hit_opportunities = phase - int(first_hit[0]) if adapted else 0
+    post_hit_probe_retained = (not adapted) or (
+        run_result.summary["stopReason"] == "post_adaptation_probe_complete"
+        and post_hit_opportunities == probe_budget
+    )
     result = {
-        "schemaVersion": "e07.s04a.e05-target-dsl-episode.v1",
+        "schemaVersion": "e07.s08h.e05-target-dsl-episode.v2",
         "adapterVersion": ADAPTER_VERSION,
+        "targetChangeSemanticsVersion": TARGET_CHANGE_SEMANTICS_VERSION,
         "targetDefinition": definition.to_dict(),
         "targetSignalAuthority": {
             "signalPermissionId": signal_permission_id,
@@ -1686,6 +1697,9 @@ def run_e05_target_change_dsl(
         else adaptation_budget + 1,
         "finalNewTargetDistance": final_distance,
         "overshootCensored": not adapted,
+        "postHitProbeOpportunities": post_hit_opportunities,
+        "postHitProbeRetained": post_hit_probe_retained,
+        "postHitProbeApplicable": adapted,
         "postHitAnyDeparture": post_hit_departure,
         "stopReason": run_result.summary["stopReason"],
         "nativeLedger": dict(run_result.summary["ledger"]),
@@ -1721,12 +1735,26 @@ def run_e05_target_change_dsl(
             },
             "genericCommunicationNotTargetSignal": True,
             "phaseBudgetRespected": phase <= adaptation_budget + probe_budget,
+            "adaptationDeadlineRespected": (not adapted)
+            or int(first_hit[0]) <= adaptation_budget,
             "censorRetained": True,
-            "postHitProbeRetained": (not adapted)
-            or run_result.summary["stopReason"] == "post_adaptation_probe_complete",
+            "postHitProbeRetained": post_hit_probe_retained,
+            "phaseEventBudgetIsNonadaptation": (
+                run_result.summary["stopReason"] != "phase_event_budget"
+                or not adapted
+            ),
         },
         "claimBoundary": "Target codes and adaptation are engineered E05 constructs, not biological goals, learning, agency, or physical signaling.",
     }
+    semantic_audit = validate_target_change_result_semantics(
+        result,
+        adaptation_budget=adaptation_budget,
+        probe_budget=probe_budget,
+    )
+    result["targetChangeSemanticAudit"] = semantic_audit
+    result["validation"]["targetChangeSemanticContract"] = bool(
+        semantic_audit["validNativeContract"]
+    )
     result["resultSha256"] = canonical_sha256("E07/S04A/E05-target/v1", result)
     return result
 

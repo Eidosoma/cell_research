@@ -115,6 +115,8 @@ def _movement(value: float) -> dict[str, float]:
 def _complete_outcome(mode_ordinal: int) -> dict[str, Any]:
     offset = mode_ordinal * 0.005
     return {
+        "initialDistance": 4,
+        "finalDistance": 2,
         "sourceTerminal": False,
         "nativeMovementDescriptorsByPhase": {
             phase: _movement(0.2 + offset + index * 0.01)

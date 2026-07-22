@@ -36,6 +36,8 @@ def _movement(value: float = 0.25) -> dict[str, float]:
 
 def _complete_outcome() -> dict:
     return {
+        "initialDistance": 4,
+        "finalDistance": 2,
         "sourceTerminal": False,
         "nativeMovementDescriptorsByPhase": {
             phase: _movement(0.2 + index * 0.01)
