@@ -87,8 +87,7 @@ E05_REPAIR_MAXIMUM_DISTANCE = (
 # without outcome values from dyadic deterioration ratios F/I and the exact
 # finite maximum F=choose(32, 2). The raw coordinate r=1-F/I is unchanged.
 E05_REPAIR_DISTANCE_EDGES = tuple(
-    float(1 - ratio)
-    for ratio in (496, 256, 128, 64, 32, 16, 8, 4, 2, 1)
+    float(1 - ratio) for ratio in (496, 256, 128, 64, 32, 16, 8, 4, 2, 1)
 ) + tuple(index / 10 for index in range(1, 11))
 E05_REGENERATION_DESCRIPTOR_SPECS: dict[str, dict[str, Any]] = {
     **{

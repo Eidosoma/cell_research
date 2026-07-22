@@ -109,8 +109,12 @@ def test_protocol_is_outcome_free_and_fails_closed() -> None:
     assert protocol["scope"]["archiveConstructionCalls"] == 0
     assert protocol["scope"]["validationOutcomeAccesses"] == 0
     assert protocol["scope"]["confirmationOutcomeAccesses"] == 0
-    assert protocol["descriptorDomain"]["version"] == E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION
-    assert protocol["targetChangeSemantics"]["version"] == TARGET_CHANGE_SEMANTICS_VERSION
+    assert (
+        protocol["descriptorDomain"]["version"] == E05_REPAIR_DESCRIPTOR_DOMAIN_VERSION
+    )
+    assert (
+        protocol["targetChangeSemantics"]["version"] == TARGET_CHANGE_SEMANTICS_VERSION
+    )
 
 
 def test_complete_algebraic_domain_includes_maximum_finite_deterioration() -> None:
@@ -235,7 +239,9 @@ def test_authoritative_target_change_branches_are_retained(
         },
     ],
 )
-def test_partial_probe_late_hit_and_invariant_are_adapter_failures(summary: dict) -> None:
+def test_partial_probe_late_hit_and_invariant_are_adapter_failures(
+    summary: dict,
+) -> None:
     audit = validate_target_change_result_semantics(
         summary, adaptation_budget=6400, probe_budget=160
     )

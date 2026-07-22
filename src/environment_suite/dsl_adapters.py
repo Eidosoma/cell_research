@@ -1740,8 +1740,7 @@ def run_e05_target_change_dsl(
             "censorRetained": True,
             "postHitProbeRetained": post_hit_probe_retained,
             "phaseEventBudgetIsNonadaptation": (
-                run_result.summary["stopReason"] != "phase_event_budget"
-                or not adapted
+                run_result.summary["stopReason"] != "phase_event_budget" or not adapted
             ),
         },
         "claimBoundary": "Target codes and adaptation are engineered E05 constructs, not biological goals, learning, agency, or physical signaling.",
