@@ -232,9 +232,25 @@ def main() -> None:
         "physicalEvaluationPlanSha256": freeze["physicalEvaluationPlanSha256"],
         "physicalEvaluationLedgerSha256": execution["physicalLedgerSha256"],
         "analysisImplementationCommitBeforeOutcomes": "2c7a1e6",
+        "finalValidationImplementationCommit": environment["repositoryCommit"],
         "analysisMechanicalCompatibilityFixRecorded": True,
     }
     _write_json(root / "provenance.json", provenance)
+    manifest_rows = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.name == "artifact_manifest.json":
+            continue
+        manifest_rows.append({
+            "path": str(path.relative_to(root)),
+            "bytes": path.stat().st_size,
+            "sha256": hash_file(path),
+        })
+    _write_json(root / "artifact_manifest.json", {
+        "schemaVersion": "e07.s07.artifact-manifest.v1",
+        "researchStepId": "S07", "success": True,
+        "root": str(root), "artifactCount": len(manifest_rows),
+        "artifacts": manifest_rows,
+    })
     print(json.dumps(validation, indent=2, sort_keys=True))
 
 
