@@ -1,0 +1,52 @@
+schemaVersion: e07.s08b.singleton-carrier-qualification-protocol.v1
+researchStepId: S08B
+title: Remediate one-member Chimera carrier dispatch
+qualificationOnly: true
+outcomeFree: true
+authorization:
+  allowedSplit: train
+  qualificationScenarioId: e07s02:chimera:train:000
+  frozenS08SmokeRowsPermitted: false
+  frozenS08SearchRowsPermitted: false
+  validationOutcomeAccessPermitted: false
+  confirmationOutcomeAccessPermitted: false
+  archiveMutationPermitted: false
+  s07ArmPromotionPermitted: false
+  rejectedModelsOrEmbeddingsPermitted: false
+remediation:
+  scope: deterministic_no_choice_dispatch_for_exactly_one_member_native_carrier
+  minimumGlobalPortfolioMembers: 2
+  carrierAuthority: native_carrier_only
+  assignmentRandomnessForSingletonCarrier: none
+  conditionedSelectorReadAndDecisionAccounting: preserved
+  memberMemoryNamespace: identity_and_member_policy
+  communicationProfile: recipient_activation_lag_lww_sum_u8_v1
+  separateCostFamiliesRequired: true
+qualification:
+  affectedConfigurationCount: 56
+  frozenSmokeBindingCount: 40
+  fullRegistryConfigurationCount: 1216
+  runOrders: [lexicographic, reverse]
+  executedQualificationEpisodesPerAffectedConfiguration: 2
+  outcomeCallsPermitted: 0
+  requiredGateIds: [G01, G02, G03, G04, G05, G06]
+immutableTrees:
+  S05: 141e2059702460ace997b56b077bf2af7972ee61718c9a04e5a30b527e518b83
+  S08P: c3fcb613877c9c9e7a619b7456fb217eb953b0e2fea04a299f5ccdcbc4af4b7b
+  S08A: f13ffc52e276629cf27f4eecef5ad3c4564fd02d7ea5de488f039ebceabab06d
+  S08: 4eb18b54d306621696b780144a808b610ee795e903144ab980c4c48e2312ff0c
+immutableFiles:
+  /workspace/FULL_PLAN.md: e216205732cf5712e3478f1e427b40b577a58b63d9e2956ffbd93ed14394699a
+  /workspace/AGENTS.md: 121c7906f1eee37791cc9c11c9c226a1478d86b7e35123f9439c66a6daa0e920
+  /workspace/input-attachments/MANIFEST.json: ed788c1187c3f03d936993a26003d5a9e4d0d836bb0b020178f8fa44b16a9463
+  configs/environment_suite/task_registry.yaml: 42ba412bc9611fca03f5f1056483dc3f9db494c1ed0a7565c5df2ebfa579a122
+  configs/environment_suite/split_manifest.json: 989e45e6b03429c64f338b674da044f154f65c1e973909a28f5874365d715df3
+  src/environment_suite/communication.py: f14d51f24f89263cd5afd7b7dd2bd775c76345a5a64e5491ad0fcc56dbeb4cf8
+  src/environment_suite/contracts.py: fa7b9e3a1b3c675762e75de8504b3c40649ac8d4bd201aa691dc879362befdad
+  src/environment_suite/dsl_adapters.py: 97cd3c945a01d2b070fee3bc8339e4ba492154430fa158ba0191e1d81ae5784b
+  src/environment_suite/runners.py: 4b6f00caeb1bf986b24515dc1b4bec8dc51ae0f9ed17c2806a4979acbcde4ef3
+  src/environment_suite/suite.py: 461cad57f68e6dc3b60b84756e56536ada648eab3472efad39cd2049328409f6
+  /artifacts/research_steps/S08/configuration_binding_validation.json: 97cd58f8eca1f44e6df3180f3d5892b97c1f6e8925d5d6cdefe1daab04823f1b
+  /artifacts/research_steps/S08P/budget_slot_ledger.parquet: 33d6875949f3d568ea949442a8622c48c96b311fa295f5bff85b9ff65a83576f
+  /artifacts/research_steps/S08P/portfolio_seed_registry.jsonl: e53736142305f7f8796219a0edef5fd4173feec9d933c8eba09e18911a3c4caa
+  /artifacts/research_steps/S05/policy_catalog.jsonl: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655

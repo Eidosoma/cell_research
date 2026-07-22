@@ -19,7 +19,7 @@ from src.policy_dsl import CompiledPolicy
 from .contracts import EvaluationAction, SuiteValidationError, canonical_sha256
 
 
-PORTFOLIO_ADAPTER_VERSION = "e07.s08a.portfolio-adapters.v1"
+PORTFOLIO_ADAPTER_VERSION = "e07.s08b.portfolio-adapters.v2"
 PORTFOLIO_MODES = {
     "fixed_balanced_identity",
     "random_static_identity",
@@ -150,10 +150,16 @@ class PortfolioDispatcher:
             self.members_by_carrier[carrier] = tuple(
                 item.policy for item in members if item.carrier == carrier
             )
-        if any(len(items) < 2 for items in self.members_by_carrier.values()):
-            raise SuiteValidationError(
-                "qualification portfolios require at least two members per carrier"
-            )
+        # A heterogeneous portfolio can legally contain a native carrier with
+        # exactly one compatible frozen member (the S08P Chimera registry has
+        # Bubble + Insertion carriers and some 1+N compositions).  Native
+        # carrier authority still determines which member set is eligible;
+        # cardinality one merely makes dispatch a deterministic no-choice.
+        self.singleton_members_by_carrier = {
+            carrier: items[0].policy_sha256
+            for carrier, items in self.members_by_carrier.items()
+            if len(items) == 1
+        }
         if int(self.definition.get("portfolioSize", len(members))) != len(members):
             raise SuiteValidationError("portfolio size mismatch")
 
@@ -273,8 +279,16 @@ class PortfolioDispatcher:
             members = self.members_by_carrier[carrier]
         except KeyError as exc:
             raise SuiteValidationError("portfolio lacks the native carrier") from exc
+        identities = self.identities_by_carrier.get(carrier)
+        if not identities or actor_id not in identities:
+            raise SuiteValidationError("portfolio actor was not registered")
         current = self.current_member.get(actor_id)
-        if self.mode in {"fixed_balanced_identity", "random_static_identity"}:
+        if len(members) == 1:
+            # Do not consume assignment randomness for a singleton carrier.
+            # Conditioned selectors remain observed/accounted below so the
+            # frozen selector contract and coordination costs are preserved.
+            chosen = members[0]
+        elif self.mode in {"fixed_balanced_identity", "random_static_identity"}:
             index = self._base_index(carrier, actor_id, len(members))
             chosen = members[index]
         elif self.mode == "random_dynamic_opportunity":
@@ -310,11 +324,12 @@ class PortfolioDispatcher:
             self.coordination["memberAssignments"] += 1
             if (
                 self.mode == "random_static_identity"
+                and len(members) > 1
                 and actor_id not in self.static_member
             ):
                 self.coordination["selectorCounterReads"] += 1
                 self.static_member[actor_id] = chosen.policy_sha256
-            elif self.mode == "random_dynamic_opportunity":
+            elif self.mode == "random_dynamic_opportunity" and len(members) > 1:
                 self.coordination["selectorCounterReads"] += 1
             if self.mode == "environment_conditioned":
                 self.coordination["selectorReads"] += 1
@@ -335,6 +350,9 @@ class PortfolioDispatcher:
             "configurationId": self.configuration_id,
             "mode": self.mode,
             "selectorSignal": self.selector_signal,
+            "singletonCarrierPolicySha256": dict(
+                sorted(self.singleton_members_by_carrier.items())
+            ),
             "portfolioStructuralLedger": dict(self.structural),
             "portfolioCoordinationLedger": dict(self.coordination),
             "assignmentCountsByPolicySha256": dict(
