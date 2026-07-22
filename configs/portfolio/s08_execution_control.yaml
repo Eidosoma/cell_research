@@ -1,0 +1,32 @@
+schemaVersion: e07.s08.execution-control.v1
+researchStepId: S08
+title: Execute byte-frozen heterogeneous policy portfolio search
+sourceDesign: /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml
+userExecutionApprovalReceived: true
+failClosedBeforeSmoke: true
+expectedFrozenFiles:
+  S08P:
+    artifact_manifest.json: bc789c16f40f3252ab733bfff05aeecb35b17b76ba8271e8e1c6e6916e70dd01
+    budget_slot_ledger.parquet: 33d6875949f3d568ea949442a8622c48c96b311fa295f5bff85b9ff65a83576f
+    candidate_eligibility_registry.jsonl: d2e0f9616e6d552bb6269cc674c223af10cd5448bb41fbf85db2c4b04bf01260
+    portfolio_member_sets.jsonl: f89e20d48faf02ab79ae1f216f6b6c04d3d1b18614bbe98a5ad22dcf6fe7e258
+    portfolio_seed_registry.jsonl: e53736142305f7f8796219a0edef5fd4173feec9d933c8eba09e18911a3c4caa
+    s08p_portfolio_protocol.yaml: ccf4440f458aaa530108268efeb94ff111e2823cdea0006be9c5c72769f7e675
+  S08A:
+    artifact_manifest.json: a832fc97f1605c470479e28da0a5065d2a3810416ba87bdb2658b8493e3c3fbc
+    immutable_input_hashes.json: 88073647f307f79a8e32dd6a621a02595a1677f165e47eb2c067e1d77a2b7c96
+    s08_execution_eligibility_gate.json: 0d125519b09ae2dfc010be5956558d653e844fe8d5c92fd021f50ae5103cf897
+    validation_summary.json: 7183adcf2a42ff5d5301a5d9f6550a4bdd5eedbdb1956d92282947a7a66dce2a
+expectedTrees:
+  S05: 141e2059702460ace997b56b077bf2af7972ee61718c9a04e5a30b527e518b83
+  S08P: c3fcb613877c9c9e7a619b7456fb217eb953b0e2fea04a299f5ccdcbc4af4b7b
+requiredGateIds: [G01, G02, G03, G04, G05, G06]
+frozenCounts:
+  candidates: 512
+  configurations: 1216
+  smokeLogicalRows: 40
+  trainingLogicalRows: 11008
+  validationLogicalCeiling: 3072
+  confirmationLogicalRows: 0
+prohibitedModulePrefixes: [src.surrogate_models, src.surrogate_remediation]
+prohibitedArtifactSubstrings: [/S06/models/, /S06/embeddings/, /S06A/models/, /S06A/embeddings/]
