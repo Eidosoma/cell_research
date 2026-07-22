@@ -1590,9 +1590,16 @@ def s09_gate(
 
 def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
     control = yaml.safe_load(Path(control_path).read_text(encoding="utf-8"))
-    if control.get("schemaVersion") != "e07.s08c.execution-continuation.v1":
-        raise RuntimeError("unexpected S08C continuation control")
-    immutable_steps = ("S05", "S08P", "S08A", "S08", "S08B")
+    schema_version = control.get("schemaVersion")
+    if schema_version not in {
+        "e07.s08c.execution-continuation.v1",
+        "e07.s08e.execution-continuation.v1",
+    }:
+        raise RuntimeError("unexpected S08 execution continuation control")
+    research_step_id = str(control.get("researchStepId", "S08C"))
+    immutable_steps = tuple(
+        control.get("immutableSteps", ("S05", "S08P", "S08A", "S08", "S08B"))
+    )
     roots = {step: ARTIFACT_ROOT / step for step in immutable_steps}
     before = {step: tree_digest(root) for step, root in roots.items()}
     tree_pass = before == control["expectedTrees"]
@@ -1610,7 +1617,8 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
         )
     protocol = checked_protocol(S08P / "s08p_portfolio_protocol.yaml")
     frozen_input_checks = verify_frozen_inputs(protocol)
-    manifests = [_manifest_validation(root) for root in (S08P, S08A, S08B)]
+    manifest_steps = tuple(control.get("manifestSteps", ("S08P", "S08A", "S08B")))
+    manifests = [_manifest_validation(ARTIFACT_ROOT / step) for step in manifest_steps]
     candidates = read_jsonl(S08P / "candidate_eligibility_registry.jsonl")
     members = read_jsonl(S08P / "portfolio_member_sets.jsonl")
     configs = read_jsonl(S08P / "portfolio_seed_registry.jsonl")
@@ -1621,12 +1629,31 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
     complete_plan = plan_digest(candidates, members, configs, budget.to_dict("records"))
     smoke_ids = set(budget.loc[budget["smoke"], "configurationId"].astype(str))
     bindings = validate_executable_bindings(configs, smoke_ids)
-    s08b_gate = json.loads((S08B / "s08_execution_eligibility_gate.json").read_text())
-    gate_source_pass = (
-        s08b_gate.get("technicalEligibilityPass") is True
-        and not s08b_gate.get("blockedGateIds")
-        and all(row["status"] == "pass" for row in s08b_gate["rows"])
+    qualification_gate_path = Path(
+        control.get(
+            "sourceQualification",
+            S08B / "s08_execution_eligibility_gate.json",
+        )
     )
+    qualification_gate = json.loads(qualification_gate_path.read_text())
+    gate_source_pass = (
+        qualification_gate.get("technicalEligibilityPass") is True
+        and not qualification_gate.get("blockedGateIds")
+        and all(row["status"] == "pass" for row in qualification_gate["rows"])
+    )
+    fail_atomic_evidence_path = control.get("failAtomicEvidence")
+    if fail_atomic_evidence_path is None:
+        fail_atomic_pass = True
+        fail_atomic_evidence = None
+    else:
+        fail_atomic_evidence = json.loads(
+            Path(fail_atomic_evidence_path).read_text(encoding="utf-8")
+        )
+        fail_atomic_pass = bool(
+            fail_atomic_evidence.get("success")
+            and fail_atomic_evidence.get("sameResultCommitmentAcrossWorkerOrders")
+            and fail_atomic_evidence.get("existingPublicationReplacementDenied")
+        )
     candidate_pass = (
         len(candidates) == 512
         and candidate_hash == freeze["candidateEligibilityCommitmentSha256"]
@@ -1721,7 +1748,7 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
         {
             "gateId": "G04",
             "status": "pass" if bindings["success"] and gate_source_pass else "blocked",
-            "requirement": "S08B bindings qualify all 1,216 configurations and 40 smoke rows",
+            "requirement": "live qualification and bindings cover all 1,216 configurations and 40 smoke rows",
         },
         {
             "gateId": "G05",
@@ -1730,15 +1757,15 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
         },
         {
             "gateId": "G06",
-            "status": "pass" if accounting_pass else "blocked",
-            "requirement": "exact smoke/training/validation/confirmation accounting",
+            "status": "pass" if accounting_pass and fail_atomic_pass else "blocked",
+            "requirement": "exact accounting and qualified fail-atomic publication",
         },
     ]
     blocked = [row["gateId"] for row in gate_rows if row["status"] != "pass"]
     after = {step: tree_digest(root) for step, root in roots.items()}
     return {
-        "schemaVersion": "e07.s08c.preflight.v1",
-        "researchStepId": "S08C",
+        "schemaVersion": f"e07.{research_step_id.lower()}.preflight.v1",
+        "researchStepId": research_step_id,
         "success": not blocked and before == after,
         "status": "eligible_for_frozen_smoke"
         if not blocked
@@ -1755,6 +1782,11 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
         "completePlanExpected": freeze["completePlanSha256"],
         "completePlanActual": complete_plan,
         "bindingValidation": bindings,
+        "qualificationGatePath": str(qualification_gate_path),
+        "qualificationGatePass": gate_source_pass,
+        "failAtomicEvidencePath": fail_atomic_evidence_path,
+        "failAtomicEvidence": fail_atomic_evidence,
+        "failAtomicEvidencePass": fail_atomic_pass,
         "accessRows": access_rows,
         "loadedProhibitedModules": loaded_prohibited,
         "accounting": {
@@ -1790,11 +1822,10 @@ def validate_rows(rows: Sequence[Mapping[str, Any]], expected: int) -> dict[str,
     }
 
 
-def immutable_tree_hashes() -> dict[str, str]:
-    return {
-        step: tree_digest(ARTIFACT_ROOT / step)
-        for step in ("S05", "S08P", "S08A", "S08", "S08B")
-    }
+def immutable_tree_hashes(
+    steps: Sequence[str] = ("S05", "S08P", "S08A", "S08", "S08B"),
+) -> dict[str, str]:
+    return {step: tree_digest(ARTIFACT_ROOT / step) for step in steps}
 
 
 def environment_record() -> dict[str, Any]:
