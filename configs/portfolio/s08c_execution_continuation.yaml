@@ -1,0 +1,98 @@
+schemaVersion: e07.s08c.execution-continuation.v1
+researchStepId: S08C
+title: Execute frozen S08 after bounded S08B remediation
+userExecutionApprovalReceived: true
+historicalDesignMayChange: false
+sourceDesign: /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml
+sourceQualification: /artifacts/research_steps/S08B/s08_execution_eligibility_gate.json
+failClosedBeforeSmoke: true
+failClosedAtSmoke: true
+expectedTrees:
+  S05: 141e2059702460ace997b56b077bf2af7972ee61718c9a04e5a30b527e518b83
+  S08P: c3fcb613877c9c9e7a619b7456fb217eb953b0e2fea04a299f5ccdcbc4af4b7b
+  S08A: f13ffc52e276629cf27f4eecef5ad3c4564fd02d7ea5de488f039ebceabab06d
+  S08: 4eb18b54d306621696b780144a808b610ee795e903144ab980c4c48e2312ff0c
+  S08B: 720c3847ec562e3b86d8afcabfa5c2b49bda6ee6f4c4e74a3293166833fdf0d3
+expectedFiles:
+  /workspace/AGENTS.md: 121c7906f1eee37791cc9c11c9c226a1478d86b7e35123f9439c66a6daa0e920
+  /workspace/FULL_PLAN.md: e216205732cf5712e3478f1e427b40b577a58b63d9e2956ffbd93ed14394699a
+  /workspace/input-attachments/MANIFEST.json: ed788c1187c3f03d936993a26003d5a9e4d0d836bb0b020178f8fa44b16a9463
+  /workspace/cell-research/configs/environment_suite/task_registry.yaml: 42ba412bc9611fca03f5f1056483dc3f9db494c1ed0a7565c5df2ebfa579a122
+  /workspace/cell-research/configs/environment_suite/split_manifest.json: 989e45e6b03429c64f338b674da044f154f65c1e973909a28f5874365d715df3
+  /workspace/cell-research/src/environment_suite/communication.py: f14d51f24f89263cd5afd7b7dd2bd775c76345a5a64e5491ad0fcc56dbeb4cf8
+  /workspace/cell-research/src/environment_suite/contracts.py: fa7b9e3a1b3c675762e75de8504b3c40649ac8d4bd201aa691dc879362befdad
+  /workspace/cell-research/src/environment_suite/dsl_adapters.py: 97cd3c945a01d2b070fee3bc8339e4ba492154430fa158ba0191e1d81ae5784b
+  /workspace/cell-research/src/environment_suite/portfolio_adapters.py: 6f4209ff15542ba51e24ef4353b1faef04036cc4056fb3f9a4d4af303b1bdd38
+  /workspace/cell-research/src/environment_suite/runners.py: 943a48d07568aee98b13cef6447244058061427f11e1b014dcdded497a4311c6
+  /workspace/cell-research/src/environment_suite/suite.py: 461cad57f68e6dc3b60b84756e56536ada648eab3472efad39cd2049328409f6
+  /workspace/cell-research/src/portfolio_search/execution.py: 4a9f29be98a320036750cc4051294ce66ad8d969fea4ff46711fcc7266e07935
+  /workspace/cell-research/scripts/execute_portfolio_search_s08c.py: dad8751a7bdb621d69b83c46942a986d45c1272fef9633ab7e41f71f041b82b0
+  /artifacts/research_steps/S08P/artifact_manifest.json: bc789c16f40f3252ab733bfff05aeecb35b17b76ba8271e8e1c6e6916e70dd01
+  /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml: ccf4440f458aaa530108268efeb94ff111e2823cdea0006be9c5c72769f7e675
+  /artifacts/research_steps/S08P/budget_slot_ledger.parquet: 33d6875949f3d568ea949442a8622c48c96b311fa295f5bff85b9ff65a83576f
+  /artifacts/research_steps/S08P/candidate_eligibility_registry.jsonl: d2e0f9616e6d552bb6269cc674c223af10cd5448bb41fbf85db2c4b04bf01260
+  /artifacts/research_steps/S08P/portfolio_member_sets.jsonl: f89e20d48faf02ab79ae1f216f6b6c04d3d1b18614bbe98a5ad22dcf6fe7e258
+  /artifacts/research_steps/S08P/portfolio_seed_registry.jsonl: e53736142305f7f8796219a0edef5fd4173feec9d933c8eba09e18911a3c4caa
+  /artifacts/research_steps/S08A/artifact_manifest.json: a832fc97f1605c470479e28da0a5065d2a3810416ba87bdb2658b8493e3c3fbc
+  /artifacts/research_steps/S08A/s08_execution_eligibility_gate.json: 0d125519b09ae2dfc010be5956558d653e844fe8d5c92fd021f50ae5103cf897
+  /artifacts/research_steps/S08/artifact_manifest.json: 270045ea3348fabb2b7456573d3601d357385bc8f5742db427169db67c9f37d1
+  /artifacts/research_steps/S08/configuration_binding_validation.json: 97cd58f8eca1f44e6df3180f3d5892b97c1f6e8925d5d6cdefe1daab04823f1b
+  /artifacts/research_steps/S08B/artifact_manifest.json: 75eee40ae49da96eda7b1482008dabae698267ba7e9dbb2b78274524ce0d2ac4
+  /artifacts/research_steps/S08B/s08_execution_eligibility_gate.json: 9e364ea76f43e6762107fa36dbbe8e14c1dfe0bfe66fc91ef412a3aa3387ceb3
+  /artifacts/research_steps/S08B/full_registry_binding_validation.json: 11c01e2728d093ad41985ec5d60e7e1c87a9fb0822887c4124725a07fff816a3
+  /artifacts/research_steps/S08B/frozen_smoke_binding_validation.json: 0876f3a986218e4389dced49a8fa26609f97f64227841bf61137188184cfed0f
+  /artifacts/research_steps/S05/policy_catalog.jsonl: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655
+frozenExecution:
+  counterDomain: E07/S08/portfolio-search/v1
+  seed: 70820260722
+  workers: 8
+  numericThreadsPerWorker: 1
+  smokeLogicalRows: 40
+  smokeIncludedInBudget: true
+  trainingLogicalRows: 11008
+  initialLogicalRows: 4864
+  adaptiveLogicalRows: 6144
+  adaptiveGenerations: 6
+  adaptiveTargetPortfoliosPerTaskGeneration: 16
+  adaptiveMatchedRandomPerTaskGeneration: 16
+  trainingScenarioFamilies: [300, 301, 302, 303]
+  mutationOperators:
+    - replace_one_member_same_native_carrier
+    - add_one_member_same_native_carrier
+    - drop_one_member_preserving_task_carrier_contract
+    - rotate_fixed_identity_assignment
+    - toggle_permitted_selector_signal
+    - flip_selector_branch_assignment
+  mutationOperatorSchedule: counter_addressed_cycle_by_generation_ordinal_retry
+  illegalOrDuplicateRetryMaximum: 128
+  policyMutation: forbidden
+  permissionExpansion: forbidden
+  stopping: exactly_six_generations_or_integrity_failure
+  efficacyEarlyStop: forbidden
+  runtimeDrivenWeakening: forbidden
+validationBoundary:
+  candidateLockRequired: true
+  maximumPortfoliosPerTask: 8
+  familyOrdinals: [400, 401, 402, 403, 404, 405, 406, 407]
+  maximumLogicalRows: 3072
+  e05PhysicalFixtures: 4
+  e05EightLogicalFamiliesReuseFourFixturesInPrespecifiedPairs: true
+  e06CounterScheduleResampling: forbidden_outside_training
+  logicalFamiliesAreIndependentReplicates: false
+  confirmationLogicalRows: 0
+analysis:
+  universalNormalizedScore: forbidden
+  crossTaskPooling: forbidden
+  nativeOutcomesAndCostsRemainSeparate: true
+  failuresAndCensorsRetained: true
+  bootstrapReplicates: 2000
+  bootstrapSeed: 708004
+  multiplicity: Holm_within_task_target_contrast_family
+  deploymentThresholdsMayChange: false
+prohibitedDependencies:
+  modulePrefixes: [src.surrogate_models, src.surrogate_remediation]
+  artifactSubstrings: [/S06/models/, /S06/embeddings/, /S06A/models/, /S06A/embeddings/]
+  s07ArmPromotion: forbidden
+  pseudoLabeling: forbidden
+  warmStarts: forbidden
+  distillation: forbidden

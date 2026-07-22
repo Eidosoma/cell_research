@@ -112,6 +112,7 @@ class PortfolioDispatcher:
         if self.definition.get("schemaVersion") not in {
             "e07.s08p.portfolio-seed-row.v1",
             "e07.s08a.qualification-portfolio.v1",
+            "e07.s08c.adaptive-portfolio.v1",
         }:
             raise SuiteValidationError("unsupported portfolio definition schema")
         self.configuration_id = str(self.definition.get("configurationId", ""))
@@ -162,6 +163,9 @@ class PortfolioDispatcher:
         }
         if int(self.definition.get("portfolioSize", len(members))) != len(members):
             raise SuiteValidationError("portfolio size mismatch")
+        self.assignment_rotation = int(self.definition.get("assignmentRotation", 0))
+        if self.assignment_rotation < 0 or self.assignment_rotation >= len(members):
+            raise SuiteValidationError("assignment rotation is outside portfolio size")
 
         selector = self.definition.get("selector")
         self.selector = dict(selector) if isinstance(selector, Mapping) else None
@@ -171,12 +175,21 @@ class PortfolioDispatcher:
                 raise SuiteValidationError("conditioned portfolio requires selector")
             exact = {
                 "profile": "bounded_memoryless_two_branch_v1",
-                "falseBranch": "current_or_first_compatible_member",
-                "trueBranch": "next_compatible_member",
                 "persistentMemoryBits": 0,
             }
             if any(self.selector.get(key) != value for key, value in exact.items()):
                 raise SuiteValidationError("selector exceeds frozen two-branch profile")
+            branches = {
+                str(self.selector.get("falseBranch", "")),
+                str(self.selector.get("trueBranch", "")),
+            }
+            if branches != {
+                "current_or_first_compatible_member",
+                "next_compatible_member",
+            }:
+                raise SuiteValidationError(
+                    "selector branch assignment is outside frozen pair"
+                )
             self.selector_signal = str(self.selector.get("signal", ""))
             if self.selector_signal not in ALLOWED_SELECTOR_SIGNALS[self.task_id]:
                 raise SuiteValidationError("selector signal is not authorized for task")
@@ -257,7 +270,7 @@ class PortfolioDispatcher:
         if not identities or actor_id not in identities:
             raise SuiteValidationError("portfolio actor was not registered")
         if self.mode == "fixed_balanced_identity":
-            return identities.index(actor_id) % size
+            return (identities.index(actor_id) + self.assignment_rotation) % size
         if self.mode == "random_static_identity":
             return _counter_index(
                 self.counter_domain,
@@ -317,7 +330,11 @@ class PortfolioDispatcher:
                 if self.selector_signal == "repair.nudge_count"
                 else selector_value is True
             )
-            if selector_true:
+            advance_on_true = (
+                self.selector is not None
+                and self.selector.get("trueBranch") == "next_compatible_member"
+            )
+            if selector_true == advance_on_true:
                 index = (index + 1) % len(members)
             chosen = members[index]
         if mutate:

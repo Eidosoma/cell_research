@@ -8,6 +8,8 @@ addressable from this module.
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import replace
 from itertools import combinations
 import hashlib
@@ -74,6 +76,42 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 Runner = Callable[[ScenarioRecord, EvaluationAction], NativeEpisodeResult]
 
 
+_LOCKED_DSL_VALIDATION: ContextVar[tuple[str, str, str, str] | None] = ContextVar(
+    "e07_locked_dsl_validation", default=None
+)
+
+
+@contextmanager
+def locked_dsl_validation_scope(
+    record: ScenarioRecord,
+    action: EvaluationAction,
+    candidate_lock_sha256: str,
+):
+    """Narrow S08 post-selection exception to the committed action and record.
+
+    The ordinary S04A/S08A path remains train-only.  S08C may enter this scope
+    only after independently verifying a frozen candidate-lock document and a
+    validation-phase access grant.  Confirmation records are never accepted.
+    """
+
+    if record.split.value != "validation" or record.protected:
+        raise SuiteValidationError("locked DSL scope is validation-only")
+    if len(candidate_lock_sha256) != 64:
+        raise SuiteValidationError("candidate lock must be SHA-256")
+    token = _LOCKED_DSL_VALIDATION.set(
+        (
+            record.task_id,
+            record.scenario_id,
+            action.policy_sha256,
+            candidate_lock_sha256,
+        )
+    )
+    try:
+        yield
+    finally:
+        _LOCKED_DSL_VALIDATION.reset(token)
+
+
 def baseline_policy_hash(policy_id: str) -> str:
     return canonical_sha256(
         "E07/S02/native-baseline-policy/v1", {"policyId": policy_id}
@@ -82,7 +120,15 @@ def baseline_policy_hash(policy_id: str) -> str:
 
 def _validate_action(record: ScenarioRecord, action: EvaluationAction) -> None:
     if action.mode == "dsl_episode":
-        if record.split.value != "train":
+        authorization = _LOCKED_DSL_VALIDATION.get()
+        locked_validation = (
+            record.split.value == "validation"
+            and not record.protected
+            and authorization is not None
+            and authorization[:3]
+            == (record.task_id, record.scenario_id, action.policy_sha256)
+        )
+        if record.split.value != "train" and not locked_validation:
             raise SuiteValidationError(
                 "S04A DSL adapters are authorized for the frozen training split only"
             )
