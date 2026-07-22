@@ -67,6 +67,31 @@ def _cache_commitment(paths: Sequence[Path]) -> str:
     )
 
 
+def _write_artifact_manifest(output: Path) -> None:
+    artifacts = []
+    for path in sorted(item for item in output.rglob("*") if item.is_file()):
+        relative = path.relative_to(output).as_posix()
+        if relative == "artifact_manifest.json":
+            continue
+        artifacts.append(
+            {
+                "path": relative,
+                "bytes": path.stat().st_size,
+                "sha256": _sha256_file(path),
+            }
+        )
+    _write_json(
+        output / "artifact_manifest.json",
+        {
+            "schemaVersion": "e07.s08g.artifact-manifest.v1",
+            "researchStepId": "S08G",
+            "artifactCount": len(artifacts),
+            "artifacts": artifacts,
+            "success": True,
+        },
+    )
+
+
 def _descriptor_forensics(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     e05_rows = [row for row in rows if row["taskId"] == "e07_s02_regeneration_1d"]
     grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
@@ -561,6 +586,7 @@ def main() -> int:
     _write_json(args.output / "execution_stop_status.json", stop)
     _write_json(args.output / "no_mutation_audit.json", no_mutation_record)
     _write_json(args.output / "validation_summary.json", validation)
+    _write_artifact_manifest(args.output)
     return 0
 
 

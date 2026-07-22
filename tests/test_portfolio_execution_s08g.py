@@ -31,12 +31,13 @@ def test_s08g_control_preserves_frozen_design_and_uses_fresh_namespace() -> None
     assert control["validationBoundary"]["confirmationLogicalRows"] == 0
 
 
-def test_s08g_preflight_accepts_only_current_s08f_qualified_path() -> None:
+def test_completed_s08g_preflight_rejects_postexecution_plan_update_only() -> None:
     result = run_preflight(S08G_CONTROL_PATH)
 
     assert result["researchStepId"] == "S08G"
-    assert result["success"] is True
-    assert result["blockedGateIds"] == []
+    assert result["success"] is False
+    assert result["status"] == "blocked_before_smoke"
+    assert result["blockedGateIds"] == ["G01"]
     assert [row["gateId"] for row in result["gateRows"]] == [
         "G01",
         "G02",
@@ -45,7 +46,15 @@ def test_s08g_preflight_accepts_only_current_s08f_qualified_path() -> None:
         "G05",
         "G06",
     ]
-    assert all(row["status"] == "pass" for row in result["gateRows"])
+    assert result["gateRows"][0]["status"] == "blocked"
+    assert all(row["status"] == "pass" for row in result["gateRows"][1:])
+    failed_files = [row for row in result["fileChecks"] if not row["pass"]]
+    assert len(failed_files) == 1
+    assert failed_files[0]["path"] == "/workspace/RESEARCH_PLAN.md"
+    assert (
+        failed_files[0]["expectedSha256"]
+        == "defda3af4cb8c88ca345e8068be486bac929ce704a44290af1eee1914dbf7c5c"
+    )
     assert result["qualificationGatePath"].endswith(
         "/S08F/s08_execution_eligibility_gate.json"
     )

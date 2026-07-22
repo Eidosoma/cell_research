@@ -67,3 +67,18 @@ def test_write_json_is_canonical_readable(tmp_path: Path) -> None:
     forensics._write_json(path, {"b": 2, "a": 1})
     assert json.loads(path.read_text(encoding="utf-8")) == {"a": 1, "b": 2}
     assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_artifact_manifest_excludes_itself_and_hashes_files(tmp_path: Path) -> None:
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.txt"
+    first.write_text('{"value":1}\n', encoding="utf-8")
+    second.write_text("evidence\n", encoding="utf-8")
+    forensics._write_artifact_manifest(tmp_path)
+    manifest = json.loads((tmp_path / "artifact_manifest.json").read_text())
+    assert manifest["artifactCount"] == 2
+    assert [row["path"] for row in manifest["artifacts"]] == [
+        "first.json",
+        "second.txt",
+    ]
+    assert all(len(row["sha256"]) == 64 for row in manifest["artifacts"])
