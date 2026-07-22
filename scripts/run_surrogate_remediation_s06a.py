@@ -130,6 +130,71 @@ def freeze() -> None:
     write_json(S06A_ROOT / "access_control_validation.json", access_audit(protocol))
 
 
+def amend_failure_handling_refreeze() -> None:
+    """Refreeze a validation-only amendment before any model is fitted."""
+
+    if not ADDED_LEDGER.exists():
+        raise RuntimeError("failure-handling amendment requires the complete ledger")
+    if (S06A_ROOT / "models").exists():
+        raise RuntimeError("failure-handling amendment must precede every model fit")
+    protocol = load_protocol()
+    prereg_path = S06A_ROOT / "preregistration_freeze.json"
+    prereg = json.loads(prereg_path.read_text(encoding="utf-8"))
+    if hash_file(PROTOCOL_PATH) != prereg["protocolSha256"]:
+        raise RuntimeError("the frozen modeling protocol changed")
+    if hash_file(PLAN_PATH) != prereg["scenarioPlanSha256"]:
+        raise RuntimeError("the frozen scenario plan changed")
+    original_freeze = S06A_ROOT / "pre_evaluation_input_hash_freeze.json"
+    original_prereg = S06A_ROOT / "pre_evaluation_preregistration_freeze.json"
+    if original_freeze.exists() or original_prereg.exists():
+        raise RuntimeError("failure-handling amendment may be applied only once")
+    shutil.copyfile(FREEZE_PATH, original_freeze)
+    shutil.copyfile(prereg_path, original_prereg)
+    amended = freeze_inputs(protocol)
+    if amended["repositoryStatusShort"]:
+        raise RuntimeError("amended pre-fit freeze requires a clean repository")
+    write_json(FREEZE_PATH, amended)
+    amendment_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/modeling/s06a_failure_handling_amendment.yaml"
+    )
+    shutil.copyfile(
+        amendment_path, S06A_ROOT / "failure_handling_validation_amendment.yaml"
+    )
+    prereg.update(
+        {
+            "inputFreezeSha256": hash_file(FREEZE_PATH),
+            "validationAmendmentAppliedBeforeFit": True,
+            "validationAmendmentSha256": hash_file(amendment_path),
+            "preEvaluationInputFreezeSha256": hash_file(original_freeze),
+            "preEvaluationPreregistrationSha256": hash_file(original_prereg),
+            "repositoryCommitAtPrefitRefreeze": amended["repositoryCommit"],
+            "frozenBeforeAnyRemediationFit": True,
+        }
+    )
+    write_json(prereg_path, prereg)
+    write_json(
+        S06A_ROOT / "failure_handling_amendment_freeze.json",
+        {
+            "schemaVersion": "e07.s06a.failure-handling-amendment-freeze.v1",
+            "researchStepId": "S06A",
+            "success": True,
+            "appliedBeforeAnyModelFit": True,
+            "modelingProtocolChanged": False,
+            "scenarioPlanChanged": False,
+            "deploymentThresholdsChanged": False,
+            "evaluationLedgerChanged": False,
+            "splitOrModelRuleChanged": False,
+            "repositoryCommit": amended["repositoryCommit"],
+            "amendmentSha256": hash_file(amendment_path),
+            "reason": (
+                "Retained policy-level native validation failures are modeled "
+                "failed outcomes, not grounds to delete rows or invalidate accounting."
+            ),
+        },
+    )
+
+
 def verify_preregistration() -> tuple[
     dict[str, Any], dict[str, Any], list[dict[str, Any]]
 ]:
@@ -1379,11 +1444,14 @@ def _write_figures(metrics: pd.DataFrame, shortcut: Mapping[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "command", choices=("freeze", "smoke", "evaluate", "fit", "all")
+        "command",
+        choices=("freeze", "amend-refreeze", "smoke", "evaluate", "fit", "all"),
     )
     args = parser.parse_args()
     if args.command == "freeze":
         freeze()
+    elif args.command == "amend-refreeze":
+        amend_failure_handling_refreeze()
     elif args.command == "smoke":
         smoke()
     elif args.command == "evaluate":

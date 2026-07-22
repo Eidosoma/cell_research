@@ -10,6 +10,7 @@ from scripts.run_surrogate_remediation_s06a import (
     _select_binary_blend,
     _select_continuous_blend,
 )
+from scripts.validate_surrogate_remediation_s06a import _native_failure_accounting
 from src.environment_suite import Split, SuiteValidationError
 from src.environment_suite.suite import EnvironmentSuite
 from src.quality_diversity.core import BASE_SCENARIOS, TASK_IDS
@@ -165,3 +166,37 @@ def test_s06_rejected_bundles_are_never_loaded_by_s06a_code() -> None:
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths)
     assert 'S06_ROOT / "models"' not in source
     assert "torch.load" not in source
+
+
+def test_native_validation_failures_are_retained_only_as_failed_outcomes() -> None:
+    handled = _native_failure_accounting(
+        [
+            {
+                "taskId": "e07_s02_regeneration_1d",
+                "scenarioOrdinal": 100,
+                "policySha256": "p",
+                "failed": True,
+                "validation": {
+                    "exactReplay": True,
+                    "developmentBudgetRespected": False,
+                },
+            }
+        ]
+    )
+    inconsistent = _native_failure_accounting(
+        [
+            {
+                "taskId": "e07_s02_regeneration_1d",
+                "scenarioOrdinal": 100,
+                "policySha256": "p",
+                "failed": False,
+                "validation": {
+                    "exactReplay": True,
+                    "developmentBudgetRespected": False,
+                },
+            }
+        ]
+    )
+    assert handled["success"] is True
+    assert handled["falseNativeValidationRowsMarkedFailed"] == 1
+    assert inconsistent["success"] is False

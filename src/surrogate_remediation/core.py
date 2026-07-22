@@ -214,6 +214,7 @@ def freeze_inputs(protocol: Mapping[str, Any]) -> dict[str, Any]:
             "_metadata/ATTACHMENT.md"
         ),
         PROTOCOL_PATH,
+        REPOSITORY / "configs/modeling/s06a_failure_handling_amendment.yaml",
         REPOSITORY / "src/surrogate_remediation/core.py",
         REPOSITORY / "scripts/run_surrogate_remediation_s06a.py",
         REPOSITORY / "scripts/validate_surrogate_remediation_s06a.py",

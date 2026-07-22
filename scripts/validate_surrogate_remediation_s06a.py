@@ -330,6 +330,43 @@ def _fresh_load_validation(combined: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _native_failure_accounting(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    false_rows = []
+    for row in rows:
+        false_keys = sorted(
+            key for key, value in row["validation"].items() if not value
+        )
+        if false_keys:
+            false_rows.append(
+                {
+                    "taskId": row["taskId"],
+                    "scenarioOrdinal": row["scenarioOrdinal"],
+                    "policySha256": row["policySha256"],
+                    "failed": bool(row["failed"]),
+                    "falseValidationKeys": false_keys,
+                }
+            )
+    inconsistent = [row for row in false_rows if not row["failed"]]
+    false_key_counts = {
+        key: sum(key in row["falseValidationKeys"] for row in false_rows)
+        for row in false_rows
+        for key in row["falseValidationKeys"]
+    }
+    return {
+        "schemaVersion": "e07.s06a.native-failure-accounting.v1",
+        "researchStepId": "S06A",
+        "success": not inconsistent,
+        "rowsWithFalseNativeValidation": len(false_rows),
+        "falseNativeValidationRowsMarkedFailed": len(false_rows) - len(inconsistent),
+        "falseNativeValidationRowsNotMarkedFailed": len(inconsistent),
+        "falseValidationKeyCounts": dict(sorted(false_key_counts.items())),
+        "claimBoundary": (
+            "A false native validation flag remains an explicit failed outcome; "
+            "it is retained for status modeling and is not reclassified as a pass."
+        ),
+    }
+
+
 def main() -> None:
     protocol = load_protocol()
     frozen = json.loads((S06A_ROOT / "input_hash_freeze.json").read_text())
@@ -350,12 +387,18 @@ def main() -> None:
     plan = read_jsonl(S06A_ROOT / "scenario_generation_plan.jsonl")
     plan_hashes = {row["planRowSha256"] for row in plan}
     added_plan_hashes = {row["planRowSha256"] for row in added}
+    native_failure_accounting = _native_failure_accounting(added)
+    write_json(
+        S06A_ROOT / "native_failure_handling_validation.json",
+        native_failure_accounting,
+    )
     complete_accounting = (
         len(added)
         == int(protocol["additionalScenarioPlan"]["expectedTopLevelEvaluations"])
         and plan_hashes == added_plan_hashes
         and len({row["stableEvaluationSha256"] for row in added}) == len(added)
-        and all(row["replayPass"] and all(row["validation"].values()) for row in added)
+        and all(row["replayPass"] for row in added)
+        and native_failure_accounting["success"]
         and accounting["actualTopLevelEvaluations"] == len(added)
     )
     if not complete_accounting:
@@ -523,6 +566,7 @@ def main() -> None:
             "primaryRows": len(combined),
             "recoveryOrphansSensitivityOnly": len(orphans),
             "allFailuresAndCensorsRetained": True,
+            "nativeFailureHandlingPass": native_failure_accounting["success"],
             "nativeEvaluationReplayPass": all(row["replayPass"] for row in added),
             "deterministicModelReplayPass": replay["success"],
             "freshLoadInferenceParityPass": fresh["success"],

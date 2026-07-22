@@ -1,0 +1,24 @@
+schemaVersion: e07.s06a.failure-handling-validation-amendment.v1
+researchStepId: S06A
+frozenBeforeAnyModelFit: true
+originalProtocolChanged: false
+scenarioPlanChanged: false
+evaluationLedgerChanged: false
+splitAssignmentChanged: false
+modelArchitectureChanged: false
+deploymentThresholdsChanged: false
+archiveMutation: false
+protectedOutcomeAccess: false
+issue: The initial post-fit validator required every retained evaluation row to have all native validation flags true, which contradicts the frozen requirement to retain and explicitly model failed rows.
+amendedRule: A row with one or more false native validation flags must remain in the primary training population, must have failed=true, and must retain the original false flags. Any false flag on failed=false remains an accounting failure.
+observedPreFitAudit:
+  evaluatedRows: 2560
+  rowsWithFalseNativeValidation: 70
+  falseNativeValidationRowsMarkedFailed: 70
+  falseNativeValidationRowsNotMarkedFailed: 0
+  task: e07_s02_regeneration_1d
+  falseKey: developmentBudgetRespected
+  exactReplayFailures: 0
+permittedEffect: Correct failure-accounting validation only, before fitting.
+forbiddenEffects: [row_deletion, outcome_reclassification, threshold_change, model_change, split_change, evaluation_change, archive_mutation, protected_access]
+claimBoundary: This amendment does not turn failed episodes into successful validations; it preserves them as explicit failed outcomes for status modeling.
