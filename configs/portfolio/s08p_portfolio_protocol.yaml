@@ -1,0 +1,405 @@
+schemaVersion: e07.s08p.portfolio-preregistration.v1
+researchStepId: S08P
+title: Preregister heterogeneous policy portfolio search
+designOnly: true
+frozenAtUtc: '2026-07-22T00:00:00Z'
+frozenQuestion: >-
+  Can task-local portfolios of complementary immutable S05 policies improve
+  task-native outcomes under paired scenarios relative to their component
+  single policies and matched random mixtures, without using S07 allocation-arm
+  membership as efficacy, rejected learned artifacts, a universal score, or
+  protected outcomes?
+
+authorizationBoundary:
+  substantivePortfolioEvaluationsAuthorized: false
+  trainingScenarioMaterializations: 0
+  validationScenarioMaterializations: 0
+  confirmationScenarioMaterializations: 0
+  episodeEvaluations: 0
+  portfolioArchiveMutations: 0
+  s05ArchiveMutations: 0
+  approvalRequiredBeforeExecution: true
+  executionGateFile: /artifacts/research_steps/S08P/s08_execution_eligibility_gate.json
+
+frozenInputs:
+  s05ArtifactManifest:
+    path: /artifacts/research_steps/S05/artifact_manifest.json
+    sha256: 5531c6131182f98dc990e72a3e439ac9c936f923502d6bdcb8a9c79d2535f7b6
+  s05EvaluationLedger:
+    path: /artifacts/research_steps/S05/evaluation_ledger.jsonl
+    sha256: 93b4cafb73471936fbfe81c618ce8d50e2f1576dcc93e342bfa8ff2cad50e4ee
+  s05PolicyCatalog:
+    path: /artifacts/research_steps/S05/policy_catalog.jsonl
+    sha256: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655
+  s05LineageLedger:
+    path: /artifacts/research_steps/S05/lineage_graph.jsonl
+    sha256: 53aafd25a5c9d2162799756c8e666c5e52f7d716e14dee956cc6c3ccc8eccb42
+  s05ArchiveEntries:
+    path: /artifacts/research_steps/S05/archive/archive_entries.jsonl
+    sha256: 4fd6e7c7e698a98f88d92bca9d0da7efaace74891108f3e07bb626b92d873f68
+  s05ArchiveManifest:
+    path: /artifacts/research_steps/S05/archive/archive_manifest.json
+    sha256: 006beaa9beb6f07e02229b18ba238961a9ef184ee5d7f4c167a02c722434598e
+  s05DuplicateAudit:
+    path: /artifacts/research_steps/S05/duplicate_audit.json
+    sha256: e2d0930da12a1c67ed1688fe2bdd8248029addc7aa2aa644227df423ea4f0dfc
+  s07rCandidateRegistry:
+    path: /artifacts/research_steps/S07R/candidate_population_registry.jsonl
+    sha256: b3a9e93ed03ff4c074450422864be2fc43890bfc5b80e78386b5eb8596b66321
+  s07ArtifactManifest:
+    path: /artifacts/research_steps/S07/artifact_manifest.json
+    sha256: f22a56789601dd7cf496c4c55a755dfa6cf7cc92b3e0207c038b81291f40de96
+  s07DownstreamGate:
+    path: /artifacts/research_steps/S07/downstream_gate_status.json
+    sha256: 278271fb70b16f84edfd089bf14cf7be29d3ccbea43f0bfe0df39d33bc04d9a5
+  s02SplitManifest:
+    path: /artifacts/research_steps/S02/environment_suite/split_manifest.json
+    sha256: 989e45e6b03429c64f338b674da044f154f65c1e973909a28f5874365d715df3
+  s02TaskRegistry:
+    path: /artifacts/research_steps/S02/environment_suite/task_registry.yaml
+    sha256: 42ba412bc9611fca03f5f1056483dc3f9db494c1ed0a7565c5df2ebfa579a122
+  s04ObjectiveRegistry:
+    path: /artifacts/research_steps/S04/objective_registry.yaml
+    sha256: 948c0cee4b2d450c5bc0242fd4b0ad4512cebbb38383d0a16c5ca40e52a6a963
+  s04DescriptorRegistry:
+    path: /artifacts/research_steps/S04/archive_descriptor_registry.yaml
+    sha256: ffa47456854f1ae2771fbd1d279aa0d469fd06c4326dd8036d3aedb8a63aa205
+  s04UncertaintyRegistry:
+    path: /artifacts/research_steps/S04/uncertainty_registry.yaml
+    sha256: d5834b4b53326726a85cf0e8322f7d62bd5e5e211961f9db5eab70a814f8f601
+  s04aQualifiedGate:
+    path: /artifacts/research_steps/S04A/s05_eligibility_gate.json
+    sha256: 69eb8829927dd43697d194ea563aef9d33d457ffc35734c61859f1c9fa46318e
+  s06RejectedDecision:
+    path: /artifacts/research_steps/S06/deployment_decision.json
+    sha256: d751ca4b4c34e1a5bca58f1eef2b50e17b5e82c57d8443b79e0a9e5c1d2b3b30
+  s06aRejectedDecision:
+    path: /artifacts/research_steps/S06A/deployment_decision.json
+    sha256: 6ad6a3b663ed158406aa7e349b5dab33c087dd6dee5b23c3f6e7956f865df60c
+
+candidateEligibility:
+  population: exact_512_task_policy_pairs_from_s07r_and_s05
+  taskCount: 8
+  candidatesPerTask: 64
+  recoveryOrphansExcluded: 189
+  requireAuthoritativePolicyDocument: true
+  requireCanonicalRecompile: true
+  requireTaskEnvironmentCompatibility: true
+  individualEligibilityUsesOutcomes: false
+  individualEligibilityUsesS07ArmMembership: false
+  individualEligibilityUsesS07Outcome: false
+  individualEligibilityUsesS06OrS06A: false
+  portfolioMemberConstraints:
+    minimumSize: 2
+    maximumSize: 4
+    duplicatePolicyHashForbidden: true
+    duplicateBodyHashForbidden: true
+    sameBoundedSemanticGroupForbidden: true
+    directParentChildPairForbidden: true
+    ordinaryTaskMembersShareNativeCarrier: true
+    chimeraMustCoverNativeCarriers: [Bubble, Insertion]
+    chimeraCarrierCountsRemainNativeAndFixed: true
+  permittedStructuralSeedFields:
+    - taskId
+    - policySha256
+    - policyBodySha256
+    - origin
+    - family
+    - generation
+    - nativeCarrier
+    - licensedCapabilityProfile
+    - complexityQuartile
+    - complexity
+    - frozenS05ArchiveMemberships
+    - frozenS05NativeStatusStratum
+    - boundedSemanticGroup
+    - lineageParents
+  interpretation: >-
+    Frozen S05 archive cells and native status strata may balance structural
+    seed coverage, but never rank efficacy; S07 arm membership and outcomes are
+    absent from the eligibility and composition-generation path.
+
+portfolioSemantics:
+  scope: task_local_only
+  crossTaskPortfolioScore: forbidden
+  identityOwnership: immutable_native_identity
+  nativeCarrierAuthority: unchanged
+  candidateConstructionAuthority: predecessor_engine_owned
+  memberMemory:
+    namespace: identity_and_member_policy
+    inactiveState: persists
+    crossMemberTransfer: forbidden
+    resetOnSwitch: false
+  communication:
+    profile: recipient_activation_lag_lww_sum_u8_v1
+    memberChannelsRemainDeclared: true
+    portfolioDispatcherCannotImpersonateNativeAuthority: true
+    sameEventDelivery: forbidden
+    senderIdentityVisible: false
+    costsSeparate: true
+  portfolioModes:
+    single_policy:
+      memberAssignment: one_member_all_identities
+      switching: forbidden
+    fixed_balanced_identity:
+      memberAssignment: deterministic_balanced_within_native_carrier
+      switching: forbidden
+    random_static_identity:
+      memberAssignment: counter_random_once_per_identity_within_native_carrier
+      switching: forbidden
+    random_dynamic_opportunity:
+      memberAssignment: counter_random_each_native_policy_opportunity_within_carrier
+      switching: permitted_and_charged
+    environment_conditioned:
+      memberAssignment: bounded_memoryless_selector_within_native_carrier
+      switching: permitted_and_charged
+  switching:
+    boundary: native_policy_opportunity_only
+    betweenProposalAndCommit: forbidden
+    maximumSwitchesPerOpportunity: 1
+    failedSwitchHandling: mark_episode_failed_and_retain
+
+selectorSignals:
+  globalRules:
+    selectorIsEngineLevelLicensedCapability: true
+    selectorReadsChargedSeparately: true
+    memberPermissionUnionDoesNotGrantSelectorPermission: true
+    selectorPermissionDoesNotGrantMemberPermission: true
+    outcomeFieldsForbidden: true
+    splitAndScenarioIdentifiersForbidden: true
+    s07ArmOrSelectionFieldsForbidden: true
+    archiveAndObjectiveFieldsForbidden: true
+    futureStateOrRandomDrawForbidden: true
+    authorityBearingTargetOrCandidateFieldsForbidden: true
+    maximumBranches: 2
+    maximumExpressionNodes: 3
+    persistentSelectorMemoryBits: 0
+  byTask:
+    e07_s02_sorting_1d: [last_action.rejected]
+    e07_s02_faults_1d: [last_action.rejected]
+    e07_s02_detour_1d: [last_action.rejected]
+    e07_s02_chimera_1d: [last_action.rejected]
+    e07_s02_regeneration_1d: [repair.nudge_count, last_action.rejected]
+    e07_s02_target_change_1d: [last_action.rejected]
+    e07_s02_spatial2d_local: [last_action.rejected]
+    e07_s02_spatial2d_memory: [last_action.rejected]
+  randomComparatorSignal: counter.choice_u8
+  staticTaskIdUse: selects_only_the_task_local_registry_not_a_member
+
+portfolioCosts:
+  aggregation: separate_vectors_never_universal_total
+  structural:
+    - uniqueMemberCount
+    - totalCanonicalMemberBytes
+    - totalRuleCount
+    - totalExpressionNodes
+    - totalPersistentMemoryBits
+    - totalOutboundSignalBits
+    - selectorBranchCount
+    - selectorExpressionNodes
+    - selectorCanonicalBytes
+  coordination:
+    - selectorReads
+    - selectorDecisions
+    - selectorCounterReads
+    - memberAssignments
+    - memberSwitches
+    - memberNamespaceInitializations
+    - emittedSignalWrites
+    - transmittedSignalBits
+    - recipientDeliveries
+    - bufferOverwrites
+    - consumedDeliveries
+    - observableAggregateReads
+  licensedCapabilities:
+    insertionPrefix: [licensedPrefixPredicateEvaluations, licensedPrefixValueReads, licensedPrefixValueComparisons]
+    selectionCursorAndRange: [engineCursorStateReads, engineCursorTargetProjectionReads, engineCursorAdvanceActions, engineCursorSwapActions, licensedLongRangeRequestedDistance, licensedLongRangeMaximumRequestedDistance]
+  nativeCostsRemainTaskSpecific: true
+  wallTimeIsOperationalOnly: true
+
+comparators:
+  singlePolicy:
+    evaluateEveryEligibleCandidateOncePerCoupledFamily: true
+    componentSinglesRequiredForEveryPortfolio: true
+    bestSingleDefinition: task_local_nondominated_single_policy_frontier
+    scalarBestPolicy: forbidden
+    objectiveSpecificBestMayDiffer: true
+  randomMixture:
+    staticComparator: random_static_identity
+    dynamicComparator: random_dynamic_opportunity
+    memberSetAndCarrierCountsMatched: true
+    scenarioAndCounterFamilyMatched: true
+    switchOpportunityScheduleMatchedForConditionedContrast: true
+    selectorSignalAccessMatchedButIgnored: true
+  fixedComposition:
+    target: fixed_balanced_identity
+    primaryRandomComparator: random_static_identity
+  conditionedComposition:
+    target: environment_conditioned
+    primaryRandomComparator: random_dynamic_opportunity
+
+searchDesign:
+  algorithm: task_stratified_non_surrogate_pareto_portfolio_search_v1
+  counterDomain: E07/S08/portfolio-search/v1
+  publicSeed: 70820260722
+  initialMemberSetsPerTask:
+    size2: 8
+    size3: 8
+    size4: 8
+  initialConfigurationsPerTask:
+    single_policy: 64
+    fixed_balanced_identity: 24
+    random_static_identity: 24
+    random_dynamic_opportunity: 24
+    environment_conditioned: 16
+    total: 152
+  scenarioFamilies:
+    split: train
+    ordinals: [300, 301, 302, 303]
+    derivation: outcome_blind_from_frozen_S02_train_base
+    commonWithinTask: true
+  smoke:
+    rows: 40
+    includedInBudget: true
+    definition: one_row_per_task_mode_on_family_300
+    passBeforeSubstantive: true
+  initialLogicalBudget: 4864
+  adaptiveSearch:
+    generations: 6
+    targetPortfoliosPerTaskGeneration: 16
+    matchedRandomComparatorsPerTaskGeneration: 16
+    scenarioFamiliesPerConfiguration: 4
+    logicalBudget: 6144
+    parentPopulation: valid_task_local_portfolio_pareto_archive_only
+    parentSelection: deterministic_cell_round_robin_then_smaller_portfolio_then_hash
+    mutationOperators:
+      - replace_one_member_same_native_carrier
+      - add_one_member_same_native_carrier
+      - drop_one_member_preserving_task_carrier_contract
+      - rotate_fixed_identity_assignment
+      - toggle_permitted_selector_signal
+      - flip_selector_branch_assignment
+    retryOnIllegalOrDuplicate: 128
+    duplicateExhaustion: fail_closed
+    policyMutation: forbidden
+    permissionExpansion: forbidden
+  totalTrainingLogicalBudget: 11008
+  workers: 8
+  numericThreadsPerWorker: 1
+  efficacyEarlyStop: forbidden
+  runtimeDrivenBudgetReduction: forbidden
+  stopping: exactly_six_generations_or_integrity_failure
+  archive:
+    separateFromS05: true
+    taskStratified: true
+    insertionUsesNativeParetoVectors: true
+    universalScore: forbidden
+    failedEpisodesRetainedAndIneligibleForInsertion: true
+    censorAware: true
+
+scenarioCoupling:
+  unit: task_scenario_family
+  identicalTaskScenarioForPortfolioAndComparators: true
+  commonRandomNumbersClaim: only_when_predecessor_scheduler_contract_supports_it
+  equalNumericSeedImpliesPairingAcrossTasks: false
+  e02CleanFaultPairing: scenario_paired_rng_unpaired_as_native_contract
+  e03MetricSupportsRemainSeparate: true
+  e04CompositionAndDynamicNullRemainFixed: true
+  e05PhaseAndSourceTerminalPairingRemainNative: true
+  e06CandidateAndConflictStreamsRemainEngineOwned: true
+
+estimands:
+  level: task_and_native_endpoint
+  universalNormalizedOutcome: forbidden
+  primaryContrasts:
+    - fixed_balanced_identity_minus_matched_random_static
+    - environment_conditioned_minus_matched_random_dynamic
+    - portfolio_minus_each_component_single
+    - portfolio_minus_task_local_single_policy_frontier
+  binary: paired_risk_difference
+  boundedContinuous: paired_scenario_mean_difference
+  time: task_native_restricted_mean_difference_with_native_censor_rule
+  failureAndCensor: explicit_guard_endpoints
+  cost: paired_fieldwise_difference_with_no_cross_family_sum
+  complementarity: paired_portfolio_minus_matched_member_mixture
+  margins:
+    binary: 0.0
+    boundedFraction: 0.01
+    nativeInteger: 1
+    nativeRestrictedTime: one_native_opportunity
+  uncertainty:
+    pairedScenarioBlockBootstrapReplicates: 2000
+    descriptorBootstrapReplicates: 1000
+    confidenceLevel: 0.95
+    seed: 708004
+  multiplicity:
+    method: Holm
+    family: within_task_contrast_family_across_primary_native_endpoints
+    crossTaskPooling: forbidden
+  failuresAndCensors:
+    completeCaseAnalysis: forbidden
+    failuresRetained: true
+    censorsRetained: true
+    zeroImputationOfCensoredTime: forbidden
+    sourceTerminalAndStoppedRowsRetained: true
+
+selectionBoundaries:
+  training:
+    purpose: portfolio_search_and_candidate_lock
+    outcomeAccess: development_only
+  validation:
+    currentAccess: sealed_during_S08P
+    futurePurpose: evaluate_locked_training_shortlist_only
+    maximumPortfoliosPerTask: 8
+    familyCountPerTask: 8
+    maximumLogicalBudget: 3072
+    requiresSeparateValidationGrant: true
+    requiresQualifiedPortfolioAdapter: true
+    mayNotRetuneOrReplaceMembers: true
+  confirmation:
+    access: sealed
+    S08Budget: 0
+    earliestUse: separately_authorized_final_confirmation_after_candidate_lock
+
+promotionAndS09Gate:
+  trainingShortlist:
+    useTaskLocalParetoFronts: true
+    maximumPortfoliosPerTask: 8
+    ifMoreThanMaximum: descriptor_cell_coverage_then_smaller_portfolio_then_hash
+    allocationArmMembershipTieBreak: forbidden
+  S09Eligibility:
+    requiresCompletePairedValidation: true
+    requiresExactReplay: true
+    requiresNoHolmSignificantNativeEndpointHarmBeyondMargin: true
+    requiresAtLeastOneHolmSignificantNativeEndpointBenefitBeyondMargin: true
+    requiresBenefitVersusMatchedRandomAndRelevantSingleFrontier: true
+    requiresFailureCensorGuardPass: true
+    requiresSeparatePortfolioCostDisclosure: true
+    requiresFrozenPortfolioAndMemberHashes: true
+    confirmationEvidenceRequired: false
+    ifNoPortfolioPasses: report_bounded_null_and_limit_S09_to_single_policy_ablation_or_stop
+
+executionPrerequisite:
+  currentState: blocked
+  reason: >-
+    S04A runners accept one DSL policy for E01-E03, E05, and E06; only E04
+    supports a two-native-carrier binding. Identity-level multi-policy assignment,
+    bounded within-carrier switching, separate member memory, and portfolio cost
+    extraction therefore require a bounded train-only qualification before S08
+    evaluation.
+  requiredEvidence:
+    - full_episode_multi_policy_control_all_eight_tasks
+    - carrier_preserving_identity_assignment
+    - conditioned_and_random_switching_legality
+    - isolated_member_memory_and_communication_delivery
+    - complete_portfolio_and_native_cost_extraction
+    - exact_replay_and_worker_order_independence
+    - failure_and_censor_retention
+    - protected_split_denial_before_materialization
+    - throughput_and_budget_accounting
+  waiverByFieldSimilarityOrSinglePolicyParity: forbidden
+
+prohibitedDependencies:
+  pythonModulePrefixes: [src.surrogate_models, src.surrogate_remediation]
+  artifactSubstrings: [/S06/models/, /S06/embeddings/, /S06A/models/, /S06A/embeddings/]
+  usesForbidden: [allocation, pseudo_labeling, warm_start, distillation, archive_mutation, candidate_promotion, decision_making]
