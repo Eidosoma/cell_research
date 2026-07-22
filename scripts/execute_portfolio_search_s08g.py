@@ -21,6 +21,7 @@ import yaml
 from src.environment_suite import AccessDeniedError
 from src.environment_suite.contracts import canonical_sha256
 from src.environment_suite.e05_semantics import (
+    TARGET_CHANGE_AUDIT_PROJECTION_SCHEMA_VERSION,
     validate_persisted_target_change_audit_projection,
 )
 from src.portfolio_preregistration.core import canonical_hash, read_jsonl
@@ -68,6 +69,7 @@ S08G_CONTROL_PATH = Path(
 S08G_CACHE_ROOT = Path(os.environ.get("E07_PORTFOLIO_CACHE_ROOT", "/cache/e07-s08g"))
 S08F = ARTIFACT_ROOT / "S08F"
 S08H = ARTIFACT_ROOT / "S08H"
+S08J = ARTIFACT_ROOT / "S08J"
 IMMUTABLE_STEPS = (
     "S05",
     "S08P",
@@ -271,6 +273,47 @@ def s08h_contract_revalidation() -> dict[str, Any]:
         "repairRawFiniteDomain": [-495, 1],
         "zeroInitialDistanceRule": "explicitly_unavailable",
         "targetChangeSemanticsVersion": target_spec.get("version"),
+        "success": all(checks.values()),
+    }
+
+
+def s08j_contract_revalidation() -> dict[str, Any]:
+    """Revalidate the outcome-free S08J persisted audit projection gate."""
+
+    gate = _read_json(S08J / "s08_execution_review_gate.json")
+    spec = _read_json(S08J / "target_audit_projection_spec.json")
+    branch = _read_json(S08J / "target_branch_qualification.json")
+    adversarial = _read_json(S08J / "adversarial_projection_validation.json")
+    no_mutation = _read_json(S08J / "no_mutation_audit.json")
+    checks = {
+        "reviewGate": bool(gate.get("success"))
+        and gate.get("status") == "qualified_for_separate_fresh_execution_review"
+        and not gate.get("blockedGateIds")
+        and all(row.get("status") == "pass" for row in gate.get("rows", [])),
+        "projectionSchema": spec.get("schemaVersion")
+        == TARGET_CHANGE_AUDIT_PROJECTION_SCHEMA_VERSION
+        and spec.get("persistedPlane")
+        == "nativeEvent.targetChangeAuditProjection",
+        "nativeContractsUnchanged": spec.get("nativeOutcomeFieldsChanged") is False
+        and spec.get("nativeStatusChanged") is False
+        and spec.get("scientificEstimandChanged") is False
+        and spec.get("validationRulesChanged") is False,
+        "branchEquivalence": bool(branch.get("success"))
+        and branch.get("fixtureRows") == 8
+        and branch.get("validRetainedRows") == 4
+        and branch.get("invalidAdapterRows") == 4
+        and all(branch.get("checks", {}).values()),
+        "adversarialFailureClosure": bool(adversarial.get("success"))
+        and adversarial.get("adversarialRows") == 10
+        and adversarial.get("failedClosedRows") == 10,
+        "qualificationPreservedInputs": bool(no_mutation.get("success")),
+    }
+    return {
+        "schemaVersion": f"e07.{STEP_LOWER}.s08j-contract-revalidation.v1",
+        "researchStepId": STEP_ID,
+        "checks": checks,
+        "projectionSchemaVersion": spec.get("schemaVersion"),
+        "persistedPlane": spec.get("persistedPlane"),
         "success": all(checks.values()),
     }
 
@@ -613,11 +656,13 @@ def main() -> int:
             "reuseS08cOutcomes": False,
             "reuseS08eOutcomes": False,
             "reuseS08gOutcomes": False,
+            "reuseS08iOutcomes": False,
         },
     )
     preflight = run_preflight(S08G_CONTROL_PATH)
     s08f_contract = s08f_contract_revalidation()
     s08h_contract = s08h_contract_revalidation()
+    s08j_contract = s08j_contract_revalidation()
     budget = pd.read_parquet(S08P / "budget_slot_ledger.parquet")
     initial_definitions = read_jsonl(S08P / "portfolio_seed_registry.jsonl")
     definitions: dict[str, dict[str, Any]] = {
@@ -634,6 +679,10 @@ def main() -> int:
         for row in preflight["gateRows"]:
             if row["gateId"] in {"G01", "G04"}:
                 row["status"] = "blocked"
+    if not s08j_contract["success"]:
+        for row in preflight["gateRows"]:
+            if row["gateId"] in {"G01", "G04"}:
+                row["status"] = "blocked"
     if not initial_accounting_revalidation["success"]:
         for row in preflight["gateRows"]:
             if row["gateId"] == "G06":
@@ -643,6 +692,7 @@ def main() -> int:
     ]
     preflight["s08fContractRevalidationPass"] = s08f_contract["success"]
     preflight["s08hContractRevalidationPass"] = s08h_contract["success"]
+    preflight["s08jContractRevalidationPass"] = s08j_contract["success"]
     preflight["initialPhysicalAccountingPass"] = initial_accounting_revalidation[
         "success"
     ]
@@ -659,6 +709,7 @@ def main() -> int:
     _write_json(output / "preflight_hash_and_gate_revalidation.json", preflight)
     _write_json(output / "s08f_contract_revalidation.json", s08f_contract)
     _write_json(output / "s08h_contract_revalidation.json", s08h_contract)
+    _write_json(output / "s08j_contract_revalidation.json", s08j_contract)
     _write_json(
         output / "initial_physical_accounting_revalidation.json",
         initial_accounting_revalidation,
@@ -1192,6 +1243,7 @@ def main() -> int:
             "s08cQuarantineOutcomeRowsLoaded": 0,
             "s08eQuarantineOutcomeRowsLoaded": 0,
             "s08gQuarantineOutcomeRowsLoaded": 0,
+            "s08iQuarantineOutcomeRowsLoaded": 0,
             "success": not preflight["loadedProhibitedModules"],
         },
     )
@@ -1241,6 +1293,7 @@ def main() -> int:
             "initialPhysical4864": initial_execution_accounting["success"],
             "e05DescriptorAvailability": descriptor_audit["success"],
             "s08hContract": s08h_contract["success"],
+            "s08jContract": s08j_contract["success"],
             "s08hRuntimeIntegrity": training_validation["s08hRuntimeIntegrityPass"],
             "logicalIdentityRestoration": identity_audit["success"],
             "replay": order_validation["success"],
