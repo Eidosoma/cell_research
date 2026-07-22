@@ -1,0 +1,56 @@
+schemaVersion: e07.s07.non-surrogate-execution-lock.v1
+researchStepId: S07
+approvedProtocol:
+  path: configs/allocation/s07r_non_surrogate_protocol.yaml
+  sha256: 162d11c74c9e23a724bcd872b760819b2f03bc84745fd7d7fe860e107166b841
+  candidatePopulationCommitmentSha256: e3b044fb18f373928ead967739fc64c28c5841744c9e3ce5ad63458d624f3a6b
+approvalToken: S07_EXECUTION_SEPARATELY_APPROVED
+execution:
+  workers: 8
+  numericThreadsPerWorker: 1
+  logicalBudget: 3072
+  candidateSelectionRows: 1536
+  smokeLogicalRows: 24
+  smokeSelection: minimum_selection_rank_per_task_arm_in_family_200
+  cacheRoot: /cache/e07_s07/physical_evaluations
+  noEfficacyEarlyStopping: true
+  noRuntimeScaleReduction: true
+smokePass:
+  requireTrainOnly: true
+  requireReplay: true
+  requireStableResultHash: true
+  requireNonemptyNativeCostsEventsAndStopReason: true
+  allowedRetainedNativeFailure: >-
+    E05 regeneration source_terminal with developmentBudgetRespected=false is a
+    prespecified native failed outcome, not an adapter-integrity failure; all
+    other validation flags must pass and the row remains in every analysis.
+analysis:
+  waveOrder: [200, 201, 202, 203]
+  descriptorBootstrapReplicates: 1000
+  descriptorStabilityThreshold: 0.8
+  comparisonBootstrapReplicates: 2000
+  comparisonBootstrapSeed: 707702
+  comparisonResamplingUnit: paired_task_by_scenario_family_block
+  discoveryCurve:
+    checkpointYield: cumulative_distinct_discoveries_divided_by_cumulative_logical_evaluations
+    auc: trapezoid_over_normalized_budget_with_origin_zero
+    discoveryAttribution: first_scenario_family_in_frozen_wave_order
+  multipleTesting: Holm_familywise_0.05_across_four_frozen_tests
+  uniformPopulationEstimator: Horvitz_Thompson_with_policy_inclusion_probability_0.5_and_finite_population_correction
+  fixedArmContrasts: descriptive_only
+traceRetention:
+  deterministicBaseRate: 0.05
+  counterDomain: E07/S07/native-event-retention/v1
+  alwaysRetainFailures: true
+  alwaysRetainCensors: true
+  alwaysRetainRareStatusDiscoveries: true
+  alwaysRetainShadowDescriptorDiscoveries: true
+  completeNativeTraceAvailability: audit_after_execution
+boundaries:
+  split: train
+  validationOutcomes: sealed
+  confirmationOutcomes: sealed
+  archiveMutation: forbidden
+  rejectedModelsAndEmbeddings: forbidden
+  crossTaskScore: forbidden
+  nativeTaskOutcomesCostsClocksAndClaimsRemainSeparate: true
