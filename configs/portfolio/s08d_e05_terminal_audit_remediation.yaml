@@ -1,0 +1,67 @@
+schemaVersion: e07.s08d.e05-terminal-audit-remediation-protocol.v1
+researchStepId: S08D
+title: Remediate E05 terminal-result auditing and fail-atomic smoke accounting
+qualificationOnly: true
+frozenQuestion: >-
+  Can every E05 portfolio terminal return expose the required assignment audit
+  and can a future smoke batch publish atomically with exact forensic failure
+  accounting, without changing native behavior or executing an S08 row?
+authorization:
+  permittedSplits: [train]
+  permittedExecution: dedicated_qualification_fixtures_only
+  frozenSmokeRowsPermitted: false
+  efficacyRowsPermitted: false
+  outcomeEndpointCallsPermitted: false
+  validationAccessPermitted: false
+  confirmationAccessPermitted: false
+  archiveMutationPermitted: false
+  s07ArmPromotionPermitted: false
+  rejectedModelsOrEmbeddingsPermitted: false
+immutableArtifactTrees:
+  S05: 141e2059702460ace997b56b077bf2af7972ee61718c9a04e5a30b527e518b83
+  S08P: c3fcb613877c9c9e7a619b7456fb217eb953b0e2fea04a299f5ccdcbc4af4b7b
+  S08A: f13ffc52e276629cf27f4eecef5ad3c4564fd02d7ea5de488f039ebceabab06d
+  S08: 4eb18b54d306621696b780144a808b610ee795e903144ab980c4c48e2312ff0c
+  S08B: 720c3847ec562e3b86d8afcabfa5c2b49bda6ee6f4c4e74a3293166833fdf0d3
+  S08C: 239ef7d7e2b7d0cb39a376a64ef45691cf06fef050c446fecba594753ca7767b
+immutableS08CFiles:
+  partial_smoke_results.parquet: 5ef52066907129565d87de466f37e99fde8039225af81ffd5eb24f32dc4dd9a8
+  smoke_failure.json: 9e15b64dcccef37f1bc863d9ee9869e05de0a492e0bfddac0cf24a69a768f88f
+  artifact_manifest.json: 87ae1b5a6297c373093a7df02c3f0edeab723cc644894a21ec42b2ff5302bcba
+preRepairSourceHashes:
+  src/environment_suite/dsl_adapters.py: 97cd3c945a01d2b070fee3bc8339e4ba492154430fa158ba0191e1d81ae5784b
+  src/environment_suite/runners.py: 943a48d07568aee98b13cef6447244058061427f11e1b014dcdded497a4311c6
+  src/portfolio_search/execution.py: 4a9f29be98a320036750cc4051294ce66ad8d969fea4ff46711fcc7266e07935
+  scripts/execute_portfolio_search_s08c.py: dad8751a7bdb621d69b83c46942a986d45c1272fef9633ab7e41f71f041b82b0
+minimalRepairs:
+  e05:
+    requiredField: portfolioAssignmentAudit
+    branches:
+      - development_source_terminal
+      - stabilization_source_terminal
+      - completed_panel
+    nativeBehaviorChangesPermitted: false
+  futureSmokePublication:
+    resultPublication: all_rows_or_zero_rows
+    cachePublicationOnWorkerFailure: zero_new_rows
+    forensicAccounting: exact_position_indexed_terminal_status
+qualification:
+  e05Modes:
+    - single_policy
+    - fixed_balanced_identity
+    - random_static_identity
+    - random_dynamic_opportunity
+    - environment_conditioned
+  e05PortfolioConfigurationPopulation: all_88_frozen_e05_portfolio_configurations
+  structuralSmokeBindings: 40
+  fullRegistryBindings: 1216
+  injectedFailurePositions: [first, middle, last]
+  runOrders: [lexicographic, reverse]
+  requiredGateIds: [G01, G02, G03, G04, G05, G06]
+accounting:
+  frozenSmokeRowsExecuted: 0
+  efficacyRowsExecuted: 0
+  outcomeEndpointCalls: 0
+  validationAccesses: 0
+  confirmationAccesses: 0
+  archiveMutations: 0

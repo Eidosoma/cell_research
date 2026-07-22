@@ -32,9 +32,11 @@ from src.portfolio_search.execution import (
     build_validation_plan,
     environment_record,
     execute_work,
+    FailAtomicBatchError,
     generate_adaptive_generation,
     immutable_tree_hashes,
     paired_estimands,
+    publish_parquet_fail_atomic,
     run_preflight,
     s09_gate,
     select_shortlist,
@@ -244,9 +246,31 @@ def main() -> int:
     }
     initial_work = _initial_work(budget, definitions)
     smoke_work = [row for row in initial_work if row["smoke"]]
-    smoke_rows, smoke_physical = execute_work(
-        smoke_work, workers=args.workers, cache_dir=CACHE_ROOT / "evaluations"
-    )
+    smoke_failure_accounting = output / "smoke_batch_forensic_accounting.json"
+    try:
+        smoke_rows, smoke_physical = execute_work(
+            smoke_work,
+            workers=args.workers,
+            cache_dir=CACHE_ROOT / "post_s08d_smoke_evaluations",
+            failure_accounting_path=smoke_failure_accounting,
+            atomic_new_cache=True,
+        )
+    except FailAtomicBatchError as exc:
+        _write_json(
+            output / "execution_stop_status.json",
+            {
+                "researchStepId": "S08C",
+                "status": "blocked_at_frozen_smoke",
+                "success": False,
+                "failureAccountingPath": str(smoke_failure_accounting),
+                "attemptedPhysicalRows": exc.accounting["attemptedPhysicalRows"],
+                "publishedSmokeRows": 0,
+                "trainingLogicalRowsExecuted": 0,
+                "validationLogicalRowsExecuted": 0,
+                "confirmationLogicalRowsExecuted": 0,
+            },
+        )
+        return 3
     smoke_validation = validate_rows(smoke_rows, 40)
     smoke_validation.update(
         {
@@ -257,8 +281,8 @@ def main() -> int:
             "substantiveSearchAuthorized": smoke_validation["success"],
         }
     )
-    ledger_frame(smoke_rows).to_parquet(
-        output / "frozen_smoke_results.parquet", index=False
+    publish_parquet_fail_atomic(
+        ledger_frame(smoke_rows), output / "frozen_smoke_results.parquet"
     )
     _write_json(output / "frozen_smoke_validation.json", smoke_validation)
     if not smoke_validation["success"]:

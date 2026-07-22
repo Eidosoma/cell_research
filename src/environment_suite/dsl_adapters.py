@@ -1075,6 +1075,66 @@ def _line_movement_descriptors(
     }
 
 
+def finalize_e05_result(
+    payload: Mapping[str, Any], runtime: LineDslRuntime
+) -> dict[str, Any]:
+    """Attach the portfolio audit at the single exit boundary for E05 panels."""
+
+    result = dict(payload)
+    if "portfolioAssignmentAudit" in result:
+        raise SuiteValidationError("E05 result audit must be attached exactly once")
+    result["portfolioAssignmentAudit"] = runtime.portfolio_assignment_audit()
+    return result
+
+
+def validate_e05_portfolio_result_contract(
+    result: Mapping[str, Any], action: EvaluationAction
+) -> dict[str, Any]:
+    """Fail closed when an E05 portfolio branch omits assignment provenance."""
+
+    audit = result.get("portfolioAssignmentAudit")
+    if not action.portfolio_definition:
+        if audit is not None:
+            raise SuiteValidationError(
+                "single-policy E05 result carried portfolio audit"
+            )
+        return {"portfolioAssignmentAuditRequired": False, "complete": True}
+    required = {
+        "adapterVersion",
+        "configurationId",
+        "mode",
+        "selectorSignal",
+        "singletonCarrierPolicySha256",
+        "assignmentCountsByPolicySha256",
+        "memberActivationCounts",
+        "currentMemberByIdentity",
+        "memberMemoryNamespaceCount",
+        "memberMemoryNamespaceSha256",
+    }
+    if not isinstance(audit, Mapping):
+        raise SuiteValidationError("E05 portfolio result omitted assignment audit")
+    missing = sorted(required - set(audit))
+    if missing:
+        raise SuiteValidationError(
+            f"E05 portfolio assignment audit is incomplete: {missing}"
+        )
+    definition = action.portfolio_definition
+    if (
+        audit["configurationId"] != definition["configurationId"]
+        or audit["mode"] != definition["mode"]
+    ):
+        raise SuiteValidationError("E05 portfolio assignment audit mismatched action")
+    if int(audit["memberMemoryNamespaceCount"]) != len(
+        audit["memberMemoryNamespaceSha256"]
+    ):
+        raise SuiteValidationError("E05 member-memory audit cardinality mismatched")
+    return {
+        "portfolioAssignmentAuditRequired": True,
+        "complete": True,
+        "requiredFields": sorted(required),
+    }
+
+
 def run_e05_regeneration_dsl(
     action: EvaluationAction, *, replicate_ordinal: int
 ) -> dict[str, Any]:
@@ -1128,7 +1188,7 @@ def run_e05_regeneration_dsl(
             }
             for axis in ("repair", "memory", "transfer")
         ]
-        return {
+        result = {
             "schemaVersion": "e07.s04a.e05-dsl-panel.v1",
             "sourceTerminal": True,
             "sourceStopReason": development.summary["stopReason"],
@@ -1145,7 +1205,6 @@ def run_e05_regeneration_dsl(
             },
             "nativeLedgers": {"development": dict(development.summary["ledger"])},
             "adapterLedgers": runtime.adapter_ledgers(),
-            "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
             "nativeMovementDescriptorsByPhase": {
                 "development": _line_movement_descriptors(runtime.ledger, cell_count=n)
             },
@@ -1159,6 +1218,7 @@ def run_e05_regeneration_dsl(
                 <= development_budget,
             },
         }
+        return finalize_e05_result(result, runtime)
 
     development_runtime_ledger = dict(runtime.ledger)
     stabilization_start = _run_state_from_result(development)
@@ -1217,7 +1277,7 @@ def run_e05_regeneration_dsl(
             }
             for axis in ("repair", "memory", "transfer")
         ]
-        return {
+        result = {
             "schemaVersion": "e07.s04a.e05-dsl-panel.v1",
             "adapterVersion": ADAPTER_VERSION,
             "sourceTerminal": True,
@@ -1261,6 +1321,7 @@ def run_e05_regeneration_dsl(
                 "stabilizationCoverageRetained": True,
             },
         }
+        return finalize_e05_result(result, runtime)
     stabilization_runtime_ledger = dict(runtime.ledger)
     checkpoint = _checkpoint_from_development(scenario, stabilization)
     lesion = apply_transfer_lesion(
@@ -1514,7 +1575,6 @@ def run_e05_regeneration_dsl(
             "transferDsl": transfer_runtime.adapter_ledgers()["dslRuntimeLedger"],
         },
         "adapterLedgers": runtime.adapter_ledgers(),
-        "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
         "adapterLedgersByIndependentPhase": {
             "memoryResetRecovery": reset_runtime.adapter_ledgers(),
             "robustnessFault": fault_runtime.adapter_ledgers(),
@@ -1536,6 +1596,7 @@ def run_e05_regeneration_dsl(
         },
         "claimBoundary": "Five operational simulator competencies remain separate; no biological regeneration, natural memory, learning, clinical repair, or universal competence is inferred.",
     }
+    result = finalize_e05_result(result, runtime)
     result["panelSha256"] = canonical_sha256("E07/S04A/E05-panel/v1", result)
     return result
 

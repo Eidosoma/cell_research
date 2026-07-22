@@ -61,6 +61,7 @@ from .dsl_adapters import (
     run_e05_target_change_dsl,
     run_line_dsl_episode,
     run_spatial_dsl_episode,
+    validate_e05_portfolio_result_contract,
 )
 
 from .contracts import (
@@ -789,11 +790,16 @@ def run_regeneration(
             action,
             replicate_ordinal=int(record.public_parameters["replicateOrdinal"]),
         )
+        first_audit_contract = validate_e05_portfolio_result_contract(first, action)
+        second_audit_contract = validate_e05_portfolio_result_contract(second, action)
         replay_pass = canonical_sha256(
             "E07/S04A/E05-replay/v1", first
         ) == canonical_sha256("E07/S04A/E05-replay/v1", second)
         checks = {key: bool(value) for key, value in first["validation"].items()}
         checks["exactReplay"] = replay_pass
+        checks["portfolioAssignmentAuditComplete"] = bool(
+            first_audit_contract["complete"] and second_audit_contract["complete"]
+        )
         axes = first["competencyAxes"]
         repair = axes.get("repair", {})
         native_ledgers = {

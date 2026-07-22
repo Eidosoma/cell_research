@@ -9,15 +9,17 @@ confirmation has no materializer or execution path.
 from __future__ import annotations
 
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Executor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
 import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import sys
+import tempfile
 import time
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -99,6 +101,15 @@ MUTATION_OPERATORS = (
 EXPECTED_E05_FAILURE_FLAG = "developmentBudgetRespected"
 
 
+class FailAtomicBatchError(RuntimeError):
+    """A worker batch failed before any new result row was published."""
+
+    def __init__(self, accounting: Mapping[str, Any]):
+        self.accounting = dict(accounting)
+        failed = int(self.accounting.get("failedPhysicalRows", 0))
+        super().__init__(f"fail-atomic batch rejected {failed} failed physical row(s)")
+
+
 def _json_bytes(value: Any) -> bytes:
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False
@@ -110,6 +121,106 @@ def _write_json(path: Path, value: Any) -> None:
     path.write_text(
         json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+def _exception_record(exc: BaseException) -> dict[str, str]:
+    error_type = f"{type(exc).__module__}.{type(exc).__qualname__}"
+    message = str(exc)
+    return {
+        "errorType": error_type,
+        "errorMessage": message,
+        "errorSha256": canonical_sha256(
+            "E07/S08D/batch-error/v1",
+            {"errorType": error_type, "errorMessage": message},
+        ),
+    }
+
+
+def execute_fail_atomic_batch(
+    keys: Sequence[str],
+    items: Sequence[Mapping[str, Any]],
+    *,
+    worker: Callable[[Mapping[str, Any]], dict[str, Any]],
+    workers: int,
+    executor_factory: Callable[..., Executor] = ProcessPoolExecutor,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Run one physical batch and either return every row or publish none.
+
+    The position-indexed ledger is terminal and exact: every submitted row is
+    classified as succeeded, failed, or cancelled after all futures settle.
+    Successful rows remain in memory until the complete batch has passed.
+    """
+
+    if len(keys) != len(items) or len(set(keys)) != len(keys):
+        raise ValueError("fail-atomic batch requires one distinct key per item")
+    if not 1 <= workers <= 8:
+        raise ValueError("workers must be in [1,8]")
+    started = time.perf_counter()
+    statuses = [
+        {"position": position, "physicalKey": key, "status": "submitted"}
+        for position, key in enumerate(keys)
+    ]
+    results: dict[str, dict[str, Any]] = {}
+    failure_seen = False
+    with executor_factory(max_workers=workers) as executor:
+        futures = {
+            executor.submit(worker, item): position
+            for position, item in enumerate(items)
+        }
+        for future in as_completed(futures):
+            position = futures[future]
+            if future.cancelled():
+                statuses[position]["status"] = "cancelled_before_execution"
+                continue
+            try:
+                result = future.result()
+            except BaseException as exc:  # worker failures must settle the batch
+                statuses[position].update(
+                    {"status": "failed", **_exception_record(exc)}
+                )
+                if not failure_seen:
+                    failure_seen = True
+                    for other in futures:
+                        if other is not future and not other.done():
+                            other.cancel()
+            else:
+                statuses[position]["status"] = "succeeded"
+                results[keys[position]] = result
+    succeeded = sum(row["status"] == "succeeded" for row in statuses)
+    failed = sum(row["status"] == "failed" for row in statuses)
+    cancelled = sum(row["status"] == "cancelled_before_execution" for row in statuses)
+    if succeeded + failed + cancelled != len(items):
+        raise RuntimeError("fail-atomic batch accounting did not reach terminal state")
+    success = failed == 0 and cancelled == 0 and succeeded == len(items)
+    accounting = {
+        "schemaVersion": "e07.s08d.fail-atomic-batch-accounting.v1",
+        "researchStepId": "S08D",
+        "success": success,
+        "physicalRowsSubmitted": len(items),
+        "succeededPhysicalRows": succeeded,
+        "failedPhysicalRows": failed,
+        "cancelledPhysicalRows": cancelled,
+        "attemptedPhysicalRows": succeeded + failed,
+        "newResultRowsPublished": len(items) if success else 0,
+        "newCacheRowsPublished": len(items) if success else 0,
+        "publicationAuthorized": success,
+        "positions": statuses,
+        "batchKeyCommitmentSha256": canonical_sha256(
+            "E07/S08D/fail-atomic-batch-keys/v1", sorted(keys)
+        ),
+        "resultCommitmentSha256": (
+            canonical_sha256(
+                "E07/S08D/fail-atomic-batch-results/v1",
+                {key: results[key] for key in sorted(results)},
+            )
+            if success
+            else None
+        ),
+        "wallSeconds": time.perf_counter() - started,
+    }
+    if not success:
+        raise FailAtomicBatchError(accounting)
+    return results, accounting
 
 
 def _counter_u64(*parts: object, stream: str) -> int:
@@ -393,10 +504,19 @@ def execute_work(
     *,
     workers: int = 8,
     cache_dir: Path = CACHE_ROOT / "evaluations",
-) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    failure_accounting_path: Path | None = None,
+    executor_factory: Callable[..., Executor] = ProcessPoolExecutor,
+    atomic_new_cache: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Execute unique physical rows and expand them to the exact logical roster."""
 
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    if atomic_new_cache and cache_dir.exists():
+        raise FileExistsError(
+            f"fail-atomic batch requires a new cache directory: {cache_dir}"
+        )
+    cache_dir.parent.mkdir(parents=True, exist_ok=True)
+    if not atomic_new_cache:
+        cache_dir.mkdir(parents=True, exist_ok=True)
     unique: dict[str, Mapping[str, Any]] = {}
     logical_keys = []
     for row in work:
@@ -413,15 +533,45 @@ def execute_work(
         else:
             pending_keys.append(key)
             pending.append(row)
+    batch_accounting: dict[str, Any] | None = None
     if pending:
-        with ProcessPoolExecutor(max_workers=workers) as executor:
-            for key, result in zip(
+        try:
+            batch_results, batch_accounting = execute_fail_atomic_batch(
                 pending_keys,
-                executor.map(evaluate_work_item, pending, chunksize=1),
-                strict=True,
-            ):
-                results[key] = result
-                _write_json(cache_dir / f"{key}.json", result)
+                pending,
+                worker=evaluate_work_item,
+                workers=workers,
+                executor_factory=executor_factory,
+            )
+        except FailAtomicBatchError as exc:
+            accounting = {
+                **exc.accounting,
+                "logicalRows": len(work),
+                "uniquePhysicalRows": len(unique),
+                "cacheHits": len(unique) - len(pending),
+                "preexistingCacheRowsUnchanged": True,
+            }
+            if failure_accounting_path is not None:
+                _write_json(failure_accounting_path, accounting)
+            raise FailAtomicBatchError(accounting) from exc
+        results.update(batch_results)
+        # No new cache row is visible until every worker row has succeeded.
+        if atomic_new_cache:
+            staging = Path(
+                tempfile.mkdtemp(
+                    prefix=f".{cache_dir.name}.s08d-staging-", dir=cache_dir.parent
+                )
+            )
+            try:
+                for key in pending_keys:
+                    _write_json(staging / f"{key}.json", batch_results[key])
+                os.replace(staging, cache_dir)
+            finally:
+                if staging.exists():
+                    shutil.rmtree(staging)
+        else:
+            for key in pending_keys:
+                _write_json(cache_dir / f"{key}.json", batch_results[key])
     expanded = []
     for logical, key in zip(work, logical_keys, strict=True):
         row = dict(results[key])
@@ -451,7 +601,29 @@ def execute_work(
         "uniquePhysicalRows": len(unique),
         "cacheHits": len(unique) - len(pending),
         "physicalRowsExecutedNow": len(pending),
+        "failAtomic": True,
+        "atomicNewCache": atomic_new_cache,
+        "batchAccounting": batch_accounting,
     }
+
+
+def publish_parquet_fail_atomic(frame: pd.DataFrame, path: Path) -> None:
+    """Publish a complete Parquet result as one same-directory rename."""
+
+    if path.exists():
+        raise FileExistsError(f"refusing to replace existing publication: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    digest = canonical_sha256(
+        "E07/S08D/parquet-publication/v1",
+        {"path": path.name, "rows": len(frame), "columns": list(frame.columns)},
+    )[:16]
+    staging = path.with_name(f".{path.name}.{digest}.{os.getpid()}.staging")
+    try:
+        frame.to_parquet(staging, index=False, compression="zstd")
+        os.replace(staging, path)
+    finally:
+        if staging.exists():
+            staging.unlink()
 
 
 def _initial_work(
