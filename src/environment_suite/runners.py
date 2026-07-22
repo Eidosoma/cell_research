@@ -71,6 +71,7 @@ from .contracts import (
     SuiteValidationError,
     canonical_sha256,
 )
+from .e05_semantics import build_target_change_audit_projection
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
@@ -955,6 +956,12 @@ def run_target_change(
         replay_pass = first == second
         checks = {key: bool(value) for key, value in first["validation"].items()}
         checks["exactReplay"] = replay_pass
+        target_audit_projection = build_target_change_audit_projection(
+            first,
+            adaptation_budget=int(record.public_parameters["adaptationBudget"]),
+            probe_budget=int(record.public_parameters["probeBudget"]),
+            source_result_sha256=str(first["resultSha256"]),
+        )
         return NativeEpisodeResult(
             stop_reason=str(first["stopReason"]),
             censored=bool(first["adaptationCensored"]),
@@ -985,6 +992,7 @@ def run_target_change(
                 "resultSha256": str(first["resultSha256"]),
                 "targetChangeInstantaneousBeforeNextOpportunity": True,
                 "targetSignalAuthority": first["targetSignalAuthority"],
+                "targetChangeAuditProjection": target_audit_projection,
                 "descriptorsByAxis": first["descriptorsByAxis"],
                 "nativeMovementDescriptors": first["nativeMovementDescriptors"],
                 **(

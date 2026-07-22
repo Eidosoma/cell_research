@@ -1,0 +1,86 @@
+schemaVersion: e07.s08j.target-audit-projection-qualification.v1
+researchStepId: S08J
+title: Qualify the persisted-row target-change audit projection
+prospectivePreregistration: true
+frozenQuestion: >-
+  Can a self-authenticating native-event projection preserve the exact S08H
+  target deadline/probe state and reproduce its authoritative validator across
+  every terminal branch, while failing closed on missing, inconsistent, or
+  forged metadata and changing no native semantic, status, estimand, or rule?
+scope:
+  qualificationOnly: true
+  authorizedEvidence: native contracts, frozen structural registries, and dedicated outcome-free training fixtures
+  s08iAccess: documented_integrity_metadata_only
+  s08iOutcomeOrEfficacyValuesLoaded: 0
+  prohibitedCacheRoot: /cache/e07-s08i
+  episodeEvaluations: 0
+  frozenSmokeRows: 0
+  portfolioExecutionRows: 0
+  efficacyRows: 0
+  archiveConstructionCalls: 0
+  archiveMutations: 0
+  validationOutcomeAccesses: 0
+  confirmationOutcomeAccesses: 0
+  s09Calls: 0
+preservation:
+  immutableArtifactSteps: [S05, S08P, S08A, S08, S08B, S08C, S08D, S08E, S08F, S08G, S08H, S08I]
+  immutableQuarantines: [S08C, S08E, S08G, S08I]
+  rejectedDependenciesExcluded: [S06, S06A]
+  s07ArmMembershipPermitted: false
+  sourceExecutionMayBeRetried: false
+projection:
+  schemaVersion: e07.s08j.e05-target-change-audit-projection.v1
+  taskId: e07_s02_target_change_1d
+  persistedPlane: nativeEvent.targetChangeAuditProjection
+  sourcePlane: complete E05 target result before endpoint projection
+  semanticsVersion: e07.s08h.e05-target-deadline-probe.v1
+  adaptationBudget: 6400
+  probeBudget: 160
+  sourceResultCommitment: required_for_DSL_rows
+  projectionCommitment: required
+  authoritativeValidator: src.environment_suite.e05_semantics.validate_target_change_result_semantics
+  nativeOutcomeFieldsChanged: false
+  nativeStatusChanged: false
+  scientificEstimandChanged: false
+  validationRulesChanged: false
+  missingMetadata: fail_closed
+  inconsistentMetadata: fail_closed
+  forgedMetadata: fail_closed
+qualification:
+  validBranches:
+    - on_time_hit_exact_probe
+    - exact_deadline_hit_exact_probe
+    - phase_event_budget_no_hit_right_censor
+    - controller_quiescent_no_hit_censor
+  invalidBranches:
+    - late_hit
+    - incomplete_post_hit_probe
+    - invariant_error
+    - hit_labeled_phase_event_budget
+  adversarialMutations:
+    - missing_projection
+    - missing_required_field
+    - forged_projection_commitment
+    - inconsistent_endpoint
+    - inconsistent_stop_reason
+    - inconsistent_validation_flag
+    - detached_source_result_commitment
+    - forged_semantic_audit
+    - wrong_semantics_version
+    - wrong_budget
+  serializationFormats: [canonical_json, json_round_trip]
+  workerOrders: [forward, reverse, even_then_odd, odd_then_even]
+  frozenRegistryBindings: 1216
+  protectedDenials: 16
+gates:
+  G01: immutable hashes and prospective protocol freeze
+  G02: exact projection serialization and S08H validator equivalence
+  G03: fail-closed missing, inconsistent, and forged metadata
+  G04: all 1,216 frozen portfolio bindings remain structurally legal
+  G05: replay, worker-order, protected denial, dependency exclusion, and complete accounting
+  G06: zero mutation and zero episode, smoke, search, archive, protected-outcome, cache, or S09 work
+decisionRule: >-
+  Clear S08J only if every G01-G06 row passes, every declared valid branch has
+  identical S08H classification after canonical serialization, every invalid
+  or adversarial case fails closed, and all preservation boundaries hold.
+  Otherwise stop and return the remaining blocker without fresh execution.

@@ -20,6 +20,9 @@ import yaml
 
 from src.environment_suite import AccessDeniedError
 from src.environment_suite.contracts import canonical_sha256
+from src.environment_suite.e05_semantics import (
+    validate_persisted_target_change_audit_projection,
+)
 from src.portfolio_preregistration.core import canonical_hash, read_jsonl
 from src.portfolio_search.execution import (
     ARTIFACT_ROOT,
@@ -62,9 +65,7 @@ S08G_CONTROL_PATH = Path(
         ),
     )
 )
-S08G_CACHE_ROOT = Path(
-    os.environ.get("E07_PORTFOLIO_CACHE_ROOT", "/cache/e07-s08g")
-)
+S08G_CACHE_ROOT = Path(os.environ.get("E07_PORTFOLIO_CACHE_ROOT", "/cache/e07-s08g"))
 S08F = ARTIFACT_ROOT / "S08F"
 S08H = ARTIFACT_ROOT / "S08H"
 IMMUTABLE_STEPS = (
@@ -258,8 +259,7 @@ def s08h_contract_revalidation() -> dict[str, Any]:
         and target.get("authoritativeAdaptationBudget") == 6400
         and target.get("authoritativePostHitProbeBudget") == 160,
         "nativeEstimandUnchanged": bool(native.get("success"))
-        and native.get("determination", {}).get("scientificEstimandChanged")
-        is False
+        and native.get("determination", {}).get("scientificEstimandChanged") is False
         and native.get("determination", {}).get("frozenDescriptorMeaningChanged")
         is False,
     }
@@ -280,38 +280,32 @@ def s08h_runtime_integrity_audit(
 ) -> dict[str, Any]:
     """Fail closed on any executed target row that violates the S08H machine."""
 
-    target_rows = [
-        row for row in rows if row["taskId"] == "e07_s02_target_change_1d"
-    ]
+    target_rows = [row for row in rows if row["taskId"] == "e07_s02_target_change_1d"]
     errors = []
     phase_budget_censors = 0
     completed_probe_rows = 0
     for row in target_rows:
         outcome = row["outcome"]
-        audit = outcome.get("targetChangeSemanticAudit", {})
         stop = str(row.get("stopReason"))
         completed = bool(outcome.get("targetCompleted"))
-        retained = bool(outcome.get("postHitProbeRetained"))
-        adaptation_time = outcome.get("adaptationTime")
-        row_errors = []
-        if outcome.get("targetChangeSemanticsVersion") != (
-            "e07.s08h.e05-target-deadline-probe.v1"
-        ):
-            row_errors.append("semantic_version")
-        if not audit.get("validNativeContract") or audit.get("adapterFailure"):
-            row_errors.append("semantic_audit")
+        persisted_audit = validate_persisted_target_change_audit_projection(
+            native_event=row.get("nativeEvent", {}),
+            native_outcome=outcome,
+            stop_reason=stop,
+            validation=row.get("validation", {}),
+            adaptation_budget=6400,
+            probe_budget=160,
+        )
+        row_errors = [
+            *persisted_audit["integrityErrors"],
+            *persisted_audit["semanticErrors"],
+        ]
         if stop == "phase_event_budget":
             phase_budget_censors += 1
-            if completed or adaptation_time is not None or not retained:
-                row_errors.append("phase_budget_not_no_hit_right_censor")
         if completed:
             completed_probe_rows += 1
-            if (
-                stop != "post_adaptation_probe_complete"
-                or not retained
-                or int(outcome.get("postHitProbeOpportunities", -1)) != 160
-            ):
-                row_errors.append("hit_without_exact_post_hit_probe")
+        if not persisted_audit["validPersistedContract"] and not row_errors:
+            row_errors.append("persisted_target_contract_invalid")
         if row_errors:
             errors.append(
                 {
@@ -320,6 +314,7 @@ def s08h_runtime_integrity_audit(
                     "scenarioFamilyOrdinal": row["scenarioFamilyOrdinal"],
                     "stopReason": stop,
                     "errors": row_errors,
+                    "persistedAudit": persisted_audit,
                 }
             )
     return {
@@ -422,8 +417,7 @@ def descriptor_availability_audit(
             for item in repair_domain_records
         ),
         "rawRepairDomainUnchanged": all(
-            item.get("status") != "valid"
-            or -495.0 <= float(item["coordinate"]) <= 1.0
+            item.get("status") != "valid" or -495.0 <= float(item["coordinate"]) <= 1.0
             for item in repair_domain_records
         ),
         "zeroInitialDistanceExplicitlyUnavailable": all(
@@ -943,9 +937,9 @@ def main() -> int:
             "initialPhysicalAccountingPass": initial_execution_accounting["success"],
             "descriptorAvailabilityPass": descriptor_audit["success"],
             "logicalIdentityRestorationPass": identity_audit["success"],
-            "s08hRuntimeIntegrityPass": s08h_runtime_integrity_audit(
-                training_rows
-            )["success"],
+            "s08hRuntimeIntegrityPass": s08h_runtime_integrity_audit(training_rows)[
+                "success"
+            ],
         }
     )
     training_validation["success"] = training_validation["success"] and all(
@@ -1247,9 +1241,7 @@ def main() -> int:
             "initialPhysical4864": initial_execution_accounting["success"],
             "e05DescriptorAvailability": descriptor_audit["success"],
             "s08hContract": s08h_contract["success"],
-            "s08hRuntimeIntegrity": training_validation[
-                "s08hRuntimeIntegrityPass"
-            ],
+            "s08hRuntimeIntegrity": training_validation["s08hRuntimeIntegrityPass"],
             "logicalIdentityRestoration": identity_audit["success"],
             "replay": order_validation["success"],
             "configurationHashes": config_hashes["success"],
