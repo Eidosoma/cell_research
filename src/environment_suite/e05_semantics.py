@@ -8,6 +8,43 @@ from typing import Any, Mapping
 TARGET_CHANGE_SEMANTICS_VERSION = "e07.s08h.e05-target-deadline-probe.v1"
 
 
+def target_change_terminal_transition(
+    *,
+    elapsed: int,
+    distance: int,
+    first_hit: int | None,
+    quiescent: bool,
+    invariant_error: bool,
+    adaptation_budget: int,
+    probe_budget: int,
+) -> tuple[int | None, str | None]:
+    """Apply the frozen deadline/probe terminal state machine."""
+
+    if invariant_error:
+        return first_hit, "invariant_error"
+    if elapsed < 0 or adaptation_budget < 1 or probe_budget < 1:
+        raise ValueError("invalid target-change clock or budget")
+    if first_hit is None and distance == 0:
+        if elapsed > adaptation_budget:
+            raise ValueError("target hit observed after the adaptation deadline")
+        first_hit = elapsed
+    if first_hit is not None:
+        if not 0 <= first_hit <= adaptation_budget or elapsed < first_hit:
+            raise ValueError("invalid target-change hit clock")
+        if elapsed - first_hit >= probe_budget:
+            if elapsed - first_hit != probe_budget:
+                raise ValueError("post-hit probe exceeded its exact budget")
+            return first_hit, "post_adaptation_probe_complete"
+        return first_hit, None
+    if quiescent:
+        return None, "controller_quiescent"
+    if elapsed >= adaptation_budget:
+        if elapsed != adaptation_budget:
+            raise ValueError("adaptation deadline was overrun without a target hit")
+        return None, "phase_event_budget"
+    return None, None
+
+
 def validate_target_change_result_semantics(
     result: Mapping[str, Any], *, adaptation_budget: int, probe_budget: int
 ) -> dict[str, Any]:

@@ -8,6 +8,7 @@ import yaml
 
 from src.environment_suite.e05_semantics import (
     TARGET_CHANGE_SEMANTICS_VERSION,
+    target_change_terminal_transition,
     validate_target_change_result_semantics,
 )
 from src.quality_diversity.core import (
@@ -259,3 +260,36 @@ def test_failure_censor_status_is_not_relabelled() -> None:
     assert audit["nativeStopReasonPreserved"] == "phase_event_budget"
     assert audit["adaptationCensoredPreserved"] is True
     assert audit["overshootCensoredPreserved"] is True
+
+
+def test_terminal_transition_enforces_deadline_then_exact_probe() -> None:
+    hit, terminal = target_change_terminal_transition(
+        elapsed=6400,
+        distance=0,
+        first_hit=None,
+        quiescent=False,
+        invariant_error=False,
+        adaptation_budget=6400,
+        probe_budget=160,
+    )
+    assert (hit, terminal) == (6400, None)
+    hit, terminal = target_change_terminal_transition(
+        elapsed=6560,
+        distance=0,
+        first_hit=hit,
+        quiescent=False,
+        invariant_error=False,
+        adaptation_budget=6400,
+        probe_budget=160,
+    )
+    assert (hit, terminal) == (6400, "post_adaptation_probe_complete")
+    with pytest.raises(ValueError, match="after the adaptation deadline"):
+        target_change_terminal_transition(
+            elapsed=6401,
+            distance=0,
+            first_hit=None,
+            quiescent=False,
+            invariant_error=False,
+            adaptation_budget=6400,
+            probe_budget=160,
+        )

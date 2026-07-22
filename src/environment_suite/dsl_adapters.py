@@ -64,6 +64,7 @@ from .communication import RecipientActivationMessageBus, SignalEmission
 from .contracts import EvaluationAction, SuiteValidationError, canonical_sha256
 from .e05_semantics import (
     TARGET_CHANGE_SEMANTICS_VERSION,
+    target_change_terminal_transition,
     validate_target_change_result_semantics,
 )
 from .portfolio_adapters import PortfolioDispatcher
@@ -1636,20 +1637,19 @@ def run_e05_target_change_dsl(
     first_hit: list[int | None] = [None]
 
     def target_terminal(active_scenario: Scenario, state: RunState):
-        if invariant_error(active_scenario, state) is not None:
-            return "invariant_error"
         elapsed = state.activation_count - start
         distance = definition.distance(state.occupancy)
-        if distance == 0 and first_hit[0] is None and elapsed <= adaptation_budget:
-            first_hit[0] = elapsed
-        if first_hit[0] is not None:
-            if elapsed - int(first_hit[0]) >= probe_budget:
-                return "post_adaptation_probe_complete"
-        elif runtime.is_quiescent(active_scenario, state):
-            return "controller_quiescent"
-        elif elapsed >= adaptation_budget:
-            return "phase_event_budget"
-        return None
+        first_hit[0], terminal = target_change_terminal_transition(
+            elapsed=elapsed,
+            distance=distance,
+            first_hit=first_hit[0],
+            quiescent=(first_hit[0] is None)
+            and runtime.is_quiescent(active_scenario, state),
+            invariant_error=invariant_error(active_scenario, state) is not None,
+            adaptation_budget=adaptation_budget,
+            probe_budget=probe_budget,
+        )
+        return terminal
 
     run_result, runtime = run_line_dsl_episode(
         scenario,
