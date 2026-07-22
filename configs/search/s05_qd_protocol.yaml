@@ -1,0 +1,141 @@
+schemaVersion: e07.s05.qd-protocol.v1
+researchStepId: S05
+title: Run quality-diversity search
+frozenAtUtc: '2026-07-22T01:22:12Z'
+frozenBeforeSmoke: true
+frozenQuestion: A task-stratified Pareto MAP-Elites search can produce stable archive improvements beyond the frozen S03 seeds on authorized training support.
+
+eligibility:
+  liveGatePath: configs/search/s04_s05_eligibility_gate.yaml
+  liveGateSha256: ba08b1d7326950ad84e377319dec3be6ad3d5b747013d4f711b1fff4e95e526b
+  evidenceGatePath: /artifacts/research_steps/S04A/s05_eligibility_gate.json
+  evidenceGateSha256: 69eb8829927dd43697d194ea563aef9d33d457ffc35734c61859f1c9fa46318e
+  evidenceManifestPath: /artifacts/research_steps/S04A/artifact_manifest.json
+  evidenceManifestSha256: 70b011a72a7d5d268f2cc94e60bc3daf9a4690ddf762be1c4b1bcff0b4405d9e
+  requiredRows: [G01_protected_split_access, G02_line_E01_E04_arbitrary_DSL_episode_binding, G03_E05_arbitrary_DSL_binding, G04_E06_arbitrary_DSL_binding, G05_objective_descriptor_extraction, G06_deterministic_replay_and_leakage]
+  failClosedOnAnyHashOrStatusChange: true
+
+frozenInputs:
+  seedLibrary: {path: /artifacts/research_steps/S03/seed_library.jsonl, sha256: 6e4cb0482ab8b200736934275fabd04baecea45ad9a64774116e62cde48f59c9}
+  objectiveRegistry: {path: configs/search/s04_objective_registry.yaml, sha256: 32b93e84357e8e43f5fc8cb21ce522c46c9548de3b79a8801339cfa2f8fc903b}
+  descriptorRegistry: {path: configs/search/s04_descriptor_registry.yaml, sha256: 37b6e37ceded3f8e0011b2b013241b2528aea4440b4ce1f736ad8d877292b581}
+  taskWeighting: {path: configs/search/s04_task_weighting.yaml, sha256: 61d1023750711e2b507b8065d916aa4ecb7617ce0511520841a630da7f85d8ba}
+  uncertaintyRegistry: {path: configs/search/s04_uncertainty_registry.yaml, sha256: d5834b4b53326726a85cf0e8322f7d62bd5e5e211961f9db5eab70a814f8f601}
+  antiGamingRegistry: {path: configs/search/s04_anti_gaming_registry.yaml, sha256: 99d1eb90235039fc8a7bfb7de4f7cd06b1956c8669bbf52a5771e433413bc2d9}
+  splitManifest: {path: configs/environment_suite/split_manifest.json, sha256: 989e45e6b03429c64f338b674da044f154f65c1e973909a28f5874365d715df3}
+
+method:
+  family: deterministic_batch_pareto_map_elites
+  taskStratified: true
+  crossTaskArchiveCells: forbidden
+  crossTaskDominance: forbidden
+  universalNormalizedScore: forbidden
+  parentSelection: counter_uniform_cell_then_counter_uniform_policy
+  batchCommitOrder: canonical_policy_sha256
+  archiveFront: uncapped_within_cell_pareto_front
+  e04Scope: one_mutable_compatible_slot_plus_frozen_faithful_counterpart
+  e04GeneralPortfolioSearchDeferredTo: S08
+
+randomness:
+  family: sha256_counter_derivation
+  rootDomain: E07/S05/quality-diversity/v1
+  addresses: [task_id, generation, candidate_ordinal, attempt, stream_name]
+  workerOrderIsRandomSource: false
+  engineNativeCounterStreamsRetained: true
+
+mutationOperators:
+  permissionExpansionAllowed: false
+  capabilityExpansionAllowed: false
+  oneOperatorPerOffspring: true
+  maxAttemptsPerTask: 512
+  operators:
+    - {id: delete_rule, weight: 0.12}
+    - {id: rotate_rule_order, weight: 0.10}
+    - {id: duplicate_rule, weight: 0.08}
+    - {id: flip_comparison, weight: 0.15}
+    - {id: nudge_literal, weight: 0.15}
+    - {id: terminal_noop, weight: 0.10}
+    - {id: flip_relative_offset, weight: 0.07}
+    - {id: flip_candidate_selector, weight: 0.08}
+    - {id: toggle_candidate_positive_requirement, weight: 0.05}
+    - {id: drop_movement_kind, weight: 0.05}
+    - {id: nudge_memory_initial, weight: 0.05}
+
+allocation:
+  profile: primary_equal_tasks
+  taskWeight: 0.125
+  candidateBudgetPerTask: 64
+  minimumEvaluatedCandidatesPerTask: 48
+  maximumGenerations: 5
+  maximumParallelWorkers: 8
+  threadsPerWorker: 1
+  primaryScenarioOrdinalsDefault: [0, 1, 2]
+  reevaluationScenarioOrdinalsDefault: [3, 4]
+  e05RegenerationPrimaryOrdinals: [0, 1]
+  e05RegenerationReevaluationOrdinals: [2, 3]
+  maximumTopLevelEvaluations: 2496
+  nativeInternalReplayIsAdditionalAndRetained: true
+  fullTracesStored: false
+  everyEvaluationSummaryStored: true
+  runtimeDrivenBudgetWeakeningPermitted: false
+
+scenarioResampling:
+  source: outcome_blind_derivation_from_frozen_train_records_only
+  lineAndTargetSeed: sha256_counter_u31
+  faultIndex: sha256_counter_modulo_n
+  chimeraReplicate: declared_ordinal
+  regenerationReplicateOrdinalsAllowed: [0, 1, 2, 3]
+  spatialResample: fixed_native_initial_challenge_with_counter_schedule_key
+  validationRecordsUsed: false
+  confirmationRecordsUsed: false
+
+archives:
+  commonRegistry: s04_native_movement_behavior_v1
+  phenotypeRegistries: frozen_s04_task_phenotype_archives
+  descriptorAggregation: arithmetic_mean_within_policy_scenario_panel
+  binBoundary: lower_inclusive_upper_exclusive_final_upper_inclusive
+  insertionRule: valid_native_episode_and_same_task_cell_and_pareto_nondominated
+  qualityVector:
+    performance: all_applicable_frozen_task_objectives
+    costs: every_fully_qualified_numeric_native_and_extension_ledger_field_minimized_separately
+    complexity: seven_frozen_complexity_fields_minimized_separately
+    licensedCapabilities: retained_as_separate_fully_qualified_cost_fields
+  provisionalArchiveUses: primary_scenario_panel
+  finalArchiveUses: primary_plus_reevaluation_scenario_panel
+  frontCap: null
+  e05SupplementalBinEdges:
+    boundedFractions: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    signedEffects: [-1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0]
+    note: S04 froze E05 axis fields and bounds but omitted explicit edges; these edges are prospectively frozen before S05 smoke and do not change the S04 fields, bounds, or axis separation.
+
+duplicates:
+  canonicalPolicyHash: reject
+  structuralBodyHashExcludingPolicyId: reject_before_evaluation
+  boundedSemanticCriterion: identical_task_scenario_result_cost_descriptor_and_stop_signature_on_all_shared_training_blocks
+  boundedSemanticDuplicate: retain_lower_complexity_then_lower_policy_hash
+  proofBoundary: finite_training_support_not_universal_program_equivalence
+
+uncertaintyAndReevaluation:
+  policiesReevaluated: union_of_provisional_archive_fronts_plus_all_frozen_seed_baselines
+  scenarioBlockBootstrapReplicates: 1000
+  objectiveIntervalBootstrapReplicates: 2000
+  stableCellProbabilityThreshold: 0.8
+  retainRawScenarioRows: true
+  censoredRowsDropped: false
+  failedRowsDropped: false
+
+convergence:
+  checkAtGenerationBoundary: true
+  minimumEvaluatedCandidatesPerTask: 48
+  patienceGenerations: 2
+  stallRequiresAll: [zero_new_cells, zero_new_seed_front_dominance, occupancy_growth_below_0.01]
+  hardStop: candidate_budget_or_prespecified_stall
+  runtimeOrWallClockStop: forbidden
+
+seedComparison:
+  sameTaskSameArchiveOnly: true
+  improvementIfAny: [stable_new_cell_not_occupied_by_seed, same_cell_pareto_dominates_at_least_one_seed_without_being_seed_dominated]
+  supportiveCriterion: at_least_one_search_generated_stable_improvement_after_duplicate_and_anti_gaming_checks
+  nullCriterion: no_stable_improvement_after_every_task_reaches_prespecified_minimum_or_budget
+
+claimBoundary: Training-support computational archive novelty and task-local Pareto improvement only; no held-out efficacy, biological competence, planning, agency, convergence proof, or universal policy superiority.

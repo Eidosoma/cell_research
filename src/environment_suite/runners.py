@@ -1005,6 +1005,19 @@ def run_spatial(
         item for item in context.episodes if item.scenario_id == scenario_id
     )
     if action.mode == "dsl_episode":
+        counter_schedule_key = record.public_parameters.get("counterScheduleKey")
+        if counter_schedule_key is not None:
+            if record.split.value != "train" or record.protected:
+                raise SuiteValidationError(
+                    "spatial counter-schedule resampling is train-only"
+                )
+            # E06 counter-based randomness is keyed by scenario_id.  S05 keeps
+            # the frozen native challenge and varies only that public counter
+            # address; no outcome or protected row is consulted.
+            definition = replace(
+                definition,
+                scenario_id=str(counter_schedule_key),
+            )
         first = run_spatial_dsl_episode(
             context,
             definition,
@@ -1077,7 +1090,8 @@ def run_spatial(
             provenance={
                 "predecessor": "E06",
                 "engineVersion": "e06-morph2d-hybrid-engine-v1",
-                "nativeScenarioId": scenario_id,
+                "nativeScenarioId": definition.scenario_id,
+                "baseNativeScenarioId": scenario_id,
                 "adapterVersion": "e07.s04a.dsl-native-adapters.v1",
             },
         )
