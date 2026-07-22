@@ -62,6 +62,7 @@ from src.policy_dsl import CompiledPolicy, compile_policy, execute_policy
 
 from .communication import RecipientActivationMessageBus, SignalEmission
 from .contracts import EvaluationAction, SuiteValidationError, canonical_sha256
+from .portfolio_adapters import PortfolioDispatcher
 
 
 ADAPTER_VERSION = "e07.s04a.dsl-native-adapters.v1"
@@ -192,6 +193,46 @@ def bind_homogeneous_line_scenario(
     )
 
 
+def bind_portfolio_line_scenario(
+    scenario: Scenario, action: EvaluationAction
+) -> Scenario:
+    """Bind a portfolio to native carriers without changing carrier authority."""
+
+    policies = compiled_policies(action)
+    if not action.portfolio_definition:
+        raise SuiteValidationError("portfolio line binding requires a definition")
+    dispatcher = PortfolioDispatcher(action.portfolio_definition, policies)
+    carriers = {Policy(name) for name in dispatcher.members_by_carrier}
+    for carrier_name, members in dispatcher.members_by_carrier.items():
+        carrier = Policy(carrier_name)
+        for policy in members:
+            _validate_line_authority(policy, carrier)
+    present = {cell.policy for cell in scenario.cells}
+    if len(carriers) == 1 and len(present) == 1:
+        carrier = next(iter(carriers))
+        if present == {carrier}:
+            return scenario
+        cells = tuple(replace(cell, policy=carrier) for cell in scenario.cells)
+        return Scenario.create(
+            cells,
+            initial_occupancy=scenario.initial_occupancy,
+            seed=scenario.seed,
+            max_activations=scenario.max_activations,
+            architecture=scenario.architecture,
+            batch_width=scenario.batch_width,
+            generation_key=(
+                f"{scenario.generation_key}/S08A/{action.policy_sha256}/{carrier.value}"
+            ),
+            fault_placement=scenario.fault_placement,
+            requested_fault_count=scenario.requested_fault_count,
+        )
+    if present != carriers:
+        raise SuiteValidationError(
+            "portfolio carriers do not exactly preserve heterogeneous native carriers"
+        )
+    return scenario
+
+
 def _line_neighbors(state: RunState) -> dict[str, tuple[str, ...]]:
     result: dict[str, tuple[str, ...]] = {}
     for position, actor_id in enumerate(state.occupancy):
@@ -231,6 +272,7 @@ def _empty_runtime_ledger() -> dict[str, int]:
 class _PendingLineEffects:
     actor_id: str
     event_index: int
+    policy_sha256: str
     emitted: Mapping[int, int]
     neighbors: Mapping[str, Sequence[str]]
 
@@ -318,24 +360,69 @@ class LineDslRuntime:
         *,
         value_projection: Mapping[str, int] | None = None,
         nudge_count: int = 0,
+        portfolio_dispatcher: PortfolioDispatcher | None = None,
     ) -> None:
         if not policies_by_native:
             raise SuiteValidationError("line runtime needs at least one policy binding")
         if any(item.environment != "line1d.v1" for item in policies_by_native.values()):
             raise SuiteValidationError("line runtime received a non-line policy")
         self.policies_by_native = dict(policies_by_native)
+        self.all_policies = {
+            policy.policy_sha256: policy for policy in policies_by_native.values()
+        }
+        if portfolio_dispatcher is not None:
+            self.all_policies.update(
+                {
+                    policy.policy_sha256: policy
+                    for members in portfolio_dispatcher.members_by_carrier.values()
+                    for policy in members
+                }
+            )
         self.value_projection = dict(value_projection or {})
         self.nudge_count = int(nudge_count)
         self.memory: dict[str, dict[str, int]] = {}
+        self.member_memory: dict[str, dict[str, dict[str, int]]] = {}
         self.last_rejected: dict[str, bool] = {}
-        self.buses: dict[tuple[int, int], RecipientActivationMessageBus] = {}
+        self.portfolio_dispatcher = portfolio_dispatcher
+        self.buses: dict[tuple[str, int, int], RecipientActivationMessageBus] = {}
         self.pending_effects: dict[int, _PendingLineEffects] = {}
         self.ledger = _empty_runtime_ledger()
         self.decision_counts: Counter[str] = Counter()
         self.activation_counts: Counter[str] = Counter()
+        self.dispatch_counts: Counter[str] = Counter()
 
-    def _policy(self, scenario: Scenario, actor_id: str) -> CompiledPolicy:
+    def _policy(
+        self,
+        scenario: Scenario,
+        state: RunState,
+        actor_id: str,
+        *,
+        mutate: bool,
+    ) -> CompiledPolicy:
         native = scenario.cell_map[actor_id].policy
+        if self.portfolio_dispatcher is not None:
+            by_carrier: dict[str, list[str]] = {
+                carrier: [] for carrier in self.portfolio_dispatcher.members_by_carrier
+            }
+            for cell in scenario.cells:
+                by_carrier.setdefault(cell.policy.value, []).append(cell.cell_id)
+            self.portfolio_dispatcher.register_identities(by_carrier)
+            signal = self.portfolio_dispatcher.selector_signal
+            selector_value: bool | int = False
+            if signal == "last_action.rejected":
+                selector_value = self.last_rejected.get(actor_id, False)
+            elif signal == "repair.nudge_count":
+                selector_value = self.nudge_count
+            policy = self.portfolio_dispatcher.select(
+                native.value,
+                actor_id,
+                self.dispatch_counts.get(actor_id, 0),
+                selector_value=selector_value,
+                mutate=mutate,
+            )
+            if mutate:
+                self.dispatch_counts[actor_id] += 1
+            return policy
         try:
             return self.policies_by_native[native]
         except KeyError as exc:
@@ -346,11 +433,11 @@ class LineDslRuntime:
     def _bus(self, policy: CompiledPolicy) -> RecipientActivationMessageBus | None:
         if policy.signal_channels == 0:
             return None
-        key = (policy.signal_channels, policy.signal_bits_per_channel)
-        if self.buses and key not in self.buses:
-            raise SuiteValidationError(
-                "one line episode cannot mix incompatible DSL signal widths"
-            )
+        key = (
+            policy.policy_sha256,
+            policy.signal_channels,
+            policy.signal_bits_per_channel,
+        )
         return self.buses.setdefault(
             key,
             RecipientActivationMessageBus(
@@ -358,6 +445,37 @@ class LineDslRuntime:
                 bits_per_channel=policy.signal_bits_per_channel,
             ),
         )
+
+    def _memory_for(
+        self, actor_id: str, policy: CompiledPolicy, *, mutate: bool
+    ) -> dict[str, int]:
+        initial = {item.name: item.initial for item in policy.memory}
+        if self.portfolio_dispatcher is None:
+            if mutate:
+                return self.memory.setdefault(actor_id, initial)
+            return self.memory.get(actor_id, initial)
+        actor_namespaces = self.member_memory.get(actor_id)
+        if actor_namespaces is None:
+            if not mutate:
+                return initial
+            actor_namespaces = self.member_memory.setdefault(actor_id, {})
+        existing = actor_namespaces.get(policy.policy_sha256)
+        if existing is not None:
+            return existing
+        if mutate:
+            actor_namespaces[policy.policy_sha256] = initial
+            self.portfolio_dispatcher.note_namespace_initialization()
+        return initial
+
+    def _write_memory(
+        self, actor_id: str, policy: CompiledPolicy, value: Mapping[str, int]
+    ) -> None:
+        if self.portfolio_dispatcher is None:
+            self.memory[actor_id] = dict(value)
+        else:
+            self.member_memory.setdefault(actor_id, {})[policy.policy_sha256] = dict(
+                value
+            )
 
     @staticmethod
     def _pending_sum(bus: RecipientActivationMessageBus | None, actor_id: str) -> int:
@@ -545,6 +663,7 @@ class LineDslRuntime:
     ) -> tuple[Proposal, bool, bool]:
         actor = scenario.cell_map[actor_id]
         position = state.occupancy.index(actor_id)
+        policy = self._policy(scenario, state, actor_id, mutate=mutate)
         if actor.fault == FaultMode.STUCK:
             return (
                 Proposal(
@@ -557,7 +676,6 @@ class LineDslRuntime:
                 False,
                 False,
             )
-        policy = self._policy(scenario, actor_id)
         observation, reads, comparisons = self._observation(
             policy,
             scenario,
@@ -567,9 +685,7 @@ class LineDslRuntime:
             consume_signal=mutate,
             charge=mutate,
         )
-        initial = self.memory.setdefault(
-            actor_id, {item.name: item.initial for item in policy.memory}
-        )
+        initial = self._memory_for(actor_id, policy, mutate=mutate)
         comparisons += _line_rule_value_comparisons(policy, observation, initial)
         result = execute_policy(policy, observation, initial)
         memory_changed = dict(result.memory) != initial
@@ -623,7 +739,7 @@ class LineDslRuntime:
             observed_target_id=observed_target,
         )
         if mutate:
-            self.memory[actor_id] = dict(result.memory)
+            self._write_memory(actor_id, policy, result.memory)
             self.activation_counts[actor_id] += 1
             self.ledger["dslActivations"] += 1
             self.ledger["dslOperations"] += result.operation_count
@@ -634,6 +750,7 @@ class LineDslRuntime:
             self.pending_effects[state.activation_count] = _PendingLineEffects(
                 actor_id,
                 state.activation_count,
+                policy.policy_sha256,
                 dict(result.emitted_signals),
                 _line_neighbors(state),
             )
@@ -712,8 +829,8 @@ class LineDslRuntime:
             if effects and effects.emitted:
                 policy = next(
                     value
-                    for value in self.policies_by_native.values()
-                    if value.signal_channels
+                    for value in self.all_policies.values()
+                    if value.policy_sha256 == effects.policy_sha256
                 )
                 bus = self._bus(policy)
                 assert bus is not None
@@ -742,9 +859,10 @@ class LineDslRuntime:
         if any(item.emitted for item in self.pending_effects.values()):
             return False
         for cell in scenario.cells:
+            policy = self._policy(scenario, state, cell.cell_id, mutate=False)
             sides: tuple[Literal["left", "right"] | None, ...] = (
                 ("left", "right")
-                if "activation.side" in self._policy(scenario, cell.cell_id).permissions
+                if "activation.side" in policy.permissions
                 else (None,)
             )
             for side in sides:
@@ -764,7 +882,7 @@ class LineDslRuntime:
             return True
         return False
 
-    def adapter_ledgers(self) -> dict[str, dict[str, int]]:
+    def adapter_ledgers(self) -> dict[str, Mapping[str, Any]]:
         communication = {
             field: 0
             for field in (
@@ -779,10 +897,101 @@ class LineDslRuntime:
         for bus in self.buses.values():
             for key, value in bus.ledger_snapshot().items():
                 communication[key] += value
-        return {
+        licensed = {
+            key: self.ledger[key]
+            for key in (
+                "licensedPrefixPredicateEvaluations",
+                "licensedPrefixValueReads",
+                "licensedPrefixValueComparisons",
+                "engineCursorStateReads",
+                "engineCursorTargetProjectionReads",
+                "engineCursorAdvanceActions",
+                "engineCursorSwapActions",
+                "licensedLongRangeRequestedDistance",
+                "licensedLongRangeMaximumRequestedDistance",
+            )
+        }
+        result: dict[str, Mapping[str, Any]] = {
             "dslRuntimeLedger": dict(self.ledger),
             "dslCommunicationLedger": communication,
+            "licensedCapabilityLedger": licensed,
         }
+        if self.portfolio_dispatcher is not None:
+            snapshot = self.portfolio_dispatcher.ledger_snapshot()
+            coordination = dict(snapshot["portfolioCoordinationLedger"])
+            coordination.update(communication)
+            result.update(
+                {
+                    "portfolioStructuralLedger": snapshot["portfolioStructuralLedger"],
+                    "portfolioCoordinationLedger": coordination,
+                }
+            )
+        return result
+
+    def portfolio_assignment_audit(self) -> Mapping[str, Any] | None:
+        if self.portfolio_dispatcher is None:
+            return None
+        snapshot = self.portfolio_dispatcher.ledger_snapshot()
+        result = {
+            key: value
+            for key, value in snapshot.items()
+            if key
+            not in {
+                "portfolioStructuralLedger",
+                "portfolioCoordinationLedger",
+            }
+        }
+        namespace_hashes = {
+            f"{actor_id}::{policy_sha256}": canonical_sha256(
+                "E07/S08A/member-memory-namespace/v1", value
+            )
+            for actor_id, namespaces in sorted(self.member_memory.items())
+            for policy_sha256, value in sorted(namespaces.items())
+        }
+        result["memberMemoryNamespaceCount"] = len(namespace_hashes)
+        result["memberMemoryNamespaceSha256"] = namespace_hashes
+        return result
+
+
+def make_line_runtime(
+    scenario: Scenario,
+    action: EvaluationAction,
+    *,
+    value_projection: Mapping[str, int] | None = None,
+    nudge_count: int = 0,
+) -> LineDslRuntime:
+    """Construct the single-member or portfolio runtime for a bound line."""
+
+    policies = compiled_policies(action)
+    dispatcher: PortfolioDispatcher | None = None
+    if action.portfolio_definition:
+        dispatcher = PortfolioDispatcher(action.portfolio_definition, policies)
+        bindings = {
+            Policy(carrier): members[0]
+            for carrier, members in dispatcher.members_by_carrier.items()
+        }
+    elif action.native_policy_bindings:
+        bindings = {
+            Policy(native): policies[policy_id]
+            for native, policy_id in action.native_policy_bindings.items()
+        }
+    elif len(policies) == 1:
+        policy = next(iter(policies.values()))
+        bindings = {cell.policy: policy for cell in scenario.cells}
+    else:
+        raise SuiteValidationError("portfolio action requires native policy bindings")
+    for carrier, policy in bindings.items():
+        _validate_line_authority(policy, carrier)
+    if dispatcher is not None:
+        for carrier_name, members in dispatcher.members_by_carrier.items():
+            for policy in members:
+                _validate_line_authority(policy, Policy(carrier_name))
+    return LineDslRuntime(
+        bindings,
+        value_projection=value_projection,
+        nudge_count=nudge_count,
+        portfolio_dispatcher=dispatcher,
+    )
 
 
 def run_line_dsl_episode(
@@ -796,21 +1005,11 @@ def run_line_dsl_episode(
     runtime: LineDslRuntime | None = None,
     terminal_evaluator: Any | None = None,
 ) -> tuple[RunResult, LineDslRuntime]:
-    policies = compiled_policies(action)
-    if action.native_policy_bindings:
-        bindings = {
-            Policy(native): policies[policy_id]
-            for native, policy_id in action.native_policy_bindings.items()
-        }
-    elif len(policies) == 1:
-        policy = next(iter(policies.values()))
-        bindings = {cell.policy: policy for cell in scenario.cells}
-    else:
-        raise SuiteValidationError("portfolio action requires native policy bindings")
-    for carrier, policy in bindings.items():
-        _validate_line_authority(policy, carrier)
-    runtime = runtime or LineDslRuntime(
-        bindings, value_projection=value_projection, nudge_count=nudge_count
+    runtime = runtime or make_line_runtime(
+        scenario,
+        action,
+        value_projection=value_projection,
+        nudge_count=nudge_count,
     )
     result = run(
         scenario,
@@ -828,9 +1027,12 @@ def line_replay_bytes(result: RunResult, runtime: LineDslRuntime) -> bytes:
         {
             "result": result.to_dict(),
             "adapterLedgers": runtime.adapter_ledgers(),
+            "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
             "memory": runtime.memory,
+            "memberMemory": runtime.member_memory,
             "lastRejected": runtime.last_rejected,
             "activationCounts": dict(sorted(runtime.activation_counts.items())),
+            "dispatchCounts": dict(sorted(runtime.dispatch_counts.items())),
         }
     )
 
@@ -884,9 +1086,12 @@ def run_e05_regeneration_dsl(
     from src.regeneration.tasks import strict_unequal_inversions
 
     policies = compiled_policies(action)
-    if len(policies) != 1:
-        raise SuiteValidationError("E05 core adapter accepts one DSL policy")
-    policy = next(iter(policies.values()))
+    if action.portfolio_definition:
+        policy = next(iter(policies.values()))
+    elif len(policies) == 1:
+        policy = next(iter(policies.values()))
+    else:
+        raise SuiteValidationError("E05 core adapter requires one policy or portfolio")
     n = 32
     development_budget = 100 * n * n
     recovery_budget = 100 * n * n
@@ -898,7 +1103,11 @@ def run_e05_regeneration_dsl(
         placement_map=0,
         max_activations=2 * development_budget + 40 * n,
     )
-    scenario = bind_homogeneous_line_scenario(source, policy)
+    scenario = (
+        bind_portfolio_line_scenario(source, action)
+        if action.portfolio_definition
+        else bind_homogeneous_line_scenario(source, policy)
+    )
     development, runtime = run_line_dsl_episode(scenario, action)
     source_completed = bool(development.summary["completed"])
     phase_rows: list[dict[str, Any]] = [
@@ -936,6 +1145,7 @@ def run_e05_regeneration_dsl(
             },
             "nativeLedgers": {"development": dict(development.summary["ledger"])},
             "adapterLedgers": runtime.adapter_ledgers(),
+            "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
             "nativeMovementDescriptorsByPhase": {
                 "development": _line_movement_descriptors(runtime.ledger, cell_count=n)
             },
@@ -1115,7 +1325,7 @@ def run_e05_regeneration_dsl(
 
     # Memory axis: same checkpoint/lesion, but identity memory reset before the
     # recovery phase.  Pairing and scheduler/global clock are unchanged.
-    reset_runtime = LineDslRuntime({scenario.cells[0].policy: policy}, nudge_count=1)
+    reset_runtime = make_line_runtime(scenario, action, nudge_count=1)
 
     def reset_terminal(active_scenario: Scenario, state: RunState):
         if invariant_error(active_scenario, state) is not None:
@@ -1303,6 +1513,13 @@ def run_e05_regeneration_dsl(
             "faultDsl": fault_runtime.adapter_ledgers()["dslRuntimeLedger"],
             "transferDsl": transfer_runtime.adapter_ledgers()["dslRuntimeLedger"],
         },
+        "adapterLedgers": runtime.adapter_ledgers(),
+        "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
+        "adapterLedgersByIndependentPhase": {
+            "memoryResetRecovery": reset_runtime.adapter_ledgers(),
+            "robustnessFault": fault_runtime.adapter_ledgers(),
+            "transfer": transfer_runtime.adapter_ledgers(),
+        },
         "validation": {
             "phaseLocalClocks": all(row["opportunities"] >= 0 for row in phase_rows),
             "developmentBudgetRespected": int(development.summary["activationCount"])
@@ -1337,15 +1554,19 @@ def run_e05_target_change_dsl(
     from src.regeneration.target_change import TargetChange, build_target_definition
 
     policies = compiled_policies(action)
-    if len(policies) != 1:
-        raise SuiteValidationError("E05 target-change adapter accepts one DSL policy")
-    policy = next(iter(policies.values()))
-    scenario = bind_homogeneous_line_scenario(scenario, policy)
+    if action.portfolio_definition:
+        policy = next(iter(policies.values()))
+        scenario = bind_portfolio_line_scenario(scenario, action)
+    elif len(policies) == 1:
+        policy = next(iter(policies.values()))
+        scenario = bind_homogeneous_line_scenario(scenario, policy)
+    else:
+        raise SuiteValidationError(
+            "E05 target-change adapter requires one policy or portfolio"
+        )
     definition = build_target_definition(scenario, TargetChange(target_change_id))
     projection = definition.policy_code_map
-    runtime = LineDslRuntime(
-        {scenario.cells[0].policy: policy}, value_projection=projection
-    )
+    runtime = make_line_runtime(scenario, action, value_projection=projection)
     start = 0
     first_hit: list[int | None] = [None]
 
@@ -1415,6 +1636,7 @@ def run_e05_target_change_dsl(
             ]["observableAggregateReads"],
         },
         "dslLedgers": runtime.adapter_ledgers(),
+        "portfolioAssignmentAudit": runtime.portfolio_assignment_audit(),
         "descriptorsByAxis": {
             "plasticity_target_adaptation": {
                 "restrictedAdaptationTimeFraction": min(
@@ -1619,24 +1841,40 @@ def run_spatial_dsl_episode(
     """Run a complete fixed-clock E06 episode under an arbitrary spatial DSL."""
 
     policies = compiled_policies(action)
-    if len(policies) != 1:
-        raise SuiteValidationError("current E06 task contract accepts one DSL policy")
-    policy = next(iter(policies.values()))
-    if policy.environment != "spatial2d.v1":
-        raise SuiteValidationError("E06 adapter requires spatial2d.v1 policy")
-    _validate_spatial_authority(policy, definition)
+    dispatcher = (
+        PortfolioDispatcher(action.portfolio_definition, policies)
+        if action.portfolio_definition
+        else None
+    )
+    if dispatcher is not None:
+        if set(dispatcher.members_by_carrier) != {"spatial"}:
+            raise SuiteValidationError("E06 portfolio requires spatial carriers")
+        spatial_policies = tuple(dispatcher.members_by_carrier["spatial"])
+    elif len(policies) == 1:
+        spatial_policies = tuple(policies.values())
+    else:
+        raise SuiteValidationError("E06 requires one policy or spatial portfolio")
+    for policy in spatial_policies:
+        if policy.environment != "spatial2d.v1":
+            raise SuiteValidationError("E06 adapter requires spatial2d.v1 policy")
+        _validate_spatial_authority(policy, definition)
     if definition.channel_mode != "none":
         raise SuiteValidationError(
             "DSL peer signals cannot impersonate an E06 authority-bearing channel"
         )
     environment = context.environments[definition.environment_id]
-    dsl_definition = _spatial_definition(policy)
+    dsl_definitions = {
+        policy.policy_sha256: _spatial_definition(policy) for policy in spatial_policies
+    }
     relation_profile = (
         None
         if definition.relation_grammar_id is None
         else compile_relation_profile(context.grammars[definition.relation_grammar_id])
     )
-    if dsl_definition.relation_profile_required and relation_profile is None:
+    if (
+        any(item.relation_profile_required for item in dsl_definitions.values())
+        and relation_profile is None
+    ):
         raise SuiteValidationError(
             "DSL policy requires unavailable local relation authority"
         )
@@ -1658,19 +1896,27 @@ def run_spatial_dsl_episode(
             if occupant.kind == "cell"
         )
     )
-    memory = {
-        actor: {item.name: item.initial for item in policy.memory}
-        for actor in actor_ids
-    }
+    if dispatcher is not None:
+        dispatcher.register_identities({"spatial": actor_ids})
+    memory = (
+        {
+            actor: {item.name: item.initial for item in spatial_policies[0].memory}
+            for actor in actor_ids
+        }
+        if dispatcher is None
+        else {}
+    )
+    member_memory: dict[str, dict[str, dict[str, int]]] = {}
     last_rejected = {actor: False for actor in actor_ids}
-    bus = (
-        RecipientActivationMessageBus(
+    buses = {
+        policy.policy_sha256: RecipientActivationMessageBus(
             channels=policy.signal_channels,
             bits_per_channel=policy.signal_bits_per_channel,
         )
+        for policy in spatial_policies
         if policy.signal_channels
-        else None
-    )
+    }
+    dispatch_counts: Counter[str] = Counter()
     movement = {field: 0 for field in MOVEMENT_LEDGER_FIELDS}
     observation = {field: 0 for field in OBSERVATION_LEDGER_FIELDS}
     channel = {field: 0 for field in CHANNEL_LEDGER_FIELDS}
@@ -1702,6 +1948,18 @@ def run_spatial_dsl_episode(
         builds: dict[str, ObservationBuild] = {}
         for slot, actor in enumerate(scheduled):
             activation = transition_index * definition.actor_batch_size + slot
+            if dispatcher is None:
+                policy = spatial_policies[0]
+            else:
+                policy = dispatcher.select(
+                    "spatial",
+                    actor,
+                    dispatch_counts[actor],
+                    selector_value=last_rejected[actor],
+                    mutate=True,
+                )
+                dispatch_counts[actor] += 1
+            dsl_definition = dsl_definitions[policy.policy_sha256]
             build = build_policy_observation(
                 environment,
                 state,
@@ -1718,6 +1976,7 @@ def run_spatial_dsl_episode(
             )
             signal_sum = 0
             if "signal.neighbor_sum_u8" in policy.permissions:
+                bus = buses.get(policy.policy_sha256)
                 if bus is None:
                     raise SuiteValidationError(
                         "signal permission requires declared channels"
@@ -1737,8 +1996,20 @@ def run_spatial_dsl_episode(
                 signal_sum=signal_sum,
                 counter_value=counter,
             )
-            decision = execute_policy(policy, dsl_observation, memory[actor])
-            memory[actor] = dict(decision.memory)
+            if dispatcher is None:
+                actor_memory = memory[actor]
+            else:
+                namespaces = member_memory.setdefault(actor, {})
+                actor_memory = namespaces.get(policy.policy_sha256)
+                if actor_memory is None:
+                    actor_memory = {item.name: item.initial for item in policy.memory}
+                    namespaces[policy.policy_sha256] = actor_memory
+                    dispatcher.note_namespace_initialization()
+            decision = execute_policy(policy, dsl_observation, actor_memory)
+            if dispatcher is None:
+                memory[actor] = dict(decision.memory)
+            else:
+                member_memory[actor][policy.policy_sha256] = dict(decision.memory)
             runtime["dslActivations"] += 1
             runtime["dslOperations"] += decision.operation_count
             runtime["dslMemoryWrites"] += sum(
@@ -1746,7 +2017,12 @@ def run_spatial_dsl_episode(
             )
             runtime["dslSignalBundles"] += int(bool(decision.emitted_signals))
             pending_emissions.append(
-                (actor, activation, dict(decision.emitted_signals))
+                (
+                    actor,
+                    activation,
+                    policy.policy_sha256,
+                    dict(decision.emitted_signals),
+                )
             )
             terminal = next(
                 item
@@ -1769,10 +2045,10 @@ def run_spatial_dsl_episode(
                 builds[proposal.proposal_id] = build
         # Every actor in the synchronous native batch observes before any peer
         # emission from that same batch becomes deliverable.
-        if bus is not None:
-            for actor, activation, emitted in pending_emissions:
-                if emitted:
-                    bus.emit(SignalEmission(actor, activation, emitted), topology)
+        for actor, activation, policy_sha256, emitted in pending_emissions:
+            bus = buses.get(policy_sha256)
+            if emitted and bus is not None:
+                bus.emit(SignalEmission(actor, activation, emitted), topology)
         batch = resolve_batch(
             environment,
             state,
@@ -1782,6 +2058,11 @@ def run_spatial_dsl_episode(
         state = parse_movement_state(batch["postState"])
         _add_fields(movement, batch["costLedger"], MOVEMENT_LEDGER_FIELDS)
         accepted = set(batch["acceptedProposalIds"])
+        proposed_actors = set(proposal_actor.values())
+        if dispatcher is not None:
+            for actor in scheduled:
+                if actor not in proposed_actors:
+                    last_rejected[actor] = False
         for proposal in proposals:
             actor = proposal_actor[proposal.proposal_id]
             last_rejected[actor] = proposal.proposal_id not in accepted
@@ -1827,25 +2108,58 @@ def run_spatial_dsl_episode(
     runtime["rejectedNativeActions"] = (
         movement["invalidProposals"] + movement["conflictLosses"]
     )
-    communication = (
-        bus.ledger_snapshot()
-        if bus is not None
-        else {
-            "emittedSignalWrites": 0,
-            "transmittedSignalBits": 0,
-            "recipientDeliveries": 0,
-            "bufferOverwrites": 0,
-            "consumedDeliveries": 0,
-            "observableAggregateReads": 0,
+    communication = {
+        "emittedSignalWrites": 0,
+        "transmittedSignalBits": 0,
+        "recipientDeliveries": 0,
+        "bufferOverwrites": 0,
+        "consumedDeliveries": 0,
+        "observableAggregateReads": 0,
+    }
+    for bus in buses.values():
+        for key, value in bus.ledger_snapshot().items():
+            communication[key] += value
+    portfolio_ledgers: dict[str, Any] = {}
+    if dispatcher is not None:
+        snapshot = dispatcher.ledger_snapshot()
+        coordination = dict(snapshot["portfolioCoordinationLedger"])
+        coordination.update(communication)
+        portfolio_ledgers = {
+            "portfolioStructuralLedger": snapshot["portfolioStructuralLedger"],
+            "portfolioCoordinationLedger": coordination,
+            "portfolioAssignmentAudit": (
+                {
+                    key: value
+                    for key, value in snapshot.items()
+                    if key
+                    not in {
+                        "portfolioStructuralLedger",
+                        "portfolioCoordinationLedger",
+                    }
+                }
+                | {
+                    "memberMemoryNamespaceCount": sum(
+                        len(namespaces) for namespaces in member_memory.values()
+                    ),
+                    "memberMemoryNamespaceSha256": {
+                        f"{actor_id}::{policy_sha256}": canonical_sha256(
+                            "E07/S08A/member-memory-namespace/v1", value
+                        )
+                        for actor_id, namespaces in sorted(member_memory.items())
+                        for policy_sha256, value in sorted(namespaces.items())
+                    },
+                }
+            ),
         }
-    )
     body = {
         "schemaVersion": "e07.s04a.e06-dsl-episode.v1",
         "adapterVersion": ADAPTER_VERSION,
         "scenarioId": definition.scenario_id,
         "environmentId": definition.environment_id,
-        "policyId": policy.policy_id,
-        "policySha256": policy.policy_sha256,
+        "policyId": (
+            spatial_policies[0].policy_id if dispatcher is None else "dsl_portfolio"
+        ),
+        "policySha256": action.policy_sha256,
         "transitionBudget": definition.transitions,
         "actorBatchSize": definition.actor_batch_size,
         "initialStateSha256": initial_hash,
@@ -1859,6 +2173,21 @@ def run_spatial_dsl_episode(
         "e06ChannelLedger": channel,
         "dslRuntimeLedger": runtime,
         "dslCommunicationLedger": communication,
+        "licensedCapabilityLedger": {
+            key: runtime[key]
+            for key in (
+                "licensedPrefixPredicateEvaluations",
+                "licensedPrefixValueReads",
+                "licensedPrefixValueComparisons",
+                "engineCursorStateReads",
+                "engineCursorTargetProjectionReads",
+                "engineCursorAdvanceActions",
+                "engineCursorSwapActions",
+                "licensedLongRangeRequestedDistance",
+                "licensedLongRangeMaximumRequestedDistance",
+            )
+        },
+        **portfolio_ledgers,
         "transitionSummaries": transition_summaries,
         "offlineEvaluation": metrics,
         "descriptors": {
@@ -1883,7 +2212,17 @@ def run_spatial_dsl_episode(
             "nativeLegalityPreserved": movement["invalidProposals"] == 0,
             "conflictResolutionNative": True,
             "atomicCommitNative": True,
-            "identityMemoryOwned": set(memory) == set(actor_ids),
+            "identityMemoryOwned": (
+                set(memory) == set(actor_ids)
+                if dispatcher is None
+                else set(member_memory).issubset(set(actor_ids))
+            ),
+            "memberMemoryNamespacesIsolated": dispatcher is None
+            or all(
+                policy_sha256 in {item.policy_sha256 for item in spatial_policies}
+                for namespaces in member_memory.values()
+                for policy_sha256 in namespaces
+            ),
             "e06ChannelsNotImpersonated": True,
             "offlineS01S02Conjunction": True,
             "onlineCompletionHiddenFromPolicy": True,

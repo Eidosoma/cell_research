@@ -238,6 +238,7 @@ class EvaluationAction:
     mode: str = "native_baseline"
     policy_documents: tuple[Mapping[str, Any], ...] = ()
     native_policy_bindings: Mapping[str, str] = field(default_factory=dict)
+    portfolio_definition: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.policy_id:
@@ -249,7 +250,11 @@ class EvaluationAction:
         if self.mode not in {"native_baseline", "dsl_episode"}:
             raise SuiteValidationError("unsupported evaluation action mode")
         if self.mode == "native_baseline":
-            if self.policy_documents or self.native_policy_bindings:
+            if (
+                self.policy_documents
+                or self.native_policy_bindings
+                or self.portfolio_definition
+            ):
                 raise SuiteValidationError(
                     "native baseline actions cannot contain DSL payloads"
                 )
@@ -265,17 +270,30 @@ class EvaluationAction:
             compiled[0].policy_id if len(compiled) == 1 else "dsl_portfolio"
         ):
             raise SuiteValidationError("dsl_episode policy ID mismatch")
-        expected_hash = (
-            compiled[0].policy_sha256
-            if len(compiled) == 1
-            else canonical_sha256(
-                "E07/S04A/dsl-portfolio/v1",
+        if self.portfolio_definition:
+            if len(compiled) < 2 or self.policy_id != "dsl_portfolio":
+                raise SuiteValidationError(
+                    "portfolio definition requires at least two DSL members"
+                )
+            expected_hash = canonical_sha256(
+                "E07/S08A/portfolio-action/v1",
                 {
-                    "bindings": dict(self.native_policy_bindings),
+                    "definition": dict(self.portfolio_definition),
                     "policies": [item.policy_sha256 for item in compiled],
                 },
             )
-        )
+        else:
+            expected_hash = (
+                compiled[0].policy_sha256
+                if len(compiled) == 1
+                else canonical_sha256(
+                    "E07/S04A/dsl-portfolio/v1",
+                    {
+                        "bindings": dict(self.native_policy_bindings),
+                        "policies": [item.policy_sha256 for item in compiled],
+                    },
+                )
+            )
         if self.policy_sha256 != expected_hash:
             raise SuiteValidationError("dsl_episode policy hash mismatch")
         identifiers = {item.policy_id for item in compiled}

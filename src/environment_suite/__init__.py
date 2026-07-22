@@ -37,6 +37,7 @@ from .dsl_adapters import (
     run_spatial_dsl_episode,
 )
 from .runners import RUNNERS, baseline_policy_hash
+from .portfolio_adapters import PORTFOLIO_ADAPTER_VERSION, portfolio_action
 from .suite import EnvironmentSuite, UnifiedEnvironment
 
 __all__ = [
@@ -64,6 +65,7 @@ __all__ = [
     "StepRecord",
     "SuiteValidationError",
     "TaskContract",
+    "PORTFOLIO_ADAPTER_VERSION",
     "UnifiedEnvironment",
     "baseline_policy_hash",
     "canonical_json_bytes",
@@ -71,6 +73,7 @@ __all__ = [
     "dsl_action",
     "load_split_manifest",
     "load_task_registry",
+    "portfolio_action",
     "run_e05_regeneration_dsl",
     "run_e05_target_change_dsl",
     "run_line_dsl_episode",

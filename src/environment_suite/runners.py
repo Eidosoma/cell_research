@@ -50,10 +50,11 @@ from src.regeneration.target_change import (
 )
 from src.regeneration.tasks import initial_checkpoint
 from .dsl_adapters import (
-    LineDslRuntime,
     bind_homogeneous_line_scenario,
+    bind_portfolio_line_scenario,
     compiled_policies,
     line_replay_bytes,
+    make_line_runtime,
     run_e05_regeneration_dsl,
     run_e05_target_change_dsl,
     run_line_dsl_episode,
@@ -129,6 +130,8 @@ def _line_common(
         "decisionCounts": dict(sorted(runtime.decision_counts.items())),
         "descriptors": descriptors,
     }
+    if runtime.portfolio_dispatcher is not None:
+        event["portfolioAssignmentAudit"] = runtime.portfolio_assignment_audit()
     outcome = {
         "completed": bool(summary["completed"]),
         "finalValues": list(summary["finalValues"]),
@@ -170,11 +173,14 @@ def run_sorting(
     scenario = _line_scenario(record)
     if action.mode == "dsl_episode":
         policies = compiled_policies(action)
-        if len(policies) != 1:
-            raise SuiteValidationError("sorting accepts one DSL policy")
-        scenario = bind_homogeneous_line_scenario(
-            scenario, next(iter(policies.values()))
-        )
+        if action.portfolio_definition:
+            scenario = bind_portfolio_line_scenario(scenario, action)
+        elif len(policies) == 1:
+            scenario = bind_homogeneous_line_scenario(
+                scenario, next(iter(policies.values()))
+            )
+        else:
+            raise SuiteValidationError("sorting requires one policy or portfolio")
         result, runtime = run_line_dsl_episode(scenario, action)
         replay, replay_runtime = run_line_dsl_episode(scenario, action)
         replay_pass = line_replay_bytes(result, runtime) == line_replay_bytes(
@@ -243,13 +249,17 @@ def run_faults(record: ScenarioRecord, action: EvaluationAction) -> NativeEpisod
     )
     if action.mode == "dsl_episode":
         policies = compiled_policies(action)
-        if len(policies) != 1:
-            raise SuiteValidationError("fault task accepts one DSL policy")
-        policy = next(iter(policies.values()))
-        scenario = bind_homogeneous_line_scenario(scenario, policy)
+        if action.portfolio_definition:
+            scenario = bind_portfolio_line_scenario(scenario, action)
+        elif len(policies) == 1:
+            scenario = bind_homogeneous_line_scenario(
+                scenario, next(iter(policies.values()))
+            )
+        else:
+            raise SuiteValidationError("fault task requires one policy or portfolio")
 
         def execute(active_scenario, active_fault):
-            active_runtime = LineDslRuntime({active_scenario.cells[0].policy: policy})
+            active_runtime = make_line_runtime(active_scenario, action)
             active_run = run_faulted_architecture(
                 active_scenario,
                 architecture,
@@ -423,11 +433,14 @@ def run_detour(record: ScenarioRecord, action: EvaluationAction) -> NativeEpisod
     ]
     if action.mode == "dsl_episode":
         policies = compiled_policies(action)
-        if len(policies) != 1:
-            raise SuiteValidationError("detour task accepts one DSL policy")
-        scenario = bind_homogeneous_line_scenario(
-            scenario, next(iter(policies.values()))
-        )
+        if action.portfolio_definition:
+            scenario = bind_portfolio_line_scenario(scenario, action)
+        elif len(policies) == 1:
+            scenario = bind_homogeneous_line_scenario(
+                scenario, next(iter(policies.values()))
+            )
+        else:
+            raise SuiteValidationError("detour task requires one policy or portfolio")
         initial_values = [
             scenario.cell_map[item].value for item in scenario.initial_occupancy
         ]
@@ -556,11 +569,14 @@ def run_chimera(
         max_activations=int(record.public_parameters["eventBudget"]),
     )
     if action.mode == "dsl_episode":
-        expected_bindings = {item.policy.value for item in scenario.cells}
-        if set(action.native_policy_bindings) != expected_bindings:
-            raise SuiteValidationError(
-                "E04 DSL portfolio must bind every native Algotype explicitly"
-            )
+        if action.portfolio_definition:
+            scenario = bind_portfolio_line_scenario(scenario, action)
+        else:
+            expected_bindings = {item.policy.value for item in scenario.cells}
+            if set(action.native_policy_bindings) != expected_bindings:
+                raise SuiteValidationError(
+                    "E04 DSL portfolio must bind every native Algotype explicitly"
+                )
         initial_labels = [
             scenario.cell_map[item].policy.value for item in scenario.initial_occupancy
         ]
@@ -739,6 +755,13 @@ def run_regeneration(
         }
         for name, ledger in first.get("extensionLedgers", {}).items():
             native_ledgers[f"e05Extension_{name}"] = ledger
+        for name, ledger in first.get("adapterLedgers", {}).items():
+            if name != "portfolioAssignmentAudit":
+                native_ledgers[name] = ledger
+        for phase, ledgers in first.get("adapterLedgersByIndependentPhase", {}).items():
+            for name, ledger in ledgers.items():
+                if name != "portfolioAssignmentAudit":
+                    native_ledgers[f"e05Adapter_{phase}_{name}"] = ledger
         return NativeEpisodeResult(
             stop_reason=(
                 "source_terminal"
@@ -757,6 +780,11 @@ def run_regeneration(
                 "descriptorsByAxis": first.get("descriptorsByAxis", {}),
                 "nativeMovementDescriptorsByPhase": first.get(
                     "nativeMovementDescriptorsByPhase", {}
+                ),
+                **(
+                    {"portfolioAssignmentAudit": first["portfolioAssignmentAudit"]}
+                    if action.portfolio_definition
+                    else {}
                 ),
             },
             native_outcome={
@@ -884,6 +912,21 @@ def run_target_change(
                 "e05TargetSignalLedger": first["targetSignalLedger"],
                 "dslRuntimeLedger": first["dslLedgers"]["dslRuntimeLedger"],
                 "dslCommunicationLedger": first["dslLedgers"]["dslCommunicationLedger"],
+                "licensedCapabilityLedger": first["dslLedgers"][
+                    "licensedCapabilityLedger"
+                ],
+                **(
+                    {
+                        "portfolioStructuralLedger": first["dslLedgers"][
+                            "portfolioStructuralLedger"
+                        ],
+                        "portfolioCoordinationLedger": first["dslLedgers"][
+                            "portfolioCoordinationLedger"
+                        ],
+                    }
+                    if action.portfolio_definition
+                    else {}
+                ),
             },
             native_event={
                 "schemaVersion": str(first["schemaVersion"]),
@@ -892,6 +935,11 @@ def run_target_change(
                 "targetSignalAuthority": first["targetSignalAuthority"],
                 "descriptorsByAxis": first["descriptorsByAxis"],
                 "nativeMovementDescriptors": first["nativeMovementDescriptors"],
+                **(
+                    {"portfolioAssignmentAudit": first["portfolioAssignmentAudit"]}
+                    if action.portfolio_definition
+                    else {}
+                ),
             },
             native_outcome={
                 key: first[key]
@@ -1051,6 +1099,17 @@ def run_spatial(
                 "e06ChannelLedger": first["e06ChannelLedger"],
                 "dslRuntimeLedger": first["dslRuntimeLedger"],
                 "dslCommunicationLedger": first["dslCommunicationLedger"],
+                "licensedCapabilityLedger": first["licensedCapabilityLedger"],
+                **(
+                    {
+                        "portfolioStructuralLedger": first["portfolioStructuralLedger"],
+                        "portfolioCoordinationLedger": first[
+                            "portfolioCoordinationLedger"
+                        ],
+                    }
+                    if action.portfolio_definition
+                    else {}
+                ),
             },
             native_event={
                 "schemaVersion": str(first["schemaVersion"]),
@@ -1060,6 +1119,11 @@ def run_spatial(
                 "onlineGlobalCompletionComputed": False,
                 "policyControlledEpisode": True,
                 "descriptors": first["descriptors"],
+                **(
+                    {"portfolioAssignmentAudit": first["portfolioAssignmentAudit"]}
+                    if action.portfolio_definition
+                    else {}
+                ),
             },
             native_outcome={
                 "fixedBudgetCompleted": True,

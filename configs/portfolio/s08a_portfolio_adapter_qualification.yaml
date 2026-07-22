@@ -1,0 +1,85 @@
+schemaVersion: e07.s08a.portfolio-adapter-qualification-protocol.v1
+researchStepId: S08A
+title: Qualify train-only multi-policy portfolio adapters
+qualificationOnly: true
+frozenS08PSemanticsPreserved: true
+authorization:
+  splits: [train]
+  validationOutcomes: sealed
+  confirmationOutcomes: sealed
+  frozenS08SmokeRowsPermitted: false
+  efficacyAllocationPermitted: false
+  portfolioSearchPermitted: false
+  archiveMutationPermitted: false
+  s07ArmPromotionPermitted: false
+  rejectedModelsOrEmbeddingsPermitted: false
+dispatch:
+  identityOwner: immutable_native_identity
+  switchingBoundary: native_policy_opportunity_only
+  maximumSwitchesPerOpportunity: 1
+  memberMemoryNamespace: identity_and_member_policy
+  inactiveMemberMemoryPersists: true
+  crossMemberMemoryTransfer: false
+  resetMemberMemoryOnSwitch: false
+communication:
+  profile: recipient_activation_lag_lww_sum_u8_v1
+  sameEventDelivery: forbidden
+  senderIdentityVisible: false
+  memberDeclaredChannelsOnly: true
+  dispatcherNativeAuthority: none
+costs:
+  aggregation: separate_vectors_never_universal_total
+  families:
+    - native_task_specific
+    - dsl_runtime
+    - licensed_insertion_prefix
+    - licensed_selection_cursor_and_range
+    - portfolio_structural
+    - portfolio_coordination
+fixtures:
+  e07_s02_sorting_1d:
+    scenarioId: e07s02:sorting:train:000
+    carriers: [Bubble]
+    mode: environment_conditioned
+    selectorSignal: last_action.rejected
+  e07_s02_faults_1d:
+    scenarioId: e07s02:faults:train:000
+    carriers: [Selection]
+    mode: random_dynamic_opportunity
+    selectorSignal: null
+  e07_s02_detour_1d:
+    scenarioId: e07s02:detour:train:000
+    carriers: [Insertion]
+    mode: fixed_balanced_identity
+    selectorSignal: null
+  e07_s02_chimera_1d:
+    scenarioId: e07s02:chimera:train:000
+    carriers: [Bubble, Insertion]
+    mode: random_dynamic_opportunity
+    selectorSignal: null
+  e07_s02_regeneration_1d:
+    scenarioId: e07s02:regeneration:train:000
+    carriers: [Bubble]
+    mode: environment_conditioned
+    selectorSignal: repair.nudge_count
+  e07_s02_target_change_1d:
+    scenarioId: e07s02:target-change:train:000
+    carriers: [Bubble]
+    mode: random_dynamic_opportunity
+    selectorSignal: null
+  e07_s02_spatial2d_local:
+    scenarioId: e07s02:spatial-local:train:000
+    carriers: [spatial]
+    mode: random_dynamic_opportunity
+    selectorSignal: null
+  e07_s02_spatial2d_memory:
+    scenarioId: e07s02:spatial-memory:train:000
+    carriers: [spatial]
+    mode: random_static_identity
+    selectorSignal: null
+validation:
+  runOrders: [lexicographic, reverse]
+  protectedDenialsPerTask: 2
+  requiredTaskCount: 8
+  requiredGateIds: [G01, G02, G03, G04, G05, G06]
+  throughputIsOperationalOnly: true
