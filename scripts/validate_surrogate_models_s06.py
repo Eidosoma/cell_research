@@ -482,9 +482,13 @@ def main() -> None:
 
     deployment_path = S06_ROOT / "deployment_decision.json"
     deployment = json.loads(deployment_path.read_text())
-    deployment["initialInMemoryVsReloadCudaBitwiseParityPass"] = deployment[
-        "inferenceReloadParityPass"
-    ]
+    # Preserve the historical runtime check across validator reruns.  The final
+    # fresh-load check below is a distinct persistence test and must not rewrite
+    # the original in-memory-versus-reload observation.
+    deployment.setdefault(
+        "initialInMemoryVsReloadCudaBitwiseParityPass",
+        deployment["inferenceReloadParityPass"],
+    )
     deployment["freshDoubleLoadCpuBitExactInferenceParityPass"] = reload_validation[
         "freshDoubleLoadCpuBitExactInferencePass"
     ]
@@ -537,9 +541,10 @@ def main() -> None:
 
     validation_path = S06_ROOT / "validation_summary.json"
     validation = json.loads(validation_path.read_text())
-    validation["checks"]["initialInMemoryVsReloadCudaBitwiseParityPass"] = validation[
-        "checks"
-    ]["inferenceReloadParityPass"]
+    validation["checks"].setdefault(
+        "initialInMemoryVsReloadCudaBitwiseParityPass",
+        validation["checks"]["inferenceReloadParityPass"],
+    )
     validation["checks"]["freshDoubleLoadCpuBitExactInferenceParityPass"] = (
         reload_validation["freshDoubleLoadCpuBitExactInferencePass"]
     )
@@ -561,9 +566,10 @@ def main() -> None:
     write_json(validation_path, validation)
     model_manifest_path = S06_ROOT / "models/model_manifest.json"
     model_manifest = json.loads(model_manifest_path.read_text())
-    model_manifest["initialInMemoryVsReloadCudaBitwiseParityPass"] = model_manifest[
-        "inferenceReloadParityPass"
-    ]
+    model_manifest.setdefault(
+        "initialInMemoryVsReloadCudaBitwiseParityPass",
+        model_manifest["inferenceReloadParityPass"],
+    )
     model_manifest["freshDoubleLoadCpuBitExactInferenceParityPass"] = reload_validation[
         "freshDoubleLoadCpuBitExactInferencePass"
     ]
