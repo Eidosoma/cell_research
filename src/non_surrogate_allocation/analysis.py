@@ -89,7 +89,14 @@ def _descriptor_panel_audits(
     for task_id, policy_hash in selected_pairs:
         panel = []
         for wave_index, ordinal in enumerate(FAMILY_ORDINALS):
-            panel.append(physical_by_key[(task_id, policy_hash, ordinal)])
+            # The frozen S05 descriptor-stability helper names this generic
+            # field ``scenarioOrdinal``.  S07's canonical ledger retains the
+            # more explicit ``scenarioFamilyOrdinal``; provide a read-only
+            # compatibility alias without changing the persisted result.
+            panel_row = dict(physical_by_key[(task_id, policy_hash, ordinal)])
+            panel_row["scenarioOrdinal"] = panel_row["scenarioFamilyOrdinal"]
+            panel_row["stableEvaluationSha256"] = panel_row["resultSha256"]
+            panel.append(panel_row)
             integrity_valid = all(
                 not row["failed"] and row["replayPass"] and all(row["validation"].values())
                 for row in panel
