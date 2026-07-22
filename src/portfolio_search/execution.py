@@ -1722,6 +1722,7 @@ def run_preflight(control_path: str | Path = CONTROL_PATH) -> dict[str, Any]:
     if schema_version not in {
         "e07.s08c.execution-continuation.v1",
         "e07.s08e.execution-continuation.v1",
+        "e07.s08g.execution-continuation.v1",
     }:
         raise RuntimeError("unexpected S08 execution continuation control")
     research_step_id = str(control.get("researchStepId", "S08C"))
