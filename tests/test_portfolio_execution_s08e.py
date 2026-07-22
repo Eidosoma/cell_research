@@ -27,12 +27,12 @@ def test_s08e_control_preserves_frozen_design_and_uses_fresh_namespace() -> None
     assert control["validationBoundary"]["confirmationLogicalRows"] == 0
 
 
-def test_s08e_preflight_revalidates_s08d_and_g01_to_g06() -> None:
+def test_historical_s08e_preflight_detects_post_s08e_s08f_source_change() -> None:
     result = run_preflight(S08E_CONTROL_PATH)
 
     assert result["researchStepId"] == "S08E"
-    assert result["success"] is True
-    assert result["blockedGateIds"] == []
+    assert result["success"] is False
+    assert result["blockedGateIds"] == ["G01"]
     assert [row["gateId"] for row in result["gateRows"]] == [
         "G01",
         "G02",
@@ -41,7 +41,8 @@ def test_s08e_preflight_revalidates_s08d_and_g01_to_g06() -> None:
         "G05",
         "G06",
     ]
-    assert all(row["status"] == "pass" for row in result["gateRows"])
+    assert result["gateRows"][0]["status"] == "blocked"
+    assert all(row["status"] == "pass" for row in result["gateRows"][1:])
     assert result["qualificationGatePath"].endswith(
         "/S08D/s08_execution_eligibility_gate.json"
     )

@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections import defaultdict
 from concurrent.futures import Executor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -26,6 +27,10 @@ import pandas as pd
 import yaml
 
 from src.environment_suite import (
+    ADAPTER_VERSION,
+    COMMUNICATION_LEDGER_FIELDS,
+    DELIVERY_PROFILE,
+    PORTFOLIO_ADAPTER_VERSION,
     AccessDeniedError,
     AccessGrant,
     AccessPhase,
@@ -231,6 +236,7 @@ def _counter_u64(*parts: object, stream: str) -> int:
     return int.from_bytes(digest[:8], "big")
 
 
+@lru_cache(maxsize=1)
 def _catalog() -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     rows = read_jsonl(S05 / "policy_catalog.jsonl")
     return (
@@ -264,6 +270,7 @@ def build_action(
     return portfolio_action(documents, configuration)
 
 
+@lru_cache(maxsize=1)
 def _base_records() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     suite = EnvironmentSuite(TASK_REGISTRY, SPLIT_MANIFEST)
     train = {task: suite.records[BASE_SCENARIOS[task]] for task in TASK_IDS}
@@ -476,9 +483,17 @@ def evaluate_work_item(work: Mapping[str, Any]) -> dict[str, Any]:
     return {**stable, "elapsedSeconds": elapsed, "workerPid": os.getpid()}
 
 
-def _physical_key(work: Mapping[str, Any]) -> str:
+def physical_dedup_equivalence_commitment(work: Mapping[str, Any]) -> dict[str, Any]:
+    """Commit every semantic dimension required for legal physical reuse.
+
+    Frozen logical IDs are deliberately absent: distinct logical identities
+    may share work, but only when behavior, native execution commitments,
+    selector/assignment/communication semantics, and every cost contract are
+    identical.  The expansion boundary restores those logical IDs later.
+    """
+
     config = work["configuration"]
-    _, train_bases, validation_bases = _base_records()
+    tasks, train_bases, validation_bases = _base_records()
     split = Split(str(work["split"]))
     task_id = str(config["taskId"])
     record = derive_record(
@@ -488,15 +503,144 @@ def _physical_key(work: Mapping[str, Any]) -> str:
     )
     by_hash, by_id = _catalog()
     action = build_action(config, by_hash, by_id)
+    document_semantics = []
+    for document in action.policy_documents:
+        compiled = compile_policy(document)
+        document_semantics.append(
+            {
+                "compiledPolicySha256": compiled.policy_sha256,
+                "permissions": sorted(str(value) for value in document["permissions"]),
+                "limits": dict(document["limits"]),
+                "signals": dict(document["signals"]),
+            }
+        )
+    selected_member_commitments = sorted(
+        (
+            str(member["nativeCarrier"]),
+            str(member["policyBodySha256"]),
+            str(member["boundedSemanticGroup"]),
+        )
+        for member in config["members"]
+    )
+    task = tasks[task_id]
+    return {
+        "schemaVersion": "e07.s08f.physical-dedup-equivalence.v1",
+        "split": split.value,
+        "taskId": task_id,
+        "scenarioCommitmentSha256": scenario_commitment(record),
+        "actionBehaviorSha256": action.policy_sha256,
+        "actionMode": action.mode,
+        "nativePolicyBindings": dict(action.native_policy_bindings),
+        "selectedMemberNativeCommitments": selected_member_commitments,
+        "nativeContractSha256": canonical_sha256(
+            "E07/S08F/native-task-contract/v1", task.to_dict()
+        ),
+        "selectorAndAssignmentSemantics": {
+            "mode": str(config["mode"]),
+            "selector": config.get("selector"),
+            "assignmentCounterDomain": config.get("assignmentCounterDomain"),
+            "assignmentRotation": int(config.get("assignmentRotation", 0)),
+        },
+        "communicationSemantics": {
+            "deliveryProfile": DELIVERY_PROFILE,
+            "communicationLedgerFields": list(COMMUNICATION_LEDGER_FIELDS),
+            "memberSignalContracts": document_semantics,
+        },
+        "costSemantics": {
+            "dslAdapterVersion": ADAPTER_VERSION,
+            "portfolioAdapterVersion": PORTFOLIO_ADAPTER_VERSION,
+            "nativeCostContract": dict(task.cost_contract),
+            "portfolioStructuralCosts": dict(config["portfolioStructuralCosts"]),
+            "licensedCapabilityContracts": document_semantics,
+            "licensedCapabilityLedgerFields": [
+                "licensedPrefixPredicateEvaluations",
+                "licensedPrefixValueReads",
+                "licensedPrefixValueComparisons",
+                "engineCursorStateReads",
+                "engineCursorTargetProjectionReads",
+                "engineCursorAdvanceActions",
+                "engineCursorSwapActions",
+                "licensedLongRangeRequestedDistance",
+                "licensedLongRangeMaximumRequestedDistance",
+            ],
+            "crossFamilyScalarTotalPermitted": False,
+        },
+    }
+
+
+def _physical_key(work: Mapping[str, Any]) -> str:
     return canonical_sha256(
-        "E07/S08C/physical-work/v1",
+        "E07/S08F/physical-work/v1",
+        physical_dedup_equivalence_commitment(work),
+    )
+
+
+def _expand_logical_result(
+    logical: Mapping[str, Any], physical: Mapping[str, Any], physical_key: str
+) -> dict[str, Any]:
+    """Restore the reserved logical configuration while retaining provenance."""
+
+    row = dict(physical)
+    configuration = logical.get("configuration")
+    if configuration is not None:
+        config = dict(configuration)
+        physical_stable = str(row["stableEvaluationSha256"])
+        row.update(
+            {
+                "physicalWorkSha256": physical_key,
+                "physicalDedupEquivalenceSha256": physical_key,
+                "physicalConfigurationId": row.get("configurationId"),
+                "physicalConfigurationDefinitionSha256": row.get(
+                    "configurationDefinitionSha256"
+                ),
+                "physicalStableEvaluationSha256": physical_stable,
+                "configurationId": str(config["configurationId"]),
+                "mode": str(config["mode"]),
+                "memberSetId": str(config["memberSetId"]),
+                "memberPolicySha256": [
+                    str(item["policySha256"]) for item in config["members"]
+                ],
+                "configurationDefinitionSha256": canonical_hash(
+                    "E07/S08C/configuration-definition/v1", config
+                ),
+            }
+        )
+        row["stableEvaluationSha256"] = canonical_sha256(
+            "E07/S08F/logical-evaluation/v1",
+            {
+                "physicalStableEvaluationSha256": physical_stable,
+                "configurationId": row["configurationId"],
+                "configurationDefinitionSha256": row["configurationDefinitionSha256"],
+                "scenarioFamilyOrdinal": int(logical["scenarioFamilyOrdinal"]),
+            },
+        )
+        row["logicalEvaluationSha256"] = row["stableEvaluationSha256"]
+    row.update(
         {
-            "split": split.value,
-            "taskId": task_id,
-            "scenario": scenario_commitment(record),
-            "actionSha256": action.policy_sha256,
+            "stage": str(logical["stage"]),
+            "generation": int(logical["generation"]),
+            "logicalSlotId": str(logical["logicalSlotId"]),
+            "reservedConfigurationSlotId": str(logical["reservedConfigurationSlotId"]),
+            "configurationRole": str(logical["configurationRole"]),
+            "scenarioFamilyOrdinal": int(logical["scenarioFamilyOrdinal"]),
+        }
+    )
+    row["logicalExpansionSha256"] = canonical_sha256(
+        "E07/S08F/logical-expansion/v1",
+        {
+            "physicalWorkSha256": physical_key,
+            "physicalStableEvaluationSha256": row.get(
+                "physicalStableEvaluationSha256", row["stableEvaluationSha256"]
+            ),
+            "stableEvaluationSha256": row["stableEvaluationSha256"],
+            "logicalSlotId": row["logicalSlotId"],
+            "reservedConfigurationSlotId": row["reservedConfigurationSlotId"],
+            "configurationId": row.get("configurationId"),
+            "configurationDefinitionSha256": row.get("configurationDefinitionSha256"),
+            "configurationRole": row["configurationRole"],
         },
     )
+    return row
 
 
 def execute_work(
@@ -574,31 +718,13 @@ def execute_work(
                 _write_json(cache_dir / f"{key}.json", batch_results[key])
     expanded = []
     for logical, key in zip(work, logical_keys, strict=True):
-        row = dict(results[key])
-        row.update(
-            {
-                "stage": str(logical["stage"]),
-                "generation": int(logical["generation"]),
-                "logicalSlotId": str(logical["logicalSlotId"]),
-                "reservedConfigurationSlotId": str(
-                    logical["reservedConfigurationSlotId"]
-                ),
-                "configurationRole": str(logical["configurationRole"]),
-                "scenarioFamilyOrdinal": int(logical["scenarioFamilyOrdinal"]),
-            }
-        )
-        row["logicalExpansionSha256"] = canonical_sha256(
-            "E07/S08C/logical-expansion/v1",
-            {
-                "stableEvaluationSha256": row["stableEvaluationSha256"],
-                "logicalSlotId": row["logicalSlotId"],
-                "reservedConfigurationSlotId": row["reservedConfigurationSlotId"],
-            },
-        )
-        expanded.append(row)
+        expanded.append(_expand_logical_result(logical, results[key], key))
     return expanded, {
         "logicalRows": len(work),
         "uniquePhysicalRows": len(unique),
+        "physicalDedupSavedRows": len(work) - len(unique),
+        "physicalDedupEquivalenceVersion": "e07.s08f.physical-work.v1",
+        "logicalExpansionVersion": "e07.s08f.logical-expansion.v1",
         "cacheHits": len(unique) - len(pending),
         "physicalRowsExecutedNow": len(pending),
         "failAtomic": True,
@@ -730,6 +856,8 @@ def build_archive(
         ):
             continue
         for descriptor in candidate["descriptors"]:
+            if descriptor.get("cellEligible", True) is not True:
+                continue
             key = (
                 str(candidate["taskId"]),
                 str(descriptor["archiveId"]),

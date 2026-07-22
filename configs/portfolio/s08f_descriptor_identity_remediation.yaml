@@ -1,0 +1,115 @@
+schemaVersion: e07.s08f.descriptor-identity-remediation.v2
+researchStepId: S08F
+frozenAtUtc: '2026-07-22T00:00:00Z'
+scope:
+  qualificationOnly: true
+  freshFrozenSmokeRows: 0
+  efficacyRows: 0
+  archiveConstructionCalls: 0
+  validationOutcomeAccesses: 0
+  confirmationOutcomeAccesses: 0
+  s09Work: false
+  allowedS08EReads:
+    - generation_0_integrity_failure.json
+    - training_evaluation_quarantine.json
+  prohibitedS08EUse:
+    - objective_values
+    - efficacy_values
+    - promotion
+    - archive_input
+    - scenario_or_policy_selection
+preservation:
+  immutableArtifactTrees: [S05, S08P, S08A, S08, S08B, S08C, S08D, S08E]
+  immutableQuarantines: [S08C, S08E]
+  nativeContractsUnchanged:
+    - legality
+    - observation_and_action
+    - clocks_and_events
+    - stopping_and_source_terminals
+    - failures_and_censors
+    - metrics_and_claim_boundaries
+    - native_costs
+    - portfolio_costs
+    - licensed_capability_costs
+e05DescriptorAvailability:
+  version: e07.s08f.e05-descriptor-availability.v1
+  unit: configuration_by_four_coupled_training_scenario_families_by_archive_id
+  expectedArchiveIds:
+    - common:e07_s02_regeneration_1d:development
+    - common:e07_s02_regeneration_1d:stabilization
+    - common:e07_s02_regeneration_1d:recovery
+    - common:e07_s02_regeneration_1d:memoryResetRecovery
+    - common:e07_s02_regeneration_1d:robustnessFault
+    - common:e07_s02_regeneration_1d:transfer
+    - phenotype:e05:robustness
+    - phenotype:e05:repair
+    - phenotype:e05:memory
+    - phenotype:e05:transfer
+  supportStates: [complete, unavailable]
+  completeRule: every coupled family supplies the same archive ID, kind, coordinate fields, finite coordinate values, and declared censor flags
+  unavailableRule: any absent phase or axis, mismatched fields or kind, or nonfinite coordinate makes that descriptor panel unavailable
+  retentionRule: emit one explicit availability record for every expected archive ID with observed and missing family ordinals plus native terminal, failure, and censor reasons
+  cellEligibilityRule: only complete support receives numeric means and a task-local cell; unavailable support has values and cell set to null
+  comparabilityRule: compare cells only within the same task, archive ID, descriptor version, coordinate fields, coupled family support, and binning contract
+  prohibited:
+    - imputation
+    - silent_row_or_descriptor_drop
+    - universal_score_or_cross_task_normalization
+    - availability_pattern_as_novelty_coordinate
+    - terminal_failure_or_censor_relabeling
+  failClosedRule: archive insertion must reject or skip explicitly unavailable descriptors and must never infer a coordinate
+logicalIdentityRestoration:
+  version: e07.s08f.logical-expansion.v1
+  physicalDedupVersion: e07.s08f.physical-work.v1
+  equivalenceCommitmentIncludes:
+    - task_and_split
+    - scenario_commitment
+    - action_behavior_hash
+    - native_contract_and_horizon_commitment
+    - selector_and_assignment_semantics
+    - communication_semantics
+    - portfolio_structural_cost_semantics
+    - native_cost_semantics
+    - licensed_capability_cost_semantics
+  equivalenceRule: physical deduplication is legal only when the complete equivalence commitment is identical
+  expansionRule: retain stable physical evaluation provenance and overwrite every logical configuration field from its reserved frozen configuration
+  restoredFields:
+    - configurationId
+    - mode
+    - memberSetId
+    - memberPolicySha256
+    - configurationDefinitionSha256
+    - configurationRole
+    - reservedConfigurationSlotId
+  physicalProvenanceFields:
+    - physicalWorkSha256
+    - physicalConfigurationId
+    - physicalStableEvaluationSha256
+    - physicalDedupEquivalenceSha256
+qualification:
+  e05TerminalClasses: [development_source_terminal, stabilization_source_terminal, completed_panel]
+  e05PortfolioModes:
+    - single_policy
+    - fixed_identity_partition
+    - random_static_identity
+    - random_dynamic_opportunity
+    - environment_conditioned
+  supportPatterns:
+    - development_only
+    - development_and_stabilization
+    - complete_all_expected_archives
+    - mixed_terminal_panel
+    - failure_and_censor_retained
+  chimeraCases:
+    - known_action_equivalent_single_policy_pair
+    - behavior_equivalent_but_identity_distinct
+    - selector_semantics_mismatch_not_deduplicated
+    - cost_semantics_mismatch_not_deduplicated
+  fullRegistryStructuralQualification: true
+  workerOrders: [canonical, reverse]
+  requiredGates: [G01, G02, G03, G04, G05, G06]
+decision:
+  pass: all preregistered qualification, accounting, replay, access, dependency, hash, gate, and no-mutation checks pass
+  failClosed: any incomparable E05 support, incomplete identity restoration, overbroad deduplication, hash drift, protected access, rejected dependency, accounting mismatch, or native-contract change
+  executionAuthorizationOnPass: false
+  nextAction: hand_control_back_for_separate_fresh_execution_review

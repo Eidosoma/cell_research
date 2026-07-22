@@ -77,6 +77,51 @@ HASH_LIKE_KEYS = {
     "policySha256",
 }
 
+E05_DESCRIPTOR_AVAILABILITY_VERSION = "e07.s08f.e05-descriptor-availability.v1"
+E05_REGENERATION_DESCRIPTOR_SPECS: dict[str, dict[str, Any]] = {
+    **{
+        f"common:e07_s02_regeneration_1d:{phase}": {
+            "kind": "common",
+            "fields": (
+                "acceptedNativeActionFraction",
+                "committedDisplacementFraction",
+            ),
+            "censorFields": (),
+        }
+        for phase in (
+            "development",
+            "stabilization",
+            "recovery",
+            "memoryResetRecovery",
+            "robustnessFault",
+            "transfer",
+        )
+    },
+    "phenotype:e05:robustness": {
+        "kind": "e05:robustness",
+        "fields": ("pairedCompletionDelta", "pairedResidualDelta"),
+        "censorFields": (),
+    },
+    "phenotype:e05:repair": {
+        "kind": "e05:repair",
+        "fields": (
+            "distanceRestorationFraction",
+            "restrictedRecoveryTimeFraction",
+        ),
+        "censorFields": ("recoveryCensored",),
+    },
+    "phenotype:e05:memory": {
+        "kind": "e05:memory",
+        "fields": ("historyInterventionEffect", "resetInterventionEffect"),
+        "censorFields": (),
+    },
+    "phenotype:e05:transfer": {
+        "kind": "e05:transfer",
+        "fields": ("frozenStratumSuccessFraction", "frozenStratumResidual"),
+        "censorFields": (),
+    },
+}
+
 
 def _json_bytes(value: Any) -> bytes:
     return json.dumps(
@@ -917,9 +962,17 @@ def _aggregate_descriptors(
     task_id: str, rows: Sequence[Mapping[str, Any]]
 ) -> list[dict[str, Any]]:
     descriptor_rows: dict[str, list[dict[str, Any]]] = {}
-    for row in rows:
+    observed_by_family: dict[str, dict[str, dict[str, Any]]] = {}
+    for row_index, row in enumerate(rows):
+        family = str(
+            row.get("scenarioFamilyOrdinal", row.get("scenarioOrdinal", row_index))
+        )
+        observed_by_family[family] = {}
         for item in _descriptor_sets(task_id, row["outcome"]):
             descriptor_rows.setdefault(item["archiveId"], []).append(item)
+            observed_by_family[family][item["archiveId"]] = item
+    if task_id == "e07_s02_regeneration_1d":
+        return _aggregate_e05_descriptors(rows, observed_by_family)
     descriptors = []
     for archive_id, items in sorted(descriptor_rows.items()):
         if len(items) != len(rows):
@@ -946,6 +999,146 @@ def _aggregate_descriptors(
                 "values": means,
                 "cell": list(cell),
                 "censorFlags": flags,
+            }
+        )
+    return descriptors
+
+
+def _e05_native_status(
+    row: Mapping[str, Any], family: str, *, descriptor_available: bool
+) -> dict[str, Any]:
+    outcome = row["outcome"]
+    return {
+        "scenarioFamilyOrdinal": family,
+        "scenarioId": row.get("scenarioId"),
+        "stopReason": row.get("stopReason"),
+        "sourceTerminal": bool(outcome.get("sourceTerminal", False)),
+        "failed": bool(row.get("failed", False)),
+        "censored": bool(row.get("censored", False)),
+        "descriptorAvailable": descriptor_available,
+    }
+
+
+def _aggregate_e05_descriptors(
+    rows: Sequence[Mapping[str, Any]],
+    observed_by_family: Mapping[str, Mapping[str, Mapping[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Retain terminal-dependent E05 support without manufacturing coordinates.
+
+    Every possible native E05 regeneration descriptor produces one record.  A
+    numeric task-local cell exists only when the same descriptor contract is
+    present and finite in every coupled scenario family.  Missing phase/axis
+    support remains explicit native terminal/failure/censor metadata.
+    """
+
+    families = tuple(
+        sorted(
+            observed_by_family,
+            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+        )
+    )
+    row_by_family = {
+        str(row.get("scenarioFamilyOrdinal", row.get("scenarioOrdinal", index))): row
+        for index, row in enumerate(rows)
+    }
+    descriptors: list[dict[str, Any]] = []
+    for archive_id, spec in E05_REGENERATION_DESCRIPTOR_SPECS.items():
+        expected_fields = tuple(spec["fields"])
+        censor_fields = tuple(spec["censorFields"])
+        observed_families: list[str] = []
+        missing_families: list[str] = []
+        reasons: set[str] = set()
+        items: list[Mapping[str, Any]] = []
+        native_status: list[dict[str, Any]] = []
+        for family in families:
+            item = observed_by_family[family].get(archive_id)
+            available = item is not None
+            native_status.append(
+                _e05_native_status(
+                    row_by_family[family], family, descriptor_available=available
+                )
+            )
+            if item is None:
+                missing_families.append(family)
+                reasons.add("missing_native_phase_or_axis_support")
+                continue
+            observed_families.append(family)
+            items.append(item)
+            if item["kind"] != spec["kind"]:
+                reasons.add("descriptor_kind_mismatch")
+            values = item["values"]
+            if set(values) != set(expected_fields) | set(censor_fields):
+                reasons.add("descriptor_field_contract_mismatch")
+            for field in expected_fields:
+                value = values.get(field)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                ):
+                    reasons.add("nonfinite_or_nonnumeric_coordinate")
+            for field in censor_fields:
+                if not isinstance(values.get(field), bool):
+                    reasons.add("invalid_censor_flag")
+        complete = len(items) == len(rows) and not reasons
+        support = {
+            "expectedScenarioFamilyOrdinals": list(families),
+            "observedScenarioFamilyOrdinals": observed_families,
+            "missingScenarioFamilyOrdinals": missing_families,
+            "nativeStatusByScenarioFamily": native_status,
+            "sourceTerminalRows": sum(item["sourceTerminal"] for item in native_status),
+            "failedRows": sum(item["failed"] for item in native_status),
+            "censoredRows": sum(item["censored"] for item in native_status),
+        }
+        base = {
+            "archiveId": archive_id,
+            "kind": str(spec["kind"]),
+            "fields": list(expected_fields),
+            "descriptorAvailabilityVersion": E05_DESCRIPTOR_AVAILABILITY_VERSION,
+            "supportState": "complete" if complete else "unavailable",
+            "cellEligible": complete,
+            "availabilityIsNoveltyCoordinate": False,
+            "support": support,
+            "availabilityReasonCodes": [] if complete else sorted(reasons),
+        }
+        if not complete:
+            descriptors.append(
+                {
+                    **base,
+                    "values": None,
+                    "cell": None,
+                    "censorFlags": None,
+                    "comparabilityKeySha256": None,
+                }
+            )
+            continue
+        means = {
+            field: sum(float(item["values"][field]) for item in items) / len(items)
+            for field in expected_fields
+        }
+        edges = _edges_for(str(spec["kind"]), expected_fields)
+        cell = tuple(_bin(means[field], edges[field]) for field in expected_fields)
+        censor_flags = {
+            field: any(bool(item["values"][field]) for item in items)
+            for field in censor_fields
+        }
+        comparability = {
+            "taskId": "e07_s02_regeneration_1d",
+            "archiveId": archive_id,
+            "descriptorAvailabilityVersion": E05_DESCRIPTOR_AVAILABILITY_VERSION,
+            "coordinateFields": list(expected_fields),
+            "scenarioFamilyOrdinals": list(families),
+            "edges": {field: list(edges[field]) for field in expected_fields},
+        }
+        descriptors.append(
+            {
+                **base,
+                "values": means,
+                "cell": list(cell),
+                "censorFlags": censor_flags,
+                "comparabilityKeySha256": canonical_sha256(
+                    "E07/S08F/E05-descriptor-comparability/v1", comparability
+                ),
             }
         )
     return descriptors
@@ -1082,6 +1275,9 @@ def archive_insert(
         stats["rejected"] += len(candidate["descriptors"])
         return stats
     for descriptor in candidate["descriptors"]:
+        if descriptor.get("cellEligible", True) is not True:
+            stats["rejected"] += 1
+            continue
         if (
             descriptor_filter is not None
             and descriptor["archiveId"] not in descriptor_filter
@@ -1132,7 +1328,11 @@ def stable_cell_audit(
 ) -> list[dict[str, Any]]:
     full = aggregate_candidate(policy, rows)
     by_archive = {item["archiveId"]: item for item in full["descriptors"]}
-    matches = {archive_id: 0 for archive_id in by_archive}
+    matches = {
+        archive_id: 0
+        for archive_id, item in by_archive.items()
+        if item.get("cellEligible", True) is True
+    }
     task_id = str(rows[0]["taskId"])
     for replicate in range(bootstrap_replicates):
         sampled = [
@@ -1151,15 +1351,24 @@ def stable_cell_audit(
             item["archiveId"]: item for item in _aggregate_descriptors(task_id, sampled)
         }
         for archive_id, reference in by_archive.items():
-            matches[archive_id] += (
-                sampled_by_archive[archive_id]["cell"] == reference["cell"]
-            )
+            if archive_id in matches:
+                sampled = sampled_by_archive[archive_id]
+                matches[archive_id] += bool(
+                    sampled.get("cellEligible", True) is True
+                    and sampled["cell"] == reference["cell"]
+                )
     return [
         (
             {
                 "archiveId": archive_id,
                 "referenceCell": reference["cell"],
-                "sameCellProbability": matches[archive_id] / bootstrap_replicates,
+                "supportState": reference.get("supportState", "complete"),
+                "cellEligible": reference.get("cellEligible", True),
+                "sameCellProbability": (
+                    matches[archive_id] / bootstrap_replicates
+                    if archive_id in matches
+                    else None
+                ),
                 "bootstrapReplicates": bootstrap_replicates,
             }
         )
