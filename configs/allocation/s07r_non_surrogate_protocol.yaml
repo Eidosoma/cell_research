@@ -1,0 +1,337 @@
+schemaVersion: e07.s07r.non-surrogate-allocation-protocol.v1
+researchStepId: S07R
+title: Preregister the non-surrogate S07 allocation redesign
+designOnly: true
+frozenQuestion: >-
+  Can a fully prespecified training-only comparison of uniform randomized
+  allocation and two fixed stratified allocations quantify rare-event and
+  task-local descriptor discovery efficiency without any rejected surrogate,
+  embedding, protected outcome, adaptive decision, or archive mutation?
+
+historicalBoundary:
+  originalS07Specification: preserved_in_RESEARCH_PLAN_as_blocked_history
+  S06Result: immutable_rejected
+  S06AResult: immutable_rejected
+  prohibitedUses:
+    - allocation
+    - pseudo_labeling
+    - warm_starts
+    - distillation
+    - archive_mutation
+    - candidate_ranking
+    - scenario_ranking
+    - decision_making
+  rejectedArtifactPrefixes:
+    - /artifacts/research_steps/S06/
+    - /artifacts/research_steps/S06A/
+  rejectedCodeImports:
+    - src.surrogate_models
+    - src.surrogate_remediation
+  allocationPathPermittedRoots:
+    - /workspace/cell-research/configs/environment_suite/
+    - /workspace/cell-research/configs/search/
+    - /artifacts/research_steps/S02/
+    - /artifacts/research_steps/S03/
+    - /artifacts/research_steps/S04/
+    - /artifacts/research_steps/S04A/
+    - /artifacts/research_steps/S05/
+
+authorizedPopulation:
+  candidateDefinition: >-
+    The 512 task-policy pairs formed by the 64 unique policy hashes per task
+    having selectedForCanonicalSearch=true in the immutable S05 evaluation
+    ledger. Recovery-orphan rows and any policy absent from this selected set
+    are excluded.
+  candidateCount: 512
+  taskCount: 8
+  candidatesPerTask: 64
+  baseEvaluationLedger:
+    path: /artifacts/research_steps/S05/evaluation_ledger.jsonl
+    sha256: 93b4cafb73471936fbfe81c618ce8d50e2f1576dcc93e342bfa8ff2cad50e4ee
+  policyCatalog:
+    path: /artifacts/research_steps/S05/policy_catalog.jsonl
+    sha256: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655
+  archiveEntries:
+    path: /artifacts/research_steps/S05/archive/archive_entries.jsonl
+    sha256: 4fd6e7c7e698a98f88d92bca9d0da7efaace74891108f3e07bb626b92d873f68
+  lineageLedger:
+    path: /artifacts/research_steps/S05/lineage_graph.jsonl
+    sha256: 53aafd25a5c9d2162799756c8e666c5e52f7d716e14dee956cc6c3ccc8eccb42
+  generationPlanLedger:
+    path: /artifacts/research_steps/S05/generation_plan_ledger.jsonl
+    sha256: 8b32fcfe98ead1f1e1207d3d5b43cda57ae13432f4daf2575dcc2a2a79496e28
+  recoveryOrphansExcluded: 189
+  outcomeUseBoundary: >-
+    Only S05 training evidence may define frozen native-status strata. S05
+    task outcomes may not rank policies in any allocation arm.
+
+scenarioPopulation:
+  split: train
+  protected: false
+  baseRecords: eight_nonprotected_S02_train_records_only
+  familyOrdinals: [200, 201, 202, 203]
+  familyCountPerTask: 4
+  taskFamilyTemplateCount: 32
+  possibleCandidateScenarioRows: 2048
+  derivationDomain: E07/S07/non-surrogate-training-scenarios/v1
+  derivationRules:
+    seededTasks: sha256_counter_seed_in_1_to_2^31_minus_2
+    E02: sha256_counter_fault_index_within_native_line
+    E04: replicate_equals_family_ordinal
+    E05_regeneration: >-
+      independent development-only family ordinal; predecessor protected
+      ordinals 4-7 are rejected before materialization
+    E06: outcome_blind_counter_schedule_key_only; base challenge unchanged
+  materializationDuringS07R: forbidden
+  outcomeReadDuringS07R: forbidden
+
+arms:
+  uniform_randomized:
+    kind: probability_sample_without_replacement
+    candidatesPerTask: 32
+    inclusionProbabilityWithinTask: 0.5
+    counterDomain: E07/S07/non-surrogate-uniform-policy/v1
+    publicSeed: 70720260722
+    selectionRule: >-
+      Rank all 64 task-policy pairs by SHA-256 of the counter domain, public
+      seed, task ID, and policy hash; take the first 32. Ties use policy hash.
+    inferenceRole: probability_sampled_comparator
+  descriptor_cell_coverage:
+    kind: fixed_deterministic_stratified
+    candidatesPerTask: 32
+    archivedQuotaPerTask: 16
+    unarchivedQuotaPerTask: 16
+    selectionRule: >-
+      Among archived candidates, greedily select 16 by maximum newly covered
+      frozen S04/S05 task-local archive memberships, then minimum already
+      represented memberships, then policy hash. Select 16 unarchived
+      candidates by exact marginal-balance over licensed-capability profile,
+      native-status stratum, and within-task complexity quartile. Fail closed
+      if either quota is infeasible.
+    inclusionProbability: deterministic_0_or_1_logged_after_roster_freeze
+    inferenceRole: fixed_design_efficiency_comparator
+  contract_status_stratified:
+    kind: fixed_deterministic_stratified
+    candidatesPerTask: 32
+    strata:
+      - licensed_capability_profile
+      - native_status_stratum
+      - within_task_complexity_quartile
+      - origin_family
+    selectionRule: >-
+      Greedily select the candidate with the largest exact rational sum of
+      inverse one-plus-current marginal stratum counts; ties use policy hash.
+      Strata and quartiles are computed before selection from authorized S05
+      records only.
+    inclusionProbability: deterministic_0_or_1_logged_after_roster_freeze
+    inferenceRole: fixed_design_efficiency_comparator
+
+strataDefinitions:
+  licensedCapabilityProfile:
+    insertion_prefix: permission line.prefix_ordered
+    selection_cursor_long_range: selection cursor permission or cursor action
+    spatial_candidate: environment spatial2d.v1
+    local_line: remaining line1d.v1 policies
+  nativeStatusStratumPrecedence:
+    - failure_observed
+    - censor_observed
+    - mixed_terminal_signature
+    - single_terminal_signature
+  complexityQuartile: >-
+    Within each task, rank the 64 candidates lexicographically by
+    worstCaseOperations, canonicalBytes, then policy hash and assign exact
+    rank blocks 0-15, 16-31, 32-47, and 48-63. This is an allocation stratum,
+    not a universal complexity or efficacy score.
+  archiveMembership: exact_task_local_archive_id_and_cell_tuple
+  forbiddenStrata:
+    - S03_structural_coverage_as_efficacy
+    - finite_corpus_equivalence_as_efficacy
+    - E05_unbound_rows
+    - E06_typed_fixtures
+    - validation_outcomes
+    - confirmation_outcomes
+    - S06_or_S06A_prediction_or_embedding
+
+randomizationAndCoupling:
+  rosterGenerationOccursOnlyAfterSeparateS07Approval: true
+  scenarioWaves: [200, 201, 202, 203]
+  everySelectedCandidateReceivesEveryWave: true
+  commonScenarioFamilyDefinitionAcrossArms: true
+  logicalRowOrder: scenario_wave_then_task_then_counter_ranked_candidate
+  workerOrderAffectsPlan: false
+  workerOrderAffectsOutcome: false
+  crossArmExactDuplicateHandling: >-
+    Evaluate an identical task-policy-family physical row once and attach its
+    immutable result to every matching logical arm row. Charge one logical
+    slot to each arm and one physical evaluation to the deduplicated row.
+  equalNumericSeedImpliesCrossContractPairing: false
+  couplingClaim: task_and_family_block_coupling_only
+
+budgetAndStopping:
+  candidatesPerTaskArm: 32
+  scenarioFamiliesPerCandidate: 4
+  logicalEvaluationsPerTaskArm: 128
+  logicalEvaluationsPerArm: 1024
+  armCount: 3
+  totalLogicalEvaluations: 3072
+  possiblePhysicalEvaluationsLowerBound: 1024
+  possiblePhysicalEvaluationsUpperBound: 3072
+  smokeRows: first_roster_row_per_task_arm_in_family_200_within_total_budget
+  smokeLogicalCount: 24
+  substantiveExecutionRequiresSmokePass: true
+  plannedWorkers: 8
+  numericThreadsPerWorker: 1
+  efficacyEarlyStopping: forbidden
+  runtimeDrivenBudgetWeakening: forbidden
+  terminalRule: complete_all_3072_logical_slots_or_report_bounded_integrity_stop
+  failClosedStops:
+    - frozen_input_hash_change
+    - protected_split_request
+    - validation_or_confirmation_outcome_access
+    - rejected_model_or_embedding_open_or_import
+    - S05_archive_or_ledger_mutation
+    - native_contract_or_replay_failure
+    - missing_propensity_or_selection_log
+    - irreconcilable_logical_or_physical_accounting
+
+estimands:
+  analysisUnit: task_by_scenario_family_block
+  checkpointsPerArm: [256, 512, 768, 1024]
+  coPrimary:
+    rareEventDiscoveryAuc:
+      definition: >-
+        Area under the four-wave cumulative curve of distinct task-local native
+        status signatures that were unseen in S05 or had S05 training
+        prevalence at most 0.10. A failed episode is always retained and
+        counted as rare. Report task-specific curves first and equal-task block
+        means only as allocation-efficiency summaries.
+      denominator: logical_evaluations
+    shadowDescriptorDiscoveryAuc:
+      definition: >-
+        Area under the four-wave cumulative curve of distinct stable frozen
+        S04 task-local descriptor cells not occupied in S05. Extraction is
+        read-only shadow analysis and never inserts into or changes an archive.
+      denominator: logical_evaluations
+  secondary:
+    - valid_episode_yield_per_logical_evaluation
+    - rare_event_yield_per_physical_evaluation
+    - shadow_descriptor_yield_per_physical_evaluation
+    - wall_seconds_and_native_opportunities_reported_separately
+    - failed_and_censored_fractions_by_task_and_native_terminal
+    - task_native_objectives_reported_separately_without_arm_scalarization
+    - task_native_cost_and_licensed_capability_ledgers_reported_separately
+  comparisons:
+    - descriptor_cell_coverage_minus_uniform_randomized
+    - contract_status_stratified_minus_uniform_randomized
+  prohibitedClaims:
+    - universal_policy_quality
+    - universal_normalized_score
+    - causal_superiority_of_fixed_arm_selection
+    - held_out_efficacy
+    - biological_or_civic_competence
+
+propensityAndSelectionLogging:
+  candidateSelectionFrame:
+    rowCount: 1536
+    definition: >-
+      One row for every arm by task-policy pair before scenario execution.
+      Uniform rows all carry inclusion probability 0.5 and a realized 0/1
+      indicator; fixed-arm rows carry deterministic probability 0 or 1. This
+      frame preserves all excluded candidates rather than logging selected
+      candidates only.
+  logicalEvaluationLedger:
+    rowCount: 3072
+    definition: One row for every selected arm-task-policy-scenario-family slot.
+  requiredFields:
+    - protocolSha256
+    - logicalRowId
+    - physicalRowId
+    - armId
+    - taskId
+    - policySha256
+    - scenarioFamilyOrdinal
+    - scenarioCommitmentSha256
+    - inclusionProbability
+    - deterministicSelectionIndicator
+    - randomizedSelectionIndicator
+    - selectionMechanismDeterministic
+    - selectionRank
+    - selectionStrata
+    - overlapArmIds
+    - reuseIndicator
+    - workerId
+    - resultSha256
+    - failed
+    - censored
+    - stopReason
+  uniformWeight: inverse_0.5_policy_inclusion_probability
+  fixedArmWeights: none_deterministic_design_descriptive_only
+  missingLogPolicy: fail_closed
+
+uncertaintyAndMultiplicity:
+  confidenceLevel: 0.95
+  bootstrapReplicates: 2000
+  bootstrapSeed: 707702
+  resamplingUnit: paired_task_by_scenario_family_block
+  primaryTests: 4
+  correction: Holm_familywise_0.05_across_two_estimands_by_two_fixed_vs_uniform_comparisons
+  uniformPopulationEstimation: Horvitz_Thompson_with_finite_population_correction
+  fixedArmInference: paired_descriptive_difference_with_block_bootstrap_not_population_causal
+  zeroRareEventRule: exact_one_sided_binomial_upper_bound_reported
+  sensitivity:
+    - leave_one_task_out_equal_task_summary
+    - logical_vs_physical_evaluation_denominator
+    - include_vs_separate_previously_unseen_status_signatures
+  nativeTaskMetricsRemainSeparate: true
+
+failureCensorAndPostAllocation:
+  retainAllFailures: true
+  retainAllCensors: true
+  nativeStopReasonRequired: true
+  noCompleteCaseAnalysis: true
+  postAllocationAnalyses:
+    - frozen_primary_estimands_and_Holm_tests
+    - task_specific_status_and_descriptor_curves
+    - native_objective_and_cost_tables_without_cross_task_ranking
+    - arm_overlap_and_physical_deduplication_sensitivity
+    - prespecified_stratum_balance_and_weighting_diagnostics
+    - bounded_null_if_primary_intervals_include_zero_or_integrity_stops
+  exploratoryLabelsRequiredForAnyOtherAnalysis: true
+
+downstreamGates:
+  S08:
+    requires:
+      - complete_S07_integrity_and_access_pass
+      - immutable_candidate_and_result_hashes
+      - native_task_outcomes_and_costs_present
+      - no_rejected_model_or_embedding_use
+    rule: >-
+      S08 may use only S05 candidates plus S07 training results under a separately
+      frozen portfolio protocol. Allocation-arm membership is not efficacy and
+      may not itself promote a policy.
+  S09:
+    requires:
+      - S08_candidate_portfolio_freeze
+      - paired_native_re_evaluation_plan
+      - full_failure_censor_retention
+    rule: No rejected model, embedding, or allocation propensity may substitute for paired ablation.
+  S10:
+    requires:
+      - explicit_native_trace_or_event_feature_availability_audit
+      - prespecified_trace_selection_propensities
+      - task_and_length_confound_tests_without_S06_or_S06A_embeddings
+      - multiple_discovery_correction
+    rule: >-
+      If complete native traces are unavailable, S10 must be redesigned as
+      native event-feature discovery or remain blocked; event-summary artifacts
+      from S06/S06A are prohibited.
+
+S07ExecutionApprovalGate:
+  approved: false
+  allocationRosterWritten: false
+  scenarioMaterialized: false
+  episodesEvaluated: 0
+  archiveMutations: 0
+  validationOutcomeEvaluations: 0
+  confirmationOutcomeEvaluations: 0
+  requiredNextAction: Chief_Scientist_approval_of_frozen_S07R_before_any_S07_action
