@@ -473,6 +473,9 @@ def main() -> None:
                     "Raw-union logistic probe reached max_iter; raw probe remains diagnostic only.",
                     "Initial in-memory-versus-reload CUDA bitwise comparison failed; fresh double-load CPU inference is the final persistence check.",
                 ],
+                "protocolDeviations": [
+                    "The frozen architecture label says residual_mlp, but the executed SurrogateMLP is a sequential LayerNorm/SiLU MLP without residual skip connections. The rejected bundles remain diagnostic only; any remediation must correct and refreeze this label/implementation before fitting."
+                ],
             }
         ),
     )
@@ -493,6 +496,9 @@ def main() -> None:
     deployment["binaryCalibration"] = gates["binaryCalibration"]
     deployment["failureAndCensoring"] = gates["failureAndCensoring"]
     deployment["embedding"] = shortcut
+    deployment["protocolDeviations"] = [
+        "Frozen residual_mlp label did not match the executed non-residual sequential MLP; deployment remains rejected."
+    ]
     deployment["binaryCalibrationPass"] = gates["binaryCalibration"]["pass"]
     deployment["failureAndCensoringPass"] = gates["failureAndCensoring"]["pass"]
     deployment["eligibleForS07"] = all(
@@ -551,6 +557,7 @@ def main() -> None:
         "PASS for artifact integrity, exact training replay, grouped evaluation, "
         "and sealed protected outcomes; FAIL frozen deployment thresholds, so models are rejected."
     )
+    validation["protocolDeviations"] = deployment["protocolDeviations"]
     write_json(validation_path, validation)
     model_manifest_path = S06_ROOT / "models/model_manifest.json"
     model_manifest = json.loads(model_manifest_path.read_text())
