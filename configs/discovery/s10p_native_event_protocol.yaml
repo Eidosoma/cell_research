@@ -1,0 +1,316 @@
+schemaVersion: e07.s10p.native-event-discovery-protocol.v1
+researchStepId: S10P
+title: Preregister the native event-feature phenotype-discovery redesign
+frozenQuestion: >-
+  Can a task-local, non-surrogate native event-feature analysis be frozen and
+  technically qualified for the S09 discoveries without reconstructing absent
+  trajectories, using protected outcomes, or changing native contracts?
+
+authorizationBoundary:
+  designOnly: true
+  allowedEvidence:
+    - schemas
+    - native_contracts
+    - structural_metadata
+    - immutable_candidate_identities
+    - outcome_independent_qualification_fixtures
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  substantiveS10EpisodeRows: 0
+  clusteringFits: 0
+  anomalyFits: 0
+  changePointScreens: 0
+  humanAnnotations: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  quarantineOutcomeOrCacheReads: 0
+  archiveMutations: 0
+
+frozenInputs:
+  taskRegistry: /artifacts/research_steps/S02/environment_suite/task_registry.yaml
+  splitManifest: /artifacts/research_steps/S02/environment_suite/split_manifest.json
+  s08mConfigurationRegistry: /artifacts/research_steps/S08M/portfolio_configuration_registry.jsonl
+  s09Protocol: /artifacts/research_steps/S09/s09_ablation_protocol.yaml
+  s09CompressedPolicies: /artifacts/research_steps/S09/compressed_policies.jsonl
+  s09CandidateLock: /artifacts/research_steps/S08M/validation_candidate_lock.json
+  inputManifest: /workspace/input-attachments/MANIFEST.json
+  forbiddenInputs:
+    - /artifacts/research_steps/S06/models
+    - /artifacts/research_steps/S06/embeddings
+    - /artifacts/research_steps/S06A/models
+    - /artifacts/research_steps/S06A/embeddings
+    - S07_allocation_arm_membership
+    - S08C_outcomes_or_cache
+    - S08E_outcomes_or_cache
+    - S08G_outcomes_or_cache
+    - S08I_outcomes_or_cache
+    - S08K_outcomes_or_cache
+
+candidatePopulation:
+  source: seven_S09_parent_configuration_IDs_and_their_seven_structural_compressions
+  parentCount: 7
+  compressedCount: 7
+  totalCount: 14
+  includeEveryCompressedBundle: true
+  filterOnS09EffectOrRegressionOutcome: false
+  useS07ArmMembership: false
+  useSurrogateOrEmbedding: false
+  tasks:
+    - e07_s02_spatial2d_local
+    - e07_s02_spatial2d_memory
+  crossTaskExecution: every_configuration_on_both_spatial_tasks
+  otherTaskEligibility: schema_qualification_only_no_candidate_execution
+
+scenarioPopulation:
+  split: train
+  derivation: outcome_blind_counter_schedule_key_from_task_phase_and_ordinal
+  discovery:
+    ordinals: [2000, 2255]
+    countPerTask: 256
+    logicalRows: 7168
+  independentReproduction:
+    ordinals: [3000, 3127]
+    countPerTask: 128
+    logicalRows: 3584
+    accessBoundary: only_after_discovery_catalog_hash_lock
+  totalLogicalRows: 10752
+  validation:
+    outcomeAccess: sealed_for_S10P_and_not_authorized_by_this_protocol_for_S10
+    reason: prior_S08M_validation_was_used_for_candidate_eligibility
+  confirmation:
+    outcomeAccess: sealed
+  coupling:
+    withinTask: every_configuration_shares_each_scenario_family
+    acrossTasks: no_common_random_numbers_claim
+  budgets:
+    graphTransitions: 32
+    actorSlotsPerTransition: 4
+  runtimeWeakening: forbidden
+
+eventFeatureContract:
+  schemaVersion: e07.s10p.native-event-features.v1
+  extraction:
+    canonicalJson: sorted_keys_ascii_no_nan
+    unknownFeaturePaths: ignored_and_audited
+    missingValues: never_imputed
+    nonfiniteValues: fail_closed
+    unavailableReasons:
+      - source_field_absent
+      - phase_not_reached
+      - source_terminal
+      - right_censored_before_phase
+      - structurally_not_applicable
+      - ordered_event_summary_unavailable
+    outcomeFieldsPermitted: false
+    objectiveFieldsPermitted: false
+    S04DescriptorFieldsPermitted: false
+    universalScorePermitted: false
+    crossTaskFeaturePooling: false
+  planes:
+    analysis: task_native_event_counts_rates_and_ordered_event_summary_features
+    confound:
+      - task_id
+      - stop_reason
+      - failed
+      - censored
+      - native_horizon
+      - observed_event_length
+      - structural_scenario_size
+      - trace_availability
+      - trace_selection_reason
+    availability: one_explicit_state_and_reason_per_registered_feature
+    provenance: source_schema_path_and_extractor_version
+  authenticOrderedSummaries:
+    e07_s02_spatial2d_local: 32_transition_summaries
+    e07_s02_spatial2d_memory: 32_transition_summaries
+  summaryOnlyTasks:
+    - e07_s02_sorting_1d
+    - e07_s02_faults_1d
+    - e07_s02_detour_1d
+    - e07_s02_chimera_1d
+    - e07_s02_regeneration_1d
+    - e07_s02_target_change_1d
+  noTrajectoryInference: true
+
+missingnessAndConfounds:
+  analysisUnit: configuration_by_task_profile_aggregated_over_scenario_families
+  preserveFailuresAndCensors: true
+  statusHandling:
+    - fit_separate_profiles_by_native_status_stratum
+    - retain_rare_status_strata_descriptively_when_n_below_8
+    - never_relabel_drop_or_promote_failure_or_censor_rows
+  featureAvailability:
+    rowMissingnessIndicatorIsNotPhenotype: true
+    minimumAvailabilityWithinTaskStatusStratum: 0.90
+    minimumEligibleAnalysisFeatures: 5
+    completeCaseClusteringAcrossPartiallySupportedFeatures: forbidden
+    supportPatternAnalysis: descriptive_only
+  deconfounding:
+    method: five_fold_scenario_family_cross_fitted_ridge_residualization
+    ridgeAlpha: 10.0
+    foldAssignment: sha256_scenario_family_mod_5
+    covariates:
+      - log1p_observed_event_length
+      - native_budget_fraction
+      - structural_scenario_size
+      - status_indicators
+    scaling: task_status_feature_median_and_MAD_with_unit_fallback
+    taskIndicatorAsFeature: forbidden
+    horizonOrLengthAsFeature: forbidden
+  postfitConfoundTests:
+    maximumAbsoluteSpearmanWithLength: 0.20
+    taskPredictionNotApplicableBecauseNoCrossTaskPool: true
+    statusPredictionBalancedAccuracyCeiling: 0.65
+    failure: block_affected_feature_set_and_reissue_design
+
+traceSelection:
+  orderedEventSummaries:
+    retention: all_rows
+    contents: counts_and_state_hash_change_indicators_only
+    fullStateInference: forbidden
+  completeNativeTrajectories:
+    available: false
+    selectedCount: 0
+    analysis: forbidden
+  failureOrAnomalyTriggeredTraceRetention:
+    permittedAsDescriptiveForensicsOnly: true
+    mayEnterFrequencyStabilityOrNullInference: false
+  selectionReasonRequired: true
+
+methods:
+  clustering:
+    primary:
+      algorithm: agglomerative_Ward
+      kGrid: [2, 3, 4, 5, 6]
+      selection: smallest_k_within_one_standard_error_of_best_scenario_bootstrap_stability
+    secondary:
+      algorithm: diagonal_Gaussian_mixture
+      kGrid: [1, 2, 3, 4, 5, 6]
+      covarianceRegularization: 0.000001
+      initializations: 20
+      selection: BIC
+    minimumClusterSizeConfigurations: 2
+    crossMethodAdjustedRandThreshold: 0.60
+  anomaly:
+    algorithm: IsolationForest
+    estimators: 500
+    maxSamples: min_256_and_n
+    maxFeatures: 1.0
+    contamination: auto
+    randomSeed: 71020260723
+    candidateThreshold: task_local_top_one_percent_or_maximum_one_configuration
+  changePoint:
+    eligibleInput: authentic_ordered_transition_summaries_only
+    series:
+      - proposal_count
+      - accepted_count
+      - conflict_loss_count
+      - state_hash_changed
+    algorithm: exact_dynamic_programming_piecewise_constant_SSE
+    penalty: BIC_p_plus_1_times_log_T
+    minimumSegmentLength: 4
+    maximumChangePoints: 3
+    taskEligibility:
+      e07_s02_spatial2d_local: true
+      e07_s02_spatial2d_memory: true
+      all_other_tasks: false
+    missingSequenceRule: not_applicable_never_reconstructed
+
+stabilityNullAndMultiplicity:
+  scenarioFamilyBootstrapReplicates: 200
+  nullReplicates: 500
+  "null": permute_configuration_labels_within_task_status_horizon_and_scenario_family
+  clustering:
+    minimumBootstrapAdjustedRand: 0.70
+    minimumClusterJaccard: 0.70
+    requireAboveMaxNull95Percentile: true
+  anomaly:
+    empiricalNullPValue: true
+    requireIndependentReproduction: true
+  changePoint:
+    "null": within_sequence_circular_shift_preserving_marginal_counts
+    minimumDiscoveryPrevalence: 0.60
+    reproductionPrevalence: 0.50
+    alignmentToleranceTransitions: 1
+  multiplicity:
+    method: Holm
+    alpha: 0.05
+    family: all_machine_generated_phenotype_candidates_across_two_tasks_and_three_method_families
+  noUniversalNoveltyScore: true
+
+independentReproduction:
+  freezeBoundary:
+    - discovery_candidate_definitions
+    - feature_support_masks
+    - preprocessing_coefficients
+    - cluster_centroids_or_medoids
+    - anomaly_thresholds
+    - change_point_windows
+    - multiplicity_family
+  lockBeforeReproduction: required
+  refittingOnReproduction: forbidden
+  success:
+    cluster: same_locked_assignment_with_Jaccard_at_least_0.70
+    anomaly: same_direction_and_empirical_Holm_p_at_most_0.05
+    changePoint: prevalence_at_least_0.50_within_one_transition
+  validationOrConfirmationUse: forbidden_without_later_separate_authorization
+
+blindedReview:
+  timing: after_machine_reproduction_lock
+  candidateGenerationByReviewers: forbidden
+  reviewers: 2
+  adjudicator: third_blinded_reviewer_only_for_disagreements
+  exemplarsPerCandidate: 6
+  exemplarRoles:
+    - two_nearest_locked_medoid
+    - two_locked_extremes
+    - two_task_status_horizon_matched_null_controls
+  tieBreak: canonical_hash
+  blindedFields:
+    - configuration_id
+    - parent_or_compressed_role
+    - objective_values
+    - validation_values
+    - policy_source
+    - S07_arm
+  allowedLabels:
+    - activity_distribution
+    - persistence_or_burst
+    - conflict_pattern
+    - state_turnover_pattern
+    - no_operational_pattern
+    - insufficient_event_summary
+  prohibitedLabelsWithoutIntervention:
+    - preference
+    - goal
+    - intention
+    - agency
+    - competency
+    - formation
+    - repair
+    - biological_phenotype
+  agreement:
+    statistic: Cohen_kappa
+    minimum: 0.60
+    belowThreshold: descriptive_machine_result_only_no_human_label_promotion
+
+s10ExecutionGate:
+  failClosed: true
+  rows:
+    G01: immutable_input_hashes_and_candidate_identity
+    G02: exact_14_candidate_2_task_10752_row_accounting
+    G03: eight_contract_extractor_qualification_and_spatial_ordered_summary_support
+    G04: explicit_missingness_censor_status_trace_and_confound_controls
+    G05: deterministic_extraction_replay_serialization_and_worker_order
+    G06: protected_denial_forbidden_dependency_S07_signal_and_quarantine_exclusion
+    G07: methods_null_multiplicity_reproduction_and_blinded_review_frozen
+    G08: zero_substantive_S10_rows_clusters_anomalies_annotations_or_mutations_in_S10P
+  substantiveS10RequiresAllRowsPass: true
+
+claimBoundary:
+  - discovery_is_relative_to_the_frozen_task_local_event_feature_registry
+  - event_summary_patterns_are_not_complete_trajectories
+  - machine_clusters_and_anomalies_are_descriptive_until_intervention
+  - no_cross_task_universal_behavior_score
+  - no_biological_cognitive_preference_goal_or_agency_claim
+  - no_validation_confirmation_or_transfer_claim
