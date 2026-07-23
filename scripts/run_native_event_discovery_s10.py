@@ -673,7 +673,12 @@ def execute() -> None:
     print("S10 preflight PASS; executing 7,168 discovery reservations", flush=True)
     started = time.perf_counter()
     discovery_roster = load_roster("discovery")
-    discovery_rows, discovery_execution = execute_phase(discovery_roster, workers=8)
+    discovery_rows, discovery_execution = execute_phase(
+        discovery_roster,
+        disposition_path=CACHE / "discovery_dispositions.json",
+        phase="discovery",
+        workers=8,
+    )
     discovery_integrity = result_integrity(discovery_rows, 7168)
     if not discovery_integrity["pass"]:
         raise RuntimeError("S10 discovery integrity failed")
@@ -700,7 +705,10 @@ def execute() -> None:
     )
     reproduction_roster = load_roster("independent_reproduction")
     reproduction_rows, reproduction_execution = execute_phase(
-        reproduction_roster, workers=8
+        reproduction_roster,
+        disposition_path=CACHE / "reproduction_dispositions.json",
+        phase="independent_reproduction",
+        workers=8,
     )
     reproduction_integrity = result_integrity(reproduction_rows, 3584)
     if not reproduction_integrity["pass"]:

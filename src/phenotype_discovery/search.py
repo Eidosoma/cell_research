@@ -11,7 +11,6 @@ state-hash change indicators leave that boundary.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
 import hashlib
 import json
@@ -38,10 +37,13 @@ from src.environment_suite.dsl_adapters import run_spatial_dsl_episode
 from src.environment_suite.runners import _morph_context
 from src.environment_suite.suite import EnvironmentSuite
 from src.environment_suite import Split
+from src.phenotype_discovery.accounting import execute_fail_atomic_replays
 from src.phenotype_discovery.native_features import (
+    build_feature_registry,
     canonical_sha256,
     exact_change_points,
     extract_native_event_features,
+    validate_feature_availability_record,
     validate_ordered_transition_summaries,
 )
 from src.policy_dsl import compile_policy
@@ -63,6 +65,8 @@ K_GRID = (2, 3, 4, 5, 6)
 BOOTSTRAP_REPLICATES = 200
 NULL_REPLICATES = 500
 ANOMALY_SEED = 71020260723
+MINIMUM_FEATURE_SUPPORT = 0.90
+MINIMUM_ELIGIBLE_FEATURES = 5
 
 _WORKER_CONTEXT: Any = None
 _WORKER_TASKS: dict[str, Any] = {}
@@ -235,9 +239,14 @@ def _series_projection(summaries: Sequence[Mapping[str, Any]]) -> dict[str, list
     }
 
 
-def evaluate_reservation(reservation: Mapping[str, Any]) -> dict[str, Any]:
-    """Evaluate one frozen logical reservation with exact double execution."""
+def evaluate_physical_reservation(
+    physical: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Evaluate one precommitted physical replay of a frozen reservation."""
 
+    reservation = physical["reservation"]
+    if not isinstance(reservation, Mapping):
+        raise TypeError("physical reservation envelope is malformed")
     if reservation.get("split") != "train":
         raise SuiteValidationError("S10 reservation left the training split")
     task_id = str(reservation["taskId"])
@@ -268,17 +277,12 @@ def evaluate_reservation(reservation: Mapping[str, Any]) -> dict[str, Any]:
     first = run_spatial_dsl_episode(
         _WORKER_CONTEXT, definition, action, target_id=target_id
     )
-    second = run_spatial_dsl_episode(
-        _WORKER_CONTEXT, definition, action, target_id=target_id
-    )
     elapsed = time.perf_counter() - started
-    replay_pass = first == second
     summary_validation = validate_ordered_transition_summaries(
         first["transitionSummaries"], expected_count=32
     )
     authority = {key: bool(value) for key, value in first["authorityAudit"].items()}
     validation = {
-        "exactReplay": replay_pass,
         "fixedTransitionCount": len(first["transitionSummaries"]) == 32,
         "actorBatchSize": int(first["actorBatchSize"]) == 4,
         "stateHashChain": bool(summary_validation["stateHashChainPass"]),
@@ -322,13 +326,9 @@ def evaluate_reservation(reservation: Mapping[str, Any]) -> dict[str, Any]:
         "orderedEventSummaries": first["transitionSummaries"],
     }
     feature_record = extract_native_event_features(task_id, payload)
-    if len(feature_record["analysisFeatures"]) != 18:
-        raise RuntimeError("spatial S10 row did not expose 18 frozen features")
-    if any(
-        value["state"] != "observed_or_exact_native_derived"
-        for value in feature_record["availability"].values()
-    ):
-        raise RuntimeError("spatial S10 feature unexpectedly unavailable")
+    availability_summary = validate_feature_availability_record(
+        feature_record, expected_task_id=task_id
+    )
     series = _series_projection(first["transitionSummaries"])
     cost_ledgers = {
         "e06MovementLedger": deepcopy(first["movementLedger"]),
@@ -369,7 +369,6 @@ def evaluate_reservation(reservation: Mapping[str, Any]) -> dict[str, Any]:
                 "censored": censored,
             }
         ),
-        "replayPass": replay_pass,
         "nativeContractPass": not false_validation,
         "nativeContractErrors": false_validation,
         "featureRecordSha256": feature_record["featureRecordSha256"],
@@ -385,73 +384,74 @@ def evaluate_reservation(reservation: Mapping[str, Any]) -> dict[str, Any]:
         "nativeCostSha256": canonical_sha256(
             "E07/S10/native-cost-ledgers/v1", cost_ledgers
         ),
-        "physicalExecutions": 2,
         "outcomePlaneReadForFeatures": False,
         "statusDerivedByNativeRunnerSemantics": True,
         "completeTrajectoryReconstructed": False,
         "claimBoundary": _WORKER_TASKS[task_id].claim_boundary,
+    }
+    return {
+        "resultBody": body,
+        "deterministicResultSha256": canonical_sha256(
+            "E07/S10A/deterministic-physical-result/v1", body
+        ),
+        "nativeReplaySha256": canonical_sha256(
+            "E07/S10A/native-episode-replay/v1", first
+        ),
+        "availabilitySummary": availability_summary,
         "elapsedSeconds": elapsed,
         "workerPid": os.getpid(),
     }
+
+
+def _finalize_logical_result(
+    reservation: Mapping[str, Any],
+    payloads: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    if len(payloads) != 2:
+        raise RuntimeError("logical result requires exactly two physical replays")
+    body = deepcopy(dict(payloads[0]["resultBody"]))
+    if str(body["logicalReservationId"]) != str(reservation["logicalReservationId"]):
+        raise RuntimeError("physical result lost its logical reservation identity")
+    body.update(
+        {
+            "replayPass": True,
+            "physicalExecutions": 2,
+            "elapsedSeconds": sum(
+                float(payload["elapsedSeconds"]) for payload in payloads
+            ),
+            "workerPids": [int(payload["workerPid"]) for payload in payloads],
+        }
+    )
     body["logicalResultSha256"] = canonical_sha256(
         "E07/S10/logical-result/v1",
         {
             key: value
             for key, value in body.items()
-            if key not in {"elapsedSeconds", "workerPid"}
+            if key not in {"elapsedSeconds", "workerPids"}
         },
     )
     return body
 
 
 def execute_phase(
-    reservations: Sequence[Mapping[str, Any]], *, workers: int = 8
+    reservations: Sequence[Mapping[str, Any]],
+    *,
+    disposition_path: str | Path,
+    phase: str,
+    workers: int = 8,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    if not 1 <= workers <= 8:
-        raise ValueError("workers must be 1..8")
-    if len({row["logicalReservationId"] for row in reservations}) != len(reservations):
-        raise RuntimeError("duplicate logical reservation")
-    results: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
-    started = time.perf_counter()
-    with ProcessPoolExecutor(
-        max_workers=workers, initializer=initialize_worker
-    ) as executor:
-        futures = {
-            executor.submit(evaluate_reservation, row): index
-            for index, row in enumerate(reservations)
-        }
-        for future in as_completed(futures):
-            index = futures[future]
-            try:
-                results.append(future.result())
-            except BaseException as exc:
-                failures.append(
-                    {
-                        "position": index,
-                        "logicalReservationId": reservations[index][
-                            "logicalReservationId"
-                        ],
-                        "errorType": f"{type(exc).__module__}.{type(exc).__qualname__}",
-                        "errorMessage": str(exc),
-                    }
-                )
-    if failures:
-        raise RuntimeError(
-            "S10 fail-atomic phase execution failed: "
-            + json.dumps(failures[:5], sort_keys=True)
-        )
+    results, accounting = execute_fail_atomic_replays(
+        reservations,
+        evaluate_physical_reservation,
+        disposition_path=disposition_path,
+        phase=phase,
+        workers=workers,
+        finalizer=_finalize_logical_result,
+        executor_kind="process",
+        initializer=initialize_worker,
+    )
     results.sort(key=lambda row: int(row["logicalOrdinal"]))
-    return results, {
-        "logicalRows": len(reservations),
-        "physicalExecutions": 2 * len(reservations),
-        "publishedRows": len(results),
-        "failedWorkerRows": 0,
-        "workers": workers,
-        "numericThreadsPerWorker": 1,
-        "failAtomic": True,
-        "wallSeconds": time.perf_counter() - started,
-    }
+    return results, accounting
 
 
 def rows_digest(rows: Sequence[Mapping[str, Any]]) -> str:
@@ -463,8 +463,102 @@ def rows_digest(rows: Sequence[Mapping[str, Any]]) -> str:
 
 
 def _feature_names(rows: Sequence[Mapping[str, Any]]) -> list[str]:
-    names = sorted({name for row in rows for name in row["analysisFeatures"]})
+    names = sorted({name for row in rows for name in row["availability"]})
     return names
+
+
+def support_decision(
+    observed_count: int,
+    denominator_count: int,
+    *,
+    threshold: float = MINIMUM_FEATURE_SUPPORT,
+) -> dict[str, Any]:
+    """Apply the frozen inclusive support rule without inventing a denominator."""
+
+    if observed_count < 0 or denominator_count < 0:
+        raise ValueError("support counts must be nonnegative")
+    if observed_count > denominator_count:
+        raise ValueError("observed support exceeds its denominator")
+    if denominator_count == 0:
+        return {
+            "observedCount": observed_count,
+            "denominatorCount": 0,
+            "support": None,
+            "threshold": threshold,
+            "comparison": "greater_than_or_equal",
+            "eligible": False,
+            "state": "undefined_zero_denominator",
+        }
+    support = observed_count / denominator_count
+    return {
+        "observedCount": observed_count,
+        "denominatorCount": denominator_count,
+        "support": support,
+        "threshold": threshold,
+        "comparison": "greater_than_or_equal",
+        "eligible": support >= threshold,
+        "state": "defined",
+    }
+
+
+def feature_support_by_task_status(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Compute explicit support masks within each task/native-status stratum."""
+
+    grouped: dict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
+    for row in rows:
+        task_id = str(row["taskId"])
+        status = str(row["statusStratum"])
+        validate_feature_availability_record(
+            {
+                "taskId": task_id,
+                "analysisFeatures": row["analysisFeatures"],
+                "availability": row["availability"],
+            },
+            expected_task_id=task_id,
+        )
+        grouped[(task_id, status)].append(row)
+    strata: list[dict[str, Any]] = []
+    for (task_id, status), stratum in sorted(grouped.items()):
+        registered = sorted(
+            spec.feature_id
+            for spec in build_feature_registry()
+            if spec.task_id == task_id
+        )
+        decisions = {}
+        for feature_id in registered:
+            observed = sum(
+                row["availability"][feature_id]["state"]
+                == "observed_or_exact_native_derived"
+                for row in stratum
+            )
+            decisions[feature_id] = support_decision(observed, len(stratum))
+        eligible = sorted(
+            feature_id
+            for feature_id, decision in decisions.items()
+            if decision["eligible"]
+        )
+        strata.append(
+            {
+                "taskId": task_id,
+                "statusStratum": status,
+                "rowCount": len(stratum),
+                "featureDecisions": decisions,
+                "eligibleFeatures": eligible,
+                "minimumEligibleAnalysisFeatures": MINIMUM_ELIGIBLE_FEATURES,
+                "minimumFeatureCountPass": len(eligible) >= MINIMUM_ELIGIBLE_FEATURES,
+                "imputedFeatureCount": 0,
+                "completeCaseRowFilterApplied": False,
+            }
+        )
+    return {
+        "schemaVersion": "e07.s10a.task-status-feature-support.v1",
+        "threshold": MINIMUM_FEATURE_SUPPORT,
+        "comparison": "greater_than_or_equal",
+        "strata": strata,
+        "stratumCount": len(strata),
+    }
 
 
 def _covariates(rows: Sequence[Mapping[str, Any]]) -> np.ndarray:
@@ -491,13 +585,22 @@ def fit_preprocessing(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
     if not rows:
         raise RuntimeError("cannot fit preprocessing without discovery rows")
+    task_status_pairs = {
+        (str(row["taskId"]), str(row["statusStratum"])) for row in rows
+    }
+    if len(task_status_pairs) != 1:
+        raise RuntimeError(
+            "preprocessing support must be fit within one task/status stratum"
+        )
+    support_document = feature_support_by_task_status(rows)
+    stratum_support = support_document["strata"][0]
     feature_names = _feature_names(rows)
     support = {
-        feature: sum(feature in row["analysisFeatures"] for row in rows) / len(rows)
+        feature: stratum_support["featureDecisions"][feature]["support"]
         for feature in feature_names
     }
-    eligible = sorted(feature for feature, value in support.items() if value >= 0.90)
-    if len(eligible) < 5:
+    eligible = list(stratum_support["eligibleFeatures"])
+    if len(eligible) < MINIMUM_ELIGIBLE_FEATURES:
         raise RuntimeError("fewer than five frozen features have 90% support")
     folds = np.asarray(
         [fold_for_family(str(row["scenarioFamilyId"])) for row in rows], dtype=int
@@ -529,6 +632,11 @@ def fit_preprocessing(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "schemaVersion": "e07.s10.preprocessing-lock.v1",
         "eligibleFeatures": eligible,
         "featureSupport": support,
+        "supportUnit": "task_id_by_native_status_stratum",
+        "supportThreshold": MINIMUM_FEATURE_SUPPORT,
+        "supportComparison": "greater_than_or_equal",
+        "completeCaseRowFilterApplied": False,
+        "imputedFeatureCount": 0,
         "ridgeAlpha": 10.0,
         "foldRule": "sha256_scenario_family_mod_5",
         "modelsByFeatureAndFold": models,

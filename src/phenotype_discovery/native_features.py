@@ -23,6 +23,16 @@ from typing import Any, Mapping, Sequence
 
 EVENT_FEATURE_SCHEMA_VERSION = "e07.s10p.native-event-features.v1"
 REGISTRY_SCHEMA_VERSION = "e07.s10p.native-event-feature-registry.v1"
+FROZEN_UNAVAILABLE_REASONS = frozenset(
+    {
+        "source_field_absent",
+        "phase_not_reached",
+        "source_terminal",
+        "right_censored_before_phase",
+        "structurally_not_applicable",
+        "ordered_event_summary_unavailable",
+    }
+)
 
 TASKS = (
     "e07_s02_sorting_1d",
@@ -505,15 +515,33 @@ def extract_native_event_features(
                 "state": "observed_or_exact_native_derived",
                 "reason": None,
             }
-        except (KeyError, ZeroDivisionError):
+        except ZeroDivisionError:
+            frozen_reason = reason or "structurally_not_applicable"
+            if frozen_reason not in FROZEN_UNAVAILABLE_REASONS:
+                raise FeatureExtractionError(
+                    f"unknown feature-unavailability reason: {frozen_reason}"
+                )
             availability[spec.feature_id] = {
                 "state": "unavailable",
-                "reason": reason
-                or (
-                    "ordered_event_summary_unavailable"
-                    if spec.transform == "ordered_summary"
-                    else "source_field_absent"
+                "reason": frozen_reason,
+                "reasonCode": (
+                    frozen_reason if reason is not None else "zero_native_denominator"
                 ),
+            }
+        except KeyError:
+            frozen_reason = reason or (
+                "ordered_event_summary_unavailable"
+                if spec.transform == "ordered_summary"
+                else "source_field_absent"
+            )
+            if frozen_reason not in FROZEN_UNAVAILABLE_REASONS:
+                raise FeatureExtractionError(
+                    f"unknown feature-unavailability reason: {frozen_reason}"
+                )
+            availability[spec.feature_id] = {
+                "state": "unavailable",
+                "reason": frozen_reason,
+                "reasonCode": frozen_reason,
             }
         source_paths[spec.feature_id] = {
             "sourcePath": spec.source_path,
@@ -567,6 +595,102 @@ def extract_native_event_features(
         "E07/S10P/native-event-feature-record/v1", body
     )
     return body
+
+
+def validate_feature_availability_record(
+    record: Mapping[str, Any],
+    *,
+    expected_task_id: str | None = None,
+) -> dict[str, Any]:
+    """Validate complete availability without requiring per-row completeness."""
+
+    task_id = str(record.get("taskId", ""))
+    if expected_task_id is not None and task_id != expected_task_id:
+        raise FeatureExtractionError(
+            f"feature task mismatch: expected {expected_task_id}, got {task_id}"
+        )
+    registered = sorted(
+        spec.feature_id for spec in build_feature_registry() if spec.task_id == task_id
+    )
+    if not registered:
+        raise FeatureExtractionError(f"no registered features for task: {task_id}")
+    analysis = record.get("analysisFeatures")
+    availability = record.get("availability")
+    if not isinstance(analysis, Mapping) or not isinstance(availability, Mapping):
+        raise FeatureExtractionError(
+            "analysisFeatures and availability must both be mappings"
+        )
+    if sorted(availability) != registered:
+        missing = sorted(set(registered) - set(availability))
+        extra = sorted(set(availability) - set(registered))
+        raise FeatureExtractionError(
+            f"availability plane does not equal registry; missing={missing}; extra={extra}"
+        )
+    if not set(analysis).issubset(registered):
+        raise FeatureExtractionError("analysis plane contains an unregistered feature")
+
+    reason_counts: dict[str, int] = {}
+    observed = 0
+    unavailable = 0
+    for feature_id in registered:
+        state_record = availability[feature_id]
+        if not isinstance(state_record, Mapping):
+            raise FeatureExtractionError(
+                f"availability record is not a mapping: {feature_id}"
+            )
+        state = state_record.get("state")
+        if state == "observed_or_exact_native_derived":
+            if feature_id not in analysis:
+                raise FeatureExtractionError(
+                    f"observed availability lacks analysis value: {feature_id}"
+                )
+            value = analysis[feature_id]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+            ):
+                raise FeatureExtractionError(
+                    f"observed analysis value is not finite numeric: {feature_id}"
+                )
+            if state_record.get("reason") is not None:
+                raise FeatureExtractionError(
+                    f"observed availability has an unavailable reason: {feature_id}"
+                )
+            observed += 1
+        elif state == "unavailable":
+            if feature_id in analysis:
+                raise FeatureExtractionError(
+                    f"unavailable feature has an analysis value: {feature_id}"
+                )
+            reason = state_record.get("reason")
+            if reason not in FROZEN_UNAVAILABLE_REASONS:
+                raise FeatureExtractionError(
+                    f"unavailable feature has invalid frozen reason: {feature_id}"
+                )
+            reason_code = state_record.get("reasonCode", reason)
+            if not isinstance(reason_code, str) or not reason_code:
+                raise FeatureExtractionError(
+                    f"unavailable feature lacks a reason code: {feature_id}"
+                )
+            reason_counts[reason_code] = reason_counts.get(reason_code, 0) + 1
+            unavailable += 1
+        else:
+            raise FeatureExtractionError(
+                f"unknown availability state for {feature_id}: {state!r}"
+            )
+    return {
+        "schemaVersion": "e07.s10a.feature-availability-summary.v1",
+        "state": (
+            "complete" if unavailable == 0 else "complete_with_explicit_unavailability"
+        ),
+        "registeredFeatureCount": len(registered),
+        "observedFeatureCount": observed,
+        "unavailableFeatureCount": unavailable,
+        "reasonCodeCounts": dict(sorted(reason_counts.items())),
+        "imputedFeatureCount": 0,
+        "silentDropCount": 0,
+    }
 
 
 def exact_change_points(

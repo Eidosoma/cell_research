@@ -14,15 +14,21 @@ from src.phenotype_discovery.search import (
     result_integrity,
     rows_digest,
 )
+from src.phenotype_discovery.native_features import build_feature_registry
 
 
 def _rows() -> list[dict]:
+    feature_ids = [
+        spec.feature_id
+        for spec in build_feature_registry()
+        if spec.task_id == "e07_s02_spatial2d_local"
+    ]
     rows = []
     for family in range(10):
         for candidate in ("a", "b"):
             features = {
-                f"feature_{index}": float(index + family + (candidate == "b"))
-                for index in range(6)
+                feature_id: float(index + family + (candidate == "b"))
+                for index, feature_id in enumerate(feature_ids)
             }
             rows.append(
                 {
@@ -30,8 +36,16 @@ def _rows() -> list[dict]:
                     "logicalReservationId": f"reservation-{family}-{candidate}",
                     "logicalResultSha256": f"{family * 2 + (candidate == 'b'):064x}",
                     "candidateId": candidate,
+                    "taskId": "e07_s02_spatial2d_local",
                     "scenarioFamilyId": f"family-{family}",
                     "analysisFeatures": features,
+                    "availability": {
+                        feature_id: {
+                            "state": "observed_or_exact_native_derived",
+                            "reason": None,
+                        }
+                        for feature_id in feature_ids
+                    },
                     "statusStratum": "transition_budget|failed=false|censored=true",
                     "confounds": {
                         "observedEventLength": 32,
@@ -81,7 +95,7 @@ def test_preprocessing_and_profiles_are_deterministic() -> None:
     assert np.array_equal(a, b)
     ids, profiles = configuration_profiles(rows, a)
     assert ids == ["a", "b"]
-    assert profiles.shape == (2, 6)
+    assert profiles.shape == (2, 18)
 
 
 def test_cluster_jaccard_is_label_invariant() -> None:
