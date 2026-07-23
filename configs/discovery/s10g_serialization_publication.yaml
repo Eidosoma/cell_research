@@ -1,0 +1,138 @@
+schemaVersion: e07.s10g.serialization-publication-protocol.v1
+researchStepId: S10G
+title: Preregister and qualify mixed-schema serialization and globally fail-atomic scientific publication
+registeredDateUtc: "2026-07-23"
+prospectiveRegistration:
+  researchPlanPath: /workspace/RESEARCH_PLAN.md
+  researchPlanSha256: 6395fd31ebed48ad0b94922b4b263adea3e93674dd41ad4c0c6e6d09e9f93ce8
+authorizationBoundary:
+  qualificationOnly: true
+  allowedEvidence:
+    - frozen_structural_definitions
+    - recorded_integrity_metadata
+    - mathematical_contracts
+    - outcome_independent_synthetic_fixtures
+  frozenEpisodes: 0
+  reproductionRows: 0
+  validationOutcomeRows: 0
+  confirmationOutcomeRows: 0
+  humanAnnotations: 0
+  archiveMutations: 0
+  s11Rows: 0
+  s10fCacheFilesRead: 0
+  s10fOutcomeArtifactFilesRead: 0
+immutableArtifactTrees:
+  S10P: {path: /artifacts/research_steps/S10P, treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704, fileCount: 26, totalBytes: 1536426}
+  S10: {path: /artifacts/research_steps/S10, treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40, fileCount: 18, totalBytes: 61921}
+  S10A: {path: /artifacts/research_steps/S10A, treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd, fileCount: 27, totalBytes: 202875}
+  S10B: {path: /artifacts/research_steps/S10B, treeSha256: 0968c06f19b488795efe7ce99bfbc50cfc1bff2e91102a2c7fbbff40891dcd16, fileCount: 17, totalBytes: 75692}
+  S10C: {path: /artifacts/research_steps/S10C, treeSha256: da1886a004f82f4555fb4d38958e8b09b743361722b2db69ed83eed2cbedb740, fileCount: 19, totalBytes: 53086}
+  S10D: {path: /artifacts/research_steps/S10D, treeSha256: c688be35e36f7ed84f0eca794ed64983077e8f98f5df935cc964aa6b99261008, fileCount: 20, totalBytes: 3144784}
+  S10E: {path: /artifacts/research_steps/S10E, treeSha256: be8e7581c9c0aa1726d679c68ffec99216914535c95e177c26cebe1631efff17, fileCount: 29, totalBytes: 104610}
+s10fQuarantineBoundary:
+  artifactRoot: /artifacts/research_steps/S10F
+  artifactFileCount: 28
+  artifactTotalBytes: 6451735
+  permittedContentFileCount: 25
+  permittedContentListSha256: d2d04126fdcc841d537eb66a6f52f1c1c54d3bb7778ef67bc8defa5824419e26
+  recordedQuarantineManifest:
+    path: /artifacts/research_steps/S10F/quarantine_manifest.json
+    sha256: 760184142f41676b2625162866cddfe130ed508ea3f77e4c61a88e5ec92f0302
+  prohibitedArtifactFiles:
+    - {path: /artifacts/research_steps/S10F/discovery_lock.json, bytes: 197691, recordedSha256: c2065a0b2835dd7c984fc1dcc3185320327d59d2b1b597d59a1036ebf5267b82}
+    - {path: /artifacts/research_steps/S10F/native_event_feature_records.parquet, bytes: 986288, recordedSha256: f231ca302e8651f6e026f548522053ffa0c854f4859df45e1b91dfd2305508d8}
+    - {path: /artifacts/research_steps/S10F/ordered_event_summary_records.parquet, bytes: 568367, recordedSha256: 1923764d7453706f969dcc276d63d6194828964225d1ba6b0157b2342c476fe7}
+  prohibitedCache:
+    path: /cache/e07-s10f
+    fileCount: 4
+    totalBytes: 33404434
+    recordedTreeSha256: 659e725a6c4eb76e2f8b9b01b32327bbd9b4290643e1cf7d6dfc5527537a0c4d
+immutableConsumedCacheMetadata:
+  S08C: {path: /cache/e07-s08c, fileCount: 23, totalBytes: 284413, recordedTreeSha256: fa2abf3d8f0cbaf872cdba994e099ff7d6bbb1452eade74dad8a34af28c8f5e7}
+  S08E: {path: /cache/e07-s08e, fileCount: 4860, totalBytes: 75858250, recordedTreeSha256: 9a8240fd49033eaa878182d71295d154a8ddac2253161228867ab87e9ba58ce9}
+  S08G: {path: /cache/e07-s08g, fileCount: 4864, totalBytes: 75889608, recordedTreeSha256: 8757454b191f75aaeb253809483e43a9dfb396925e60716642a9c3801fbaaf4c}
+  S08I: {path: /cache/e07-s08i, fileCount: 40, totalBytes: 728710, recordedTreeSha256: 35e2ca923b962a3d6392f17d01ab7352e952bae56582ee6929ac419d4437f872}
+  S08K: {path: /cache/e07-s08k, fileCount: 9758, totalBytes: 188946893, recordedTreeSha256: b8a5f0a9844193fbaf71a26b97f25adb9c0d050d5d4d8758308d16e8ccfdd7bd}
+  S10: {path: /cache/e07-s10, fileCount: 0, totalBytes: 0, recordedTreeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10B: {path: /cache/e07-s10b, fileCount: 0, totalBytes: 0, recordedTreeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10D: {path: /cache/e07-s10d, fileCount: 2, totalBytes: 22269417, recordedTreeSha256: 63d73a82a47b65fd6802c3d5709086adedc87a70770cb49c6c6b6ef92de184a5}
+frozenScientificContracts:
+  s10pMethodRegistry: {path: /artifacts/research_steps/S10P/method_registry.json, sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6}
+  s10pScientificProtocol: {path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml, sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd}
+  s10pEligibilityGate: {path: /artifacts/research_steps/S10P/s10_eligibility_gate.json, sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef}
+  s10eMethodFeasibility: {path: /artifacts/research_steps/S10E/method_feasibility_registry.json, sha256: 5d0268ce062f0ad0c93174abe3e573238950368d0f36ad9df994e1c4c4ad3d79}
+  s10eHolmFamily: {path: /artifacts/research_steps/S10E/holm_family_contract.json, sha256: 7a5a8fdd61d828bf37ba11a06ce0f006ef8cdd05afa2f87604ffedc16f10c07b}
+  s10fSerializationForensics: {path: /artifacts/research_steps/S10F/serialization_failure_forensics.json, sha256: 73cd2246ecace7e5842f816c9b70884e6c7fbcd06c40ef62d8c07498006d2c48}
+recordSchema:
+  version: e07.s10g.method-record.v1
+  families: [clustering, anomaly, change_point, fixed_holm]
+  evidenceStates: [evidentiary, non_evidentiary]
+  valueStates: [available, unavailable, not_applicable]
+  nonEvidentiaryRawPValue: 1.0
+  requiredExplicitValuePlanes:
+    - configurationId
+    - slotId
+    - payload
+    - rawPValue
+    - holmAdjustedPValue
+    - preMultiplicityGatePass
+    - multiplicityPass
+  dataframeRule: exact_nonnullable_columns_with_canonical_json_text_for_every_value_plane
+  parquetRule: explicit_nonnullable_Arrow_schema_no_inference
+  jsonRule: UTF-8_canonical_sorted_keys_allow_nan_false
+  prohibited:
+    - NaN
+    - positive_or_negative_infinity
+    - pandas_NA_or_NaT
+    - numpy_nonfinite_scalars_or_arrays
+    - absent_required_fields
+    - inferred_or_ambiguous_dataframe_columns
+publication:
+  version: e07.s10g.global-scientific-publication.v1
+  commitRule: validate_complete_staging_then_one_same_filesystem_atomic_directory_rename
+  destinationMustBeAbsent: true
+  exactForensicsOutsideScientificDestination: true
+  artifactClasses:
+    - {id: discovery_catalog, path: discovery_catalog.parquet, mediaType: parquet}
+    - {id: preprocessing_results, path: preprocessing_results.parquet, mediaType: parquet}
+    - {id: confound_audits, path: confound_audits.parquet, mediaType: parquet}
+    - {id: clustering_results, path: clustering_results.parquet, mediaType: method_records_parquet}
+    - {id: anomaly_results, path: anomaly_results.parquet, mediaType: method_records_parquet}
+    - {id: change_point_results, path: change_point_results.parquet, mediaType: method_records_parquet}
+    - {id: fixed_holm_records, path: fixed_holm_records.parquet, mediaType: method_records_parquet}
+    - {id: discovery_lock, path: discovery_lock.json, mediaType: json}
+    - {id: independent_reproduction_results, path: independent_reproduction_results.parquet, mediaType: parquet}
+    - {id: machine_discovery_summary, path: machine_discovery_summary.json, mediaType: json}
+    - {id: blinded_exemplar_packet, path: blinded_exemplar_packet.json, mediaType: json}
+    - {id: reviewer_instructions, path: reviewer_instructions.md, mediaType: markdown}
+    - {id: human_review_status, path: human_review_status.json, mediaType: json}
+    - {id: native_event_feature_records, path: native_event_feature_records.parquet, mediaType: parquet}
+    - {id: ordered_event_summary_records, path: ordered_event_summary_records.parquet, mediaType: parquet}
+    - {id: complete_accounting, path: complete_accounting.json, mediaType: json}
+    - {id: replay_validation, path: replay_validation.json, mediaType: json}
+    - {id: native_contract_validation, path: native_contract_validation.json, mediaType: json}
+    - {id: validation_summary, path: validation_summary.json, mediaType: json}
+    - {id: execution_summary, path: execution_summary.json, mediaType: json}
+  failureInjection:
+    phasesPerArtifactClass: [before_write, during_write, after_write]
+    globalPhases:
+      - before_full_validation
+      - after_full_validation
+      - before_commit
+      - after_commit
+  acceptedFinalStates:
+    - zero_scientific_publication
+    - complete_validated_publication
+scientificDesign:
+  populations: unchanged_from_S10P
+  estimands: unchanged_from_S10P
+  methodsAndHyperparameters: unchanged_from_S10P_and_S10E
+  thresholds: unchanged_from_S10P_and_S10E
+  candidateRules: unchanged_from_S10P
+  multiplicity: unchanged_nonshrinking_fixed_Holm
+  missingnessCensoringTraceCostsAndClaims: unchanged
+futureExecution:
+  authorized: false
+  requiresSeparateApproval: true
+  requiresGenuinelyFreshNamespace: true
+  mustNotReuseAnyConsumedOrQuarantinedCacheOrOutcome: true
