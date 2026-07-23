@@ -47,6 +47,7 @@ STEP_ID = "S10E"
 REPOSITORY = Path("/workspace/cell-research")
 WORKSPACE = Path("/workspace")
 OUTPUT = Path("/artifacts/research_steps/S10E")
+FAILED_ATTEMPT = Path("/cache/e07-s10e-qualification-attempt1")
 CONFIG = REPOSITORY / "configs/discovery/s10e_method_feasibility.yaml"
 SCRIPT = Path(__file__).resolve()
 TEST = REPOSITORY / "tests/test_s10e_method_feasibility.py"
@@ -285,7 +286,7 @@ def boundary_qualification(frozen: tuple[str, ...], rule: Mapping[str, Any]) -> 
         "feature_support_at_90": (True, True, True, 14),
         "feature_support_above_90": (True, True, True, 14),
         "four_supported_features": (False, False, False, 14),
-        "incomplete_candidate_family_grid": (True, False, False, 13),
+        "incomplete_candidate_family_grid": (True, False, False, 14),
         "series_length_31": (True, True, True, 13),
         "row_count_7": (False, False, False, 0),
     }
@@ -1386,6 +1387,24 @@ def main() -> None:
         ],
         "dependenciesInstalled": [],
     }
+    attempt_forensics = {
+        "schemaVersion": "e07.s10e.qualification-attempt-forensics.v1",
+        "researchStepId": STEP_ID,
+        "attemptId": "qualification-attempt-1",
+        "attemptTree": tree_snapshot(FAILED_ATTEMPT),
+        "failureClass": "synthetic_fixture_expected_count_error",
+        "failedFinalCheck": "boundaryQualification",
+        "observedCorrectBehavior": (
+            "Removing one candidate-family row blocks complete-incidence "
+            "profile resampling but leaves all 14 candidate change-point "
+            "panels supported by at least two families."
+        ),
+        "scientificRuleChanged": False,
+        "methodOrThresholdChanged": False,
+        "frozenEpisodesSubmitted": 0,
+        "protectedRowsRead": 0,
+        "retryUsedIdenticalScale": True,
+    }
 
     for name, value in (
         ("preregistration_freeze.json", freeze),
@@ -1418,6 +1437,7 @@ def main() -> None:
         ("environment_provenance.json", environment),
         ("test_validation.json", test_validation),
         ("command_log.json", command_log),
+        ("qualification_attempt_forensics.json", attempt_forensics),
     ):
         write_json(OUTPUT / name, value)
     (OUTPUT / "research_step_full_results.md").write_text(

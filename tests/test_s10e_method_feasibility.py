@@ -146,6 +146,7 @@ def test_incomplete_candidate_family_grid_blocks_resampling_methods() -> None:
     assert (
         "INCOMPLETE_CANDIDATE_FAMILY_INCIDENCE" in result["clustering"]["reasonCodes"]
     )
+    assert result["changePoint"]["admissibleCandidateCount"] == 14
 
 
 def test_four_supported_features_block_profile_methods_only() -> None:
