@@ -1,0 +1,175 @@
+schemaVersion: e07.s10d.fresh-native-event-execution.v1
+researchStepId: S10D
+title: Fresh S10 execution after S10C
+registeredDateUtc: "2026-07-23"
+continuationOf:
+  scientificDesign: S10P
+  missingnessAndAccountingContract: S10A
+  failedExecution: S10B
+  callbackBindingQualification: S10C
+
+immutableInputs:
+  s10pTree:
+    path: /artifacts/research_steps/S10P
+    treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704
+    fileCount: 26
+    totalBytes: 1536426
+  failedS10Tree:
+    path: /artifacts/research_steps/S10
+    treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40
+    fileCount: 18
+    totalBytes: 61921
+  s10aTree:
+    path: /artifacts/research_steps/S10A
+    treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd
+    fileCount: 27
+    totalBytes: 202875
+  s10bTree:
+    path: /artifacts/research_steps/S10B
+    treeSha256: 0968c06f19b488795efe7ce99bfbc50cfc1bff2e91102a2c7fbbff40891dcd16
+    fileCount: 17
+    totalBytes: 75692
+  s10cTree:
+    path: /artifacts/research_steps/S10C
+    treeSha256: da1886a004f82f4555fb4d38958e8b09b743361722b2db69ed83eed2cbedb740
+    fileCount: 19
+    totalBytes: 53086
+  scientificProtocol:
+    path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml
+    sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd
+  featureRegistry:
+    path: /artifacts/research_steps/S10P/native_event_feature_registry.json
+    sha256: a2507549c7871de709490ed4d50a17118a4968ccb878d454a3156e48979beb55
+  methodRegistry:
+    path: /artifacts/research_steps/S10P/method_registry.json
+    sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6
+  candidatePopulation:
+    path: /artifacts/research_steps/S10P/candidate_population.jsonl
+    sha256: 6ad286757a846ea959d720ccbe1a91dc7ce6b277c97b736b377b072edaa126d8
+  logicalRoster:
+    path: /artifacts/research_steps/S10P/s10_logical_roster.parquet
+    sha256: b29828a90cdeb9c7be56510a237e10d77e38398a6f19530f75958a3abb088621
+  eligibilityGate:
+    path: /artifacts/research_steps/S10P/s10_eligibility_gate.json
+    sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef
+  s10aFreshExecutionGate:
+    path: /artifacts/research_steps/S10A/fresh_s10_execution_gate.json
+    sha256: 2a3e490b5eeec0d6fe5a7ccd714fe7ee854fb452002a53de866f5afe17bf2902
+  s10cInstalledDispatchQualification:
+    path: /artifacts/research_steps/S10C/installed_dispatch_qualification.json
+    sha256: ba04a6822f07e4de7e4523931d75a0703d5fabda4c0fb14d3629516caac94cc1
+  s10cValidation:
+    path: /artifacts/research_steps/S10C/validation_summary.json
+    sha256: afd0a2f97e17f7f7a5ca0046b974ac3c6e847d12cd25dcffe7eb4c4ce05493fd
+  s10cCallbackIdentity:
+    path: /artifacts/research_steps/S10C/callback_identity_provenance.json
+    sha256: 62c50eb94cad5a9fc201e7b6853ccdbecd35274e9e36582735c721506151a9b0
+  s10bCallbackQualifiedWrapper:
+    path: /workspace/cell-research/scripts/run_native_event_discovery_s10b.py
+    sha256: 520a61c787a161cbc3a4bf2e8d6116e5a7ba12fb3678ff817fdddfbc6454bf6d
+  s10aAccountingCore:
+    path: /workspace/cell-research/src/phenotype_discovery/accounting.py
+    sha256: 32c7ebd5e68097aa42f229840da6315c547d0940b0ffd2eb3aa82bd74a264c20
+  s10aNativeFeaturesCore:
+    path: /workspace/cell-research/src/phenotype_discovery/native_features.py
+    sha256: d177b18276b6fec5f4d354795981dd1b77c5121b05835f0ca534b05f8784d59d
+  s10aSearchCore:
+    path: /workspace/cell-research/src/phenotype_discovery/search.py
+    sha256: c67ebd4f5e7a1e57f5e84f0a84346b2c9286c15075c1212bf760373d8fba71a2
+  researchPlanAfterProspectiveRegistration:
+    path: /workspace/RESEARCH_PLAN.md
+    sha256: 2b78be9085776f8fd5a6ca23b6e370f88d60380340f41f612f820b302a1af068
+
+authorization:
+  separateS10DExecutionApprovalReceived: true
+  split: train
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  humanAnnotations: 0
+  s11Rows: 0
+  failedOrQuarantineCacheReads: 0
+  failedOrQuarantineOutcomeRowsReused: 0
+  s10bCacheRetryOrReuse: forbidden
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  completeTrajectoryReconstructions: 0
+  universalNoveltyScores: 0
+  archiveMutations: 0
+
+execution:
+  outputDirectory: /artifacts/research_steps/S10D
+  cacheNamespace: /cache/e07-s10d
+  freshness:
+    namespaceAbsentBeforeRunnerEntry: required
+    runnerCreatesNamespace: true
+    namespacePresentAndEmptyAtInstalledPreflight: required
+    failedNamespaceReuse: forbidden
+  workers: 8
+  numericThreadsPerWorker: 1
+  discoveryLogicalRows: 7168
+  independentReproductionLogicalRows: 3584
+  totalLogicalRows: 10752
+  physicalReplaysPerLogicalRow: 2
+  totalPhysicalReplays: 21504
+  failAtomicByPhase: true
+  completePositionIndexedDispositions: true
+  discoveryLockBeforeReproduction: true
+  runtimeDrivenWeakening: forbidden
+
+installedCallbackGate:
+  installer: scripts.run_native_event_discovery_s10b.installed_base_callbacks
+  capturedOriginalBinding: required
+  installedTargetIdentity: required
+  preflightInvocationsBeforeEpisode: 1
+  prospectiveFreezeInvocationsBeforeEpisode: 1
+  recursionErrorsPermitted: 0
+  s10cQualificationMustPass: true
+  failBeforeEpisodeOnMismatch: true
+
+missingness:
+  explicitUnavailableStateAndReasonRequired: true
+  imputation: forbidden
+  silentDrop: forbidden
+  supportUnit: task_id_by_native_status_stratum
+  minimumAvailability: 0.90
+  comparison: greater_than_or_equal
+  minimumEligibleAnalysisFeatures: 5
+  completeCaseFiltering: forbidden
+  availabilityAsPhenotype: forbidden
+
+scientificDesign:
+  population: unchanged_from_S10P
+  estimands: unchanged_from_S10P
+  methodsAndHyperparameters: unchanged_from_S10P
+  thresholds: unchanged_from_S10P
+  nullAndMultiplicity: unchanged_from_S10P
+  independentReproduction: unchanged_from_S10P
+  traceSelectionAndCensoring: unchanged_from_S10P
+  absentTrajectoryReconstruction: forbidden
+  externalReview:
+    boundary: after_machine_reproduction_lock
+    packetOnlyIfReached: true
+    reviewerInstructionsOnlyIfReached: true
+    annotationsMustRemainEmpty: true
+  claimBoundaries: unchanged_from_S10P
+
+failureRule:
+  failClosedOn:
+    - immutable_hash_mismatch
+    - fresh_namespace_failure
+    - gate_failure
+    - callback_identity_or_invocation_failure
+    - binding_failure
+    - protected_access
+    - prohibited_dependency
+    - precommit_failure
+    - identity_failure
+    - feature_contract_failure
+    - replay_mismatch
+    - accounting_failure
+    - native_contract_failure
+    - discovery_lock_failure
+  publishScientificRowsOnFailure: false
+  preserveCompleteForensicDispositions: true
+  stopBeforeHumanAnnotation: true
+  stopBeforeS11: true
