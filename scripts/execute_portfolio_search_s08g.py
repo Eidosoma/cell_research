@@ -54,6 +54,11 @@ from src.portfolio_search.execution import (
     _archive_rows,
 )
 from src.portfolio_search.identity import validate_persisted_logical_identity_rows
+from src.portfolio_search.identity import (
+    identity_commitment_projection_rows,
+    validate_bound_identity_roster,
+    validate_identity_commitment_projection_rows,
+)
 
 
 STEP_ID = os.environ.get("E07_PORTFOLIO_STEP_ID", "S08G")
@@ -71,6 +76,7 @@ S08G_CACHE_ROOT = Path(os.environ.get("E07_PORTFOLIO_CACHE_ROOT", "/cache/e07-s0
 S08F = ARTIFACT_ROOT / "S08F"
 S08H = ARTIFACT_ROOT / "S08H"
 S08J = ARTIFACT_ROOT / "S08J"
+S08L = ARTIFACT_ROOT / "S08L"
 IMMUTABLE_STEPS = (
     "S05",
     "S08P",
@@ -150,6 +156,127 @@ def result_digest(rows: Sequence[Mapping[str, Any]]) -> str:
 
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def reservation_roster_audit(budget: pd.DataFrame) -> dict[str, Any]:
+    rows = []
+    for raw in budget.sort_values("logicalSlotOrdinal").to_dict("records"):
+        paired = raw.get("pairedSlotId")
+        if pd.isna(paired):
+            paired = None
+        rows.append(
+            {
+                "stage": str(raw["stage"]),
+                "generation": int(raw["generation"]),
+                "taskId": str(raw["taskId"]),
+                "split": str(raw["split"]),
+                "scenarioFamilyOrdinal": int(raw["scenarioFamilyOrdinal"]),
+                "logicalSlotOrdinal": int(raw["logicalSlotOrdinal"]),
+                "logicalSlotId": str(raw["logicalSlotId"]),
+                "reservedConfigurationSlotId": str(raw["configurationId"]),
+                "configurationRole": str(raw["configurationRole"]),
+                "pairedSlotId": None if paired is None else str(paired),
+                "smoke": bool(raw["smoke"]),
+            }
+        )
+    by_generation = Counter(row["generation"] for row in rows)
+    by_task = Counter(row["taskId"] for row in rows)
+    slots = [row["logicalSlotId"] for row in rows]
+    ordinals = [row["logicalSlotOrdinal"] for row in rows]
+    reservation_ids = [
+        canonical_sha256(
+            "E07/S08L/reservation-slot/v1",
+            {"schemaVersion": "e07.s08l.reservation-slot.v1", **row},
+        )
+        for row in rows
+    ]
+    checks = {
+        "exactRows": len(rows) == 11008,
+        "uniqueLogicalSlots": len(set(slots)) == 11008,
+        "uniqueLogicalOrdinals": sorted(ordinals) == list(range(11008)),
+        "uniqueReservationIdentities": len(set(reservation_ids)) == 11008,
+        "exactGenerationAccounting": by_generation
+        == Counter({0: 4864, 1: 1024, 2: 1024, 3: 1024, 4: 1024, 5: 1024, 6: 1024}),
+        "exactTaskAccounting": set(by_task.values()) == {1376} and len(by_task) == 8,
+        "trainingOnly": {row["split"] for row in rows} == {"train"},
+        "smoke40": sum(row["smoke"] for row in rows) == 40,
+    }
+    return {
+        "schemaVersion": f"e07.{STEP_LOWER}.reservation-roster-audit.v1",
+        "researchStepId": STEP_ID,
+        "logicalReservations": len(rows),
+        "reservationRosterSha256": canonical_hash(
+            f"E07/{STEP_ID}/reservation-roster/v1", rows
+        ),
+        "uniqueLogicalSlots": len(set(slots)),
+        "uniqueReservationSlotIdentities": len(set(reservation_ids)),
+        "byGeneration": dict(sorted(by_generation.items())),
+        "byTask": dict(sorted(by_task.items())),
+        "checks": checks,
+        "success": all(checks.values()),
+    }
+
+
+def persist_identity_checkpoint(
+    output: Path,
+    label: str,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    physical_identity_resolver: Any,
+    returned_results: bool,
+) -> dict[str, Any]:
+    """Persist and fresh-read every identity plane at one frozen boundary."""
+
+    bound_audit = (
+        {
+            "schemaVersion": f"e07.{STEP_LOWER}.returned-bound-roster-check.v1",
+            "success": True,
+            "logicalRows": len(rows),
+            "validation": "covered_by_persisted_result_and_projection_validators",
+        }
+        if returned_results
+        else validate_bound_identity_roster(
+            rows, physical_identity_resolver=physical_identity_resolver
+        )
+    )
+    projection = identity_commitment_projection_rows(rows)
+    path = output / f"{label}_identity_plane.parquet"
+    if path.exists():
+        raise RuntimeError(f"identity checkpoint already exists: {path}")
+    pd.DataFrame(projection).to_parquet(path, index=False, compression="zstd")
+    round_trip = pd.read_parquet(path).to_dict("records")
+    projection_audit = validate_identity_commitment_projection_rows(round_trip)
+    persisted_audit = (
+        validate_persisted_logical_identity_rows(rows) if returned_results else None
+    )
+    checks = {
+        "boundRoster": bound_audit["success"],
+        "completeProjection": len(projection) == len(rows),
+        "freshReadCommitments": projection_audit["success"],
+        "persistedResultProjection": (
+            persisted_audit is not None and persisted_audit["success"]
+            if returned_results
+            else True
+        ),
+    }
+    audit = {
+        "schemaVersion": f"e07.{STEP_LOWER}.identity-checkpoint.v1",
+        "researchStepId": STEP_ID,
+        "label": label,
+        "generatedBeforeOutcome": not returned_results,
+        "returnedResultIdentityPlane": returned_results,
+        "identityPlaneVersion": "e07.s08l.logical-identity-plane.v1",
+        "logicalRows": len(rows),
+        "projectionPath": str(path),
+        "projectionSha256": sha256_file(path),
+        "boundRosterValidation": bound_audit,
+        "projectionRoundTripValidation": projection_audit,
+        "persistedResultValidation": persisted_audit,
+        "checks": checks,
+        "success": all(checks.values()),
+    }
+    _write_json(output / f"{label}_identity_validation.json", audit)
+    return audit
 
 
 def s08f_contract_revalidation() -> dict[str, Any]:
@@ -314,6 +441,54 @@ def s08j_contract_revalidation() -> dict[str, Any]:
         "checks": checks,
         "projectionSchemaVersion": spec.get("schemaVersion"),
         "persistedPlane": spec.get("persistedPlane"),
+        "success": all(checks.values()),
+    }
+
+
+def s08l_contract_revalidation() -> dict[str, Any]:
+    """Revalidate the outcome-independent four-plane identity qualification."""
+
+    gate = _read_json(S08L / "s08_execution_eligibility_gate.json")
+    spec = _read_json(S08L / "identity_plane_spec.json")
+    qualification = _read_json(S08L / "full_structural_identity_qualification.json")
+    serialization = _read_json(
+        S08L / "serialization_replay_worker_order_validation.json"
+    )
+    checks = {
+        "executionReviewGate": bool(gate.get("success"))
+        and gate.get("technicalEligibilityPass") is True
+        and not gate.get("blockedGateIds")
+        and all(row.get("status") == "pass" for row in gate.get("rows", [])),
+        "identityPlaneVersion": spec.get("identityPlaneVersion")
+        == "e07.s08l.logical-identity-plane.v1"
+        and spec.get("generatedBeforeOutcome") is True,
+        "scientificDesignUnchanged": spec.get("scientificDesignChanged") is False
+        and spec.get("s08pBudgetsChanged") is False
+        and spec.get("s08pComparatorsChanged") is False
+        and spec.get("s08pCostsChanged") is False
+        and spec.get("s08pEstimandsChanged") is False
+        and spec.get("s08pSelectorsChanged") is False
+        and spec.get("s08pStatisticalRulesChanged") is False,
+        "exactReservationAccounting": bool(qualification.get("success"))
+        and qualification.get("logicalReservations") == 11008
+        and qualification.get("uniqueLogicalSlots") == 11008
+        and qualification.get("uniqueReservationSlotIdentities") == 11008
+        and qualification.get("uniqueLogicalResultIdentities") == 11008
+        and qualification.get("physicalExpansionMemberCount") == 11008,
+        "exactInitialAndAdaptiveAccounting": [
+            row.get("logicalRows") for row in qualification.get("batches", [])
+        ]
+        == [4864, 1024, 1024, 1024, 1024, 1024, 1024],
+        "replaySerializationWorkerOrder": bool(serialization.get("success")),
+    }
+    return {
+        "schemaVersion": f"e07.{STEP_LOWER}.s08l-contract-revalidation.v1",
+        "researchStepId": STEP_ID,
+        "identityPlaneVersion": spec.get("identityPlaneVersion"),
+        "qualifiedIdentityDigestSha256": qualification.get(
+            "primaryIdentityDigestSha256"
+        ),
+        "checks": checks,
         "success": all(checks.values()),
     }
 
@@ -658,13 +833,16 @@ def main() -> int:
             "reuseS08eOutcomes": False,
             "reuseS08gOutcomes": False,
             "reuseS08iOutcomes": False,
+            "reuseS08kOutcomes": False,
         },
     )
     preflight = run_preflight(S08G_CONTROL_PATH)
     s08f_contract = s08f_contract_revalidation()
     s08h_contract = s08h_contract_revalidation()
     s08j_contract = s08j_contract_revalidation()
+    s08l_contract = s08l_contract_revalidation()
     budget = pd.read_parquet(S08P / "budget_slot_ledger.parquet")
+    reservation_audit = reservation_roster_audit(budget)
     initial_definitions = read_jsonl(S08P / "portfolio_seed_registry.jsonl")
     definitions: dict[str, dict[str, Any]] = {
         str(row["configurationId"]): dict(row) for row in initial_definitions
@@ -684,7 +862,15 @@ def main() -> int:
         for row in preflight["gateRows"]:
             if row["gateId"] in {"G01", "G04"}:
                 row["status"] = "blocked"
+    if not s08l_contract["success"]:
+        for row in preflight["gateRows"]:
+            if row["gateId"] in {"G01", "G04", "G06"}:
+                row["status"] = "blocked"
     if not initial_accounting_revalidation["success"]:
+        for row in preflight["gateRows"]:
+            if row["gateId"] == "G06":
+                row["status"] = "blocked"
+    if not reservation_audit["success"]:
         for row in preflight["gateRows"]:
             if row["gateId"] == "G06":
                 row["status"] = "blocked"
@@ -694,6 +880,8 @@ def main() -> int:
     preflight["s08fContractRevalidationPass"] = s08f_contract["success"]
     preflight["s08hContractRevalidationPass"] = s08h_contract["success"]
     preflight["s08jContractRevalidationPass"] = s08j_contract["success"]
+    preflight["s08lContractRevalidationPass"] = s08l_contract["success"]
+    preflight["reservationRosterPass"] = reservation_audit["success"]
     preflight["initialPhysicalAccountingPass"] = initial_accounting_revalidation[
         "success"
     ]
@@ -711,6 +899,8 @@ def main() -> int:
     _write_json(output / "s08f_contract_revalidation.json", s08f_contract)
     _write_json(output / "s08h_contract_revalidation.json", s08h_contract)
     _write_json(output / "s08j_contract_revalidation.json", s08j_contract)
+    _write_json(output / "s08l_contract_revalidation.json", s08l_contract)
+    _write_json(output / "reservation_roster_validation.json", reservation_audit)
     _write_json(
         output / "initial_physical_accounting_revalidation.json",
         initial_accounting_revalidation,
@@ -739,6 +929,26 @@ def main() -> int:
                 "status": "blocked_before_smoke",
                 "success": False,
                 "blockedGateIds": preflight["blockedGateIds"],
+                "trainingLogicalRowsExecuted": 0,
+                "validationLogicalRowsExecuted": 0,
+                "confirmationLogicalRowsExecuted": 0,
+            },
+        )
+        return 2
+    initial_precommit = persist_identity_checkpoint(
+        output,
+        "initial_roster_precommitment",
+        initial_work,
+        physical_identity_resolver=_physical_key,
+        returned_results=False,
+    )
+    if not initial_precommit["success"]:
+        _write_json(
+            output / "execution_stop_status.json",
+            {
+                "researchStepId": STEP_ID,
+                "status": "blocked_before_smoke_identity_precommitment",
+                "success": False,
                 "trainingLogicalRowsExecuted": 0,
                 "validationLogicalRowsExecuted": 0,
                 "confirmationLogicalRowsExecuted": 0,
@@ -774,6 +984,13 @@ def main() -> int:
             },
         )
         return 3
+    smoke_identity = persist_identity_checkpoint(
+        output,
+        "smoke_returned",
+        smoke_rows,
+        physical_identity_resolver=_physical_key,
+        returned_results=True,
+    )
     smoke_runtime_integrity = s08h_runtime_integrity_audit(smoke_rows)
     _write_json(output / "smoke_s08h_runtime_integrity.json", smoke_runtime_integrity)
     smoke_validation = validate_rows(smoke_rows, 40)
@@ -785,10 +1002,13 @@ def main() -> int:
             "physicalAccounting": smoke_physical,
             "substantiveSearchAuthorized": smoke_validation["success"],
             "s08hRuntimeIntegrityPass": smoke_runtime_integrity["success"],
+            "s08lIdentityPersistencePass": smoke_identity["success"],
         }
     )
     smoke_validation["success"] = (
-        smoke_validation["success"] and smoke_runtime_integrity["success"]
+        smoke_validation["success"]
+        and smoke_runtime_integrity["success"]
+        and smoke_identity["success"]
     )
     smoke_validation["substantiveSearchAuthorized"] = smoke_validation["success"]
     _write_json(output / "frozen_smoke_validation.json", smoke_validation)
@@ -826,12 +1046,19 @@ def main() -> int:
     training_rows, initial_physical = execute_work(
         initial_work, workers=args.workers, cache_dir=S08G_CACHE_ROOT / "evaluations"
     )
+    initial_identity = persist_identity_checkpoint(
+        output,
+        "generation_0_returned",
+        training_rows,
+        physical_identity_resolver=_physical_key,
+        returned_results=True,
+    )
     initial_runtime_integrity = s08h_runtime_integrity_audit(training_rows)
     _write_json(
         output / "generation_0_s08h_runtime_integrity.json",
         initial_runtime_integrity,
     )
-    if not initial_runtime_integrity["success"]:
+    if not initial_runtime_integrity["success"] or not initial_identity["success"]:
         _write_json(
             output / "execution_stop_status.json",
             {
@@ -879,16 +1106,51 @@ def main() -> int:
             budget,
             prior_ids,
         )
+        generation_precommit = persist_identity_checkpoint(
+            output,
+            f"generation_{generation}_precommitment",
+            works,
+            physical_identity_resolver=_physical_key,
+            returned_results=False,
+        )
+        if not generation_precommit["success"]:
+            _write_json(
+                output / "execution_stop_status.json",
+                {
+                    "researchStepId": STEP_ID,
+                    "status": (
+                        f"quarantined_before_generation_{generation}_"
+                        "identity_precommitment"
+                    ),
+                    "success": False,
+                    "trainingLogicalRowsExecuted": len(training_rows),
+                    "adaptiveGenerationsCompleted": generation - 1,
+                    "archivePublished": False,
+                    "validationLogicalRowsExecuted": 0,
+                    "confirmationLogicalRowsExecuted": 0,
+                },
+            )
+            return 4
         definitions.update(generated)
         rows, physical = execute_work(
             works, workers=args.workers, cache_dir=S08G_CACHE_ROOT / "evaluations"
+        )
+        generation_identity = persist_identity_checkpoint(
+            output,
+            f"generation_{generation}_returned",
+            rows,
+            physical_identity_resolver=_physical_key,
+            returned_results=True,
         )
         generation_runtime_integrity = s08h_runtime_integrity_audit(rows)
         _write_json(
             output / f"generation_{generation}_s08h_runtime_integrity.json",
             generation_runtime_integrity,
         )
-        if not generation_runtime_integrity["success"]:
+        if (
+            not generation_runtime_integrity["success"]
+            or not generation_identity["success"]
+        ):
             _write_json(
                 output / "execution_stop_status.json",
                 {
@@ -1026,6 +1288,15 @@ def main() -> int:
         initial_single_by_member,
         lock_path=lock_path,
     )
+    validation_precommit = persist_identity_checkpoint(
+        output,
+        "validation_roster_precommitment",
+        validation_work,
+        physical_identity_resolver=_physical_key,
+        returned_results=False,
+    )
+    if not validation_precommit["success"]:
+        return 5
     lock_sha = sha256_file(lock_path)
     # Demonstrate lock denial before any validation outcome is materialized.
     first_locked = next(iter(validation_definitions.values()))
@@ -1048,7 +1319,20 @@ def main() -> int:
         workers=args.workers,
         cache_dir=S08G_CACHE_ROOT / "validation_evaluations",
     )
+    validation_identity = persist_identity_checkpoint(
+        output,
+        "validation_returned",
+        validation_rows,
+        physical_identity_resolver=_physical_key,
+        returned_results=True,
+    )
     validation_validation = validate_rows(validation_rows, len(validation_work))
+    validation_validation["s08lIdentityPersistencePass"] = validation_identity[
+        "success"
+    ]
+    validation_validation["success"] = (
+        validation_validation["success"] and validation_identity["success"]
+    )
     if not validation_validation["success"]:
         _write_json(
             output / "validation_execution_validation.json", validation_validation
@@ -1248,6 +1532,7 @@ def main() -> int:
             "s08eQuarantineOutcomeRowsLoaded": 0,
             "s08gQuarantineOutcomeRowsLoaded": 0,
             "s08iQuarantineOutcomeRowsLoaded": 0,
+            "s08kQuarantineOutcomeRowsLoaded": 0,
             "success": not preflight["loadedProhibitedModules"],
         },
     )
@@ -1298,12 +1583,30 @@ def main() -> int:
             "e05DescriptorAvailability": descriptor_audit["success"],
             "s08hContract": s08h_contract["success"],
             "s08jContract": s08j_contract["success"],
+            "s08lContract": s08l_contract["success"],
+            "reservationRoster": reservation_audit["success"],
+            "identityInitialPrecommitment": initial_precommit["success"],
+            "identitySmokeReturned": smoke_identity["success"],
+            "identityGeneration0Returned": initial_identity["success"],
+            "identityAdaptiveCheckpoints": all(
+                _read_json(
+                    output
+                    / f"generation_{generation}_precommitment_identity_validation.json"
+                )["success"]
+                and _read_json(
+                    output
+                    / f"generation_{generation}_returned_identity_validation.json"
+                )["success"]
+                for generation in range(1, 7)
+            ),
             "s08hRuntimeIntegrity": training_validation["s08hRuntimeIntegrityPass"],
             "logicalIdentityRestoration": identity_audit["success"],
             "replay": order_validation["success"],
             "configurationHashes": config_hashes["success"],
             "validationWithinCeiling": len(validation_rows) <= 3072,
             "candidateLock": denied_absent,
+            "validationIdentityPrecommitment": validation_precommit["success"],
+            "validationIdentityPersistence": validation_identity["success"],
             "confirmationSealed": True,
             "dependencyExclusion": not preflight["loadedProhibitedModules"],
             "noMutation": no_mutation,

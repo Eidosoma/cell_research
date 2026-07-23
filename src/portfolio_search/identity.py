@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from copy import deepcopy
+import json
 import math
 from typing import Any, Callable, Mapping, Sequence
 
@@ -569,5 +570,258 @@ def validate_persisted_logical_identity_rows(
         "uniqueLogicalResultIdentities": len(set(logical_ids)),
         "uniqueStableLogicalHashes": len(set(stable_hashes)),
         "physicalExpansionGroups": len(group_members),
+        "errors": errors,
+    }
+
+
+def identity_commitment_projection_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Project every pre-outcome identity plane into a compact durable ledger.
+
+    The canonical JSON retains the complete expansion membership rather than
+    only its digest.  This lets a fresh reader authenticate one-to-many
+    membership without loading an outcome or reconstructing runtime work.
+    """
+
+    projected: list[dict[str, Any]] = []
+    for position, row in enumerate(rows):
+        plane = row.get("identityPlane")
+        if not isinstance(plane, Mapping):
+            raise IdentityPlaneError(f"identityPlane missing at position {position}")
+        reservation = plane.get("reservationSlot")
+        runtime = plane.get("runtimeConfiguration")
+        physical = plane.get("physicalExecution")
+        logical = plane.get("logicalResult")
+        expansion = plane.get("physicalToLogicalExpansion")
+        if not all(
+            isinstance(item, Mapping)
+            for item in (reservation, runtime, physical, logical, expansion)
+        ):
+            raise IdentityPlaneError(
+                f"identityPlane component missing at position {position}"
+            )
+        projected.append(
+            {
+                "identityPlaneVersion": str(plane.get("schemaVersion")),
+                "stage": str(reservation["stage"]),
+                "generation": int(reservation["generation"]),
+                "taskId": str(reservation["taskId"]),
+                "split": str(reservation["split"]),
+                "scenarioFamilyOrdinal": int(reservation["scenarioFamilyOrdinal"]),
+                "logicalSlotOrdinal": int(reservation["logicalSlotOrdinal"]),
+                "logicalSlotId": str(reservation["logicalSlotId"]),
+                "reservedConfigurationSlotId": str(
+                    reservation["reservedConfigurationSlotId"]
+                ),
+                "configurationRole": str(reservation["configurationRole"]),
+                "runtimeConfigurationId": str(runtime["configurationId"]),
+                "reservationSlotIdentitySha256": str(
+                    plane["reservationSlotIdentitySha256"]
+                ),
+                "runtimeConfigurationIdentitySha256": str(
+                    plane["runtimeConfigurationIdentitySha256"]
+                ),
+                "physicalExecutionIdentitySha256": str(
+                    plane["physicalExecutionIdentitySha256"]
+                ),
+                "logicalResultIdentitySha256": str(
+                    plane["logicalResultIdentitySha256"]
+                ),
+                "physicalToLogicalExpansionCommitmentSha256": str(
+                    plane["physicalToLogicalExpansionCommitmentSha256"]
+                ),
+                "logicalIdentityBindingSha256": str(
+                    plane["logicalIdentityBindingSha256"]
+                ),
+                "physicalExpansionLogicalResultCount": int(
+                    expansion["logicalResultCount"]
+                ),
+                "identityPlaneJson": json.dumps(
+                    dict(plane),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=True,
+                    allow_nan=False,
+                ),
+            }
+        )
+    return projected
+
+
+def validate_identity_commitment_projection_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Authenticate a durable outcome-independent identity projection."""
+
+    errors: list[dict[str, Any]] = []
+    parsed: list[dict[str, Any]] = []
+    for position, row in enumerate(rows):
+        try:
+            plane = json.loads(str(row["identityPlaneJson"]))
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(
+                {"position": position, "error": f"identity JSON invalid: {exc}"}
+            )
+            continue
+        if not isinstance(plane, dict):
+            errors.append(
+                {"position": position, "error": "identity JSON is not object"}
+            )
+            continue
+        reservation = plane.get("reservationSlot", {})
+        runtime = plane.get("runtimeConfiguration", {})
+        physical = plane.get("physicalExecution", {})
+        logical = plane.get("logicalResult", {})
+        expansion = plane.get("physicalToLogicalExpansion", {})
+        component_checks = {
+            "version": plane.get("schemaVersion") == IDENTITY_PLANE_VERSION,
+            "reservation": (
+                plane.get("reservationSlotIdentitySha256")
+                == canonical_sha256("E07/S08L/reservation-slot/v1", reservation)
+            ),
+            "runtime": (
+                plane.get("runtimeConfigurationIdentitySha256")
+                == canonical_sha256("E07/S08L/runtime-configuration/v1", runtime)
+            ),
+            "physical": (
+                plane.get("physicalExecutionIdentitySha256")
+                == canonical_sha256("E07/S08L/physical-execution/v1", physical)
+            ),
+            "logical": (
+                plane.get("logicalResultIdentitySha256")
+                == canonical_sha256("E07/S08L/logical-result-identity/v1", logical)
+            ),
+            "expansion": (
+                plane.get("physicalToLogicalExpansionCommitmentSha256")
+                == canonical_sha256(
+                    "E07/S08L/physical-to-logical-expansion/v1", expansion
+                )
+            ),
+        }
+        expected_binding = canonical_sha256(
+            "E07/S08L/logical-identity-binding/v1",
+            {
+                "reservationSlotIdentitySha256": plane.get(
+                    "reservationSlotIdentitySha256"
+                ),
+                "runtimeConfigurationIdentitySha256": plane.get(
+                    "runtimeConfigurationIdentitySha256"
+                ),
+                "physicalExecutionIdentitySha256": plane.get(
+                    "physicalExecutionIdentitySha256"
+                ),
+                "logicalResultIdentitySha256": plane.get("logicalResultIdentitySha256"),
+                "physicalToLogicalExpansionCommitmentSha256": plane.get(
+                    "physicalToLogicalExpansionCommitmentSha256"
+                ),
+            },
+        )
+        component_checks["binding"] = (
+            plane.get("logicalIdentityBindingSha256") == expected_binding
+        )
+        denormalized = {
+            "identityPlaneVersion": plane.get("schemaVersion"),
+            "stage": reservation.get("stage"),
+            "generation": reservation.get("generation"),
+            "taskId": reservation.get("taskId"),
+            "split": reservation.get("split"),
+            "scenarioFamilyOrdinal": reservation.get("scenarioFamilyOrdinal"),
+            "logicalSlotOrdinal": reservation.get("logicalSlotOrdinal"),
+            "logicalSlotId": reservation.get("logicalSlotId"),
+            "reservedConfigurationSlotId": reservation.get(
+                "reservedConfigurationSlotId"
+            ),
+            "configurationRole": reservation.get("configurationRole"),
+            "runtimeConfigurationId": runtime.get("configurationId"),
+            "reservationSlotIdentitySha256": plane.get("reservationSlotIdentitySha256"),
+            "runtimeConfigurationIdentitySha256": plane.get(
+                "runtimeConfigurationIdentitySha256"
+            ),
+            "physicalExecutionIdentitySha256": plane.get(
+                "physicalExecutionIdentitySha256"
+            ),
+            "logicalResultIdentitySha256": plane.get("logicalResultIdentitySha256"),
+            "physicalToLogicalExpansionCommitmentSha256": plane.get(
+                "physicalToLogicalExpansionCommitmentSha256"
+            ),
+            "logicalIdentityBindingSha256": plane.get("logicalIdentityBindingSha256"),
+            "physicalExpansionLogicalResultCount": expansion.get("logicalResultCount"),
+        }
+        component_checks["denormalized"] = all(
+            str(row.get(field)) == str(value) for field, value in denormalized.items()
+        )
+        for check, passed in component_checks.items():
+            if not passed:
+                errors.append(
+                    {"position": position, "error": f"{check} commitment mismatch"}
+                )
+        parsed.append(plane)
+
+    by_group: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for plane in parsed:
+        reservation = plane["reservationSlot"]
+        by_group[
+            (
+                str(plane["physicalExecutionIdentitySha256"]),
+                str(plane["physicalToLogicalExpansionCommitmentSha256"]),
+            )
+        ].append(
+            {
+                "logicalSlotId": str(reservation["logicalSlotId"]),
+                "logicalResultIdentitySha256": str(
+                    plane["logicalResultIdentitySha256"]
+                ),
+                "reservationSlotIdentitySha256": str(
+                    plane["reservationSlotIdentitySha256"]
+                ),
+                "runtimeConfigurationIdentitySha256": str(
+                    plane["runtimeConfigurationIdentitySha256"]
+                ),
+            }
+        )
+    for position, plane in enumerate(parsed):
+        key = (
+            str(plane["physicalExecutionIdentitySha256"]),
+            str(plane["physicalToLogicalExpansionCommitmentSha256"]),
+        )
+        expected_members = sorted(
+            by_group[key],
+            key=lambda item: (
+                item["logicalResultIdentitySha256"],
+                item["logicalSlotId"],
+            ),
+        )
+        if plane["physicalToLogicalExpansion"].get("members") != expected_members:
+            errors.append(
+                {
+                    "position": position,
+                    "error": "physical expansion membership is incomplete or ambiguous",
+                }
+            )
+
+    slots = [str(plane["reservationSlot"]["logicalSlotId"]) for plane in parsed]
+    reservation_ids = [str(plane["reservationSlotIdentitySha256"]) for plane in parsed]
+    logical_ids = [str(plane["logicalResultIdentitySha256"]) for plane in parsed]
+    if len(set(slots)) != len(slots):
+        errors.append({"position": None, "error": "logical slots are not unique"})
+    if len(set(reservation_ids)) != len(reservation_ids):
+        errors.append(
+            {"position": None, "error": "reservation identities are not unique"}
+        )
+    if len(set(logical_ids)) != len(logical_ids):
+        errors.append(
+            {"position": None, "error": "logical result identities are not unique"}
+        )
+    return {
+        "schemaVersion": "e07.s08m.identity-commitment-projection-validation.v1",
+        "success": not errors and len(parsed) == len(rows),
+        "logicalRows": len(rows),
+        "parsedIdentityRows": len(parsed),
+        "uniqueLogicalSlots": len(set(slots)),
+        "uniqueReservationSlotIdentities": len(set(reservation_ids)),
+        "uniqueLogicalResultIdentities": len(set(logical_ids)),
+        "physicalExpansionGroups": len(by_group),
+        "physicalExpansionMemberCount": sum(len(group) for group in by_group.values()),
         "errors": errors,
     }

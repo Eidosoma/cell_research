@@ -1,0 +1,242 @@
+schemaVersion: e07.s08m.execution-continuation.v1
+researchStepId: S08M
+title: Fresh frozen S08 execution after S08L
+userExecutionApprovalReceived: true
+prospectivePreregistration: true
+historicalDesignMayChange: false
+sourceDesign: /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml
+sourceQualification: /artifacts/research_steps/S08L/s08_execution_eligibility_gate.json
+descriptorSupportEvidence: /artifacts/research_steps/S08F/e05_terminal_support_qualification.json
+physicalAccountingEvidence: /artifacts/research_steps/S08F/full_registry_dedup_accounting.json
+dedupEquivalenceEvidence: /artifacts/research_steps/S08F/dedup_equivalence_qualification.json
+s08hEligibilityEvidence: /artifacts/research_steps/S08H/s08_execution_eligibility_gate.json
+descriptorDomainEvidence: /artifacts/research_steps/S08H/descriptor_domain_qualification.json
+targetChangeEvidence: /artifacts/research_steps/S08H/target_change_branch_qualification.json
+s08jEligibilityEvidence: /artifacts/research_steps/S08J/s08_execution_review_gate.json
+targetAuditProjectionEvidence: /artifacts/research_steps/S08J/target_branch_qualification.json
+s08lEligibilityEvidence: /artifacts/research_steps/S08L/s08_execution_eligibility_gate.json
+identityPlaneEvidence: /artifacts/research_steps/S08L/full_structural_identity_qualification.json
+failAtomicEvidence: /artifacts/research_steps/S08D/fail_atomic_publication_validation.json
+failClosedBeforeSmoke: true
+failClosedAtSmoke: true
+failClosedAtEveryIdentityBoundary: true
+failClosedBeforeArchivePublication: true
+freshCacheRoot: /cache/e07-s08m
+reuseS08cOutcomes: false
+reuseS08eOutcomes: false
+reuseS08gOutcomes: false
+reuseS08iOutcomes: false
+reuseS08kOutcomes: false
+quarantinedCacheRoots:
+  - /cache/e07-s08c
+  - /cache/e07-s08e
+  - /cache/e07-s08g
+  - /cache/e07-s08i
+  - /cache/e07-s08k
+immutableSteps:
+  - S05
+  - S08P
+  - S08A
+  - S08
+  - S08B
+  - S08C
+  - S08D
+  - S08E
+  - S08F
+  - S08G
+  - S08H
+  - S08I
+  - S08J
+  - S08K
+  - S08L
+manifestSteps:
+  - S05
+  - S08P
+  - S08A
+  - S08
+  - S08B
+  - S08C
+  - S08D
+  - S08F
+  - S08G
+  - S08H
+  - S08I
+  - S08J
+expectedTrees:
+  S05: 141e2059702460ace997b56b077bf2af7972ee61718c9a04e5a30b527e518b83
+  S08P: c3fcb613877c9c9e7a619b7456fb217eb953b0e2fea04a299f5ccdcbc4af4b7b
+  S08A: f13ffc52e276629cf27f4eecef5ad3c4564fd02d7ea5de488f039ebceabab06d
+  S08: 4eb18b54d306621696b780144a808b610ee795e903144ab980c4c48e2312ff0c
+  S08B: 720c3847ec562e3b86d8afcabfa5c2b49bda6ee6f4c4e74a3293166833fdf0d3
+  S08C: 239ef7d7e2b7d0cb39a376a64ef45691cf06fef050c446fecba594753ca7767b
+  S08D: 3fe1b373061b349a8816f1b2346ebbcd7633443ccbf1a9a825a7e610f823c6b3
+  S08E: e2dd1335e74d850daeff8c0b35e3146e919fc3cdce9e0ec765f7fbd1c1d32694
+  S08F: 97983c6ce95d98b5f1c6377f5a966195c240221c2a0754e595982864cfd28ff3
+  S08G: 57a373273e9b81162d5162b2a1d166449f73c32704946410753ac6e08daf4fe9
+  S08H: 204cb4ff23bcd1f2744d221dc9249dbc456832448be2bf7f135f0aae84b6ca1f
+  S08I: 5756415668827b1e168b3f934d8b04d3e8e5c803c2a01f785258493b838a50ab
+  S08J: 2db8b747c85b6b589888c3eb25db14a0c9db53eed950bbff9e2a8fe44b9e3409
+  S08K: 5d643eed6f3de7e8d085fd9f8a199b18d0a44cd05e8d424dff2876ef9c361fb1
+  S08L: 1ec9de539abbd9511eecab160eb3396f08ad6a4d40e3b66209f913c2b821267a
+expectedFiles:
+  /workspace/AGENTS.md: 121c7906f1eee37791cc9c11c9c226a1478d86b7e35123f9439c66a6daa0e920
+  /workspace/FULL_PLAN.md: e216205732cf5712e3478f1e427b40b577a58b63d9e2956ffbd93ed14394699a
+  /workspace/RESEARCH_PLAN.md: e7975083a0426a4ef940beceb528c43ec0dbf4f140143119b3c28b2b186460f9
+  /workspace/input-attachments/MANIFEST.json: ed788c1187c3f03d936993a26003d5a9e4d0d836bb0b020178f8fa44b16a9463
+  /workspace/cell-research/configs/environment_suite/task_registry.yaml: 42ba412bc9611fca03f5f1056483dc3f9db494c1ed0a7565c5df2ebfa579a122
+  /workspace/cell-research/configs/environment_suite/split_manifest.json: 989e45e6b03429c64f338b674da044f154f65c1e973909a28f5874365d715df3
+  /workspace/cell-research/src/environment_suite/communication.py: f14d51f24f89263cd5afd7b7dd2bd775c76345a5a64e5491ad0fcc56dbeb4cf8
+  /workspace/cell-research/src/environment_suite/contracts.py: fa7b9e3a1b3c675762e75de8504b3c40649ac8d4bd201aa691dc879362befdad
+  /workspace/cell-research/src/environment_suite/dsl_adapters.py: c9c301a77d6661c4f0a55ad718a83de6bdafaa25e5b400dd5fd0b9255077ba6a
+  /workspace/cell-research/src/environment_suite/e05_semantics.py: 5e1c2560e241f807e37dc5754fe88990b2c9541d2abc40a124ed921a2f4aad27
+  /workspace/cell-research/src/environment_suite/portfolio_adapters.py: 6f4209ff15542ba51e24ef4353b1faef04036cc4056fb3f9a4d4af303b1bdd38
+  /workspace/cell-research/src/environment_suite/runners.py: 6b3e54a8fdc07ae7d8a0e3f6e3b38e19e6b579fb799e1a2625d7ac52095188b9
+  /workspace/cell-research/src/environment_suite/suite.py: 461cad57f68e6dc3b60b84756e56536ada648eab3472efad39cd2049328409f6
+  /workspace/cell-research/src/portfolio_search/execution.py: 911205a2c903a274d8c1678a67fdd670c72fc45c937fe9b297d493b00566f99f
+  /workspace/cell-research/src/portfolio_search/identity.py: b3ee1b4bf0b1fb998ce2b71069c128c95759c6b435b153c93d4b70c36c0a344a
+  /workspace/cell-research/src/quality_diversity/core.py: 8d7ac75b61c21c2a00d077b16f93d9f5b0b95ca4f7b9fb1ba24c91d79d3edc00
+  /workspace/cell-research/scripts/execute_portfolio_search_s08g.py: e7a49733aeaeda0996c12f4d5c4683ef989bafaf62e895e90368b406116f4fbe
+  /workspace/cell-research/scripts/execute_portfolio_search_s08m.py: cb4659368fbf0bd28fcb746bced08cf3492c5f28d1d9f5f4c17227fa48416c82
+  /artifacts/research_steps/S08P/artifact_manifest.json: bc789c16f40f3252ab733bfff05aeecb35b17b76ba8271e8e1c6e6916e70dd01
+  /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml: ccf4440f458aaa530108268efeb94ff111e2823cdea0006be9c5c72769f7e675
+  /artifacts/research_steps/S08P/budget_slot_ledger.parquet: 33d6875949f3d568ea949442a8622c48c96b311fa295f5bff85b9ff65a83576f
+  /artifacts/research_steps/S08P/candidate_eligibility_registry.jsonl: d2e0f9616e6d552bb6269cc674c223af10cd5448bb41fbf85db2c4b04bf01260
+  /artifacts/research_steps/S08P/portfolio_member_sets.jsonl: f89e20d48faf02ab79ae1f216f6b6c04d3d1b18614bbe98a5ad22dcf6fe7e258
+  /artifacts/research_steps/S08P/portfolio_seed_registry.jsonl: e53736142305f7f8796219a0edef5fd4173feec9d933c8eba09e18911a3c4caa
+  /artifacts/research_steps/S08F/artifact_manifest.json: 41632eafd14f5af4f0925e366dd93877d2976c3af7cd9e6aa420553e21e05cb7
+  /artifacts/research_steps/S08F/s08_execution_eligibility_gate.json: 6dc2e2d0263960d5bf541456b7a1b61d0cd307219495ca1cd13b41a6ff0dcc03
+  /artifacts/research_steps/S08F/full_registry_dedup_accounting.json: 6f61235591f7865b0b41482c915ef76cd74ecbfc89cf6ed0ab34bddae0941906
+  /artifacts/research_steps/S08F/e05_terminal_support_qualification.json: 1a52686e7be94e78537ae19e2a3835a2790abb2a5f49198f31cba303daa4abbe
+  /artifacts/research_steps/S08F/dedup_equivalence_qualification.json: 566f7c20dc749356742e20dce5e0e7d345d8787cad1c4b1cafb4e2828f43a7ac
+  /artifacts/research_steps/S08F/logical_identity_restoration.json: d9aa5c9c4be56e52bc981f65fce4436a71bd711da33e8b41b44216822f7f90dd
+  /artifacts/research_steps/S08H/artifact_manifest.json: d599af151060630edebcce2ef3f60578797033f2608d4659ac0fd74be3efb014
+  /artifacts/research_steps/S08H/s08_execution_eligibility_gate.json: 680949fed5c247d4b5590fac64f73dba6721f8322728964f7b1fd1ecf0f016f3
+  /artifacts/research_steps/S08H/descriptor_domain_spec.json: 2ae137f005b4afebbc544f9e0f9a666ba698badd28e9129644be9430131d5943
+  /artifacts/research_steps/S08H/descriptor_domain_qualification.json: c4a05837d85858ee29457684ae0a2a8d52acc24414f29b88eac0411037c867d7
+  /artifacts/research_steps/S08H/target_change_semantics_spec.json: dc34301f60a9020867f1459342a030e831c531f302638ee20be55d1ac683287d
+  /artifacts/research_steps/S08H/target_change_branch_qualification.json: 9ef214b07388b86b5730b752ff5ef24e6c2b9c88c0f8fd6e5c502b9bec7dcabc
+  /artifacts/research_steps/S08H/native_contract_validation.json: 17c37ed7feb26c945dea56939389422dc3d2e0ba53a9b3f60be5b96b4e10dbca
+  /artifacts/research_steps/S08J/artifact_manifest.json: d17dfacf84d6f76f8d5b88b9dfe6bd10a8f6363d24689364e2babedfdc20d590
+  /artifacts/research_steps/S08J/s08_execution_review_gate.json: 74988268b8bcec62f8f52048da4655c1adcc361d49e6e16a1fa2988815944109
+  /artifacts/research_steps/S08J/target_audit_projection_spec.json: 22dbb74b3c91bf29e9139cf955023c6c8b6c9c1c07589cd03af863b5b8464e61
+  /artifacts/research_steps/S08J/target_branch_qualification.json: 51b37882541bbc52c8c95b6efa0a1f818370b070a86e26aae2f548d808c49e36
+  /artifacts/research_steps/S08J/adversarial_projection_validation.json: 966dae194c73d2de91d58e017a3dd392fdb822c3e6ed62f0904359570efc30f0
+  /artifacts/research_steps/S08J/no_mutation_audit.json: cf272dfed36eeb24d518e95b07e4d6de0642282f52337089cb10e06c4004ff90
+  /artifacts/research_steps/S08L/artifact_manifest.json: ff6f10af6f95a299fa9625b1d84a72487b66769efd385d3300be3a7528d4fe31
+  /artifacts/research_steps/S08L/s08_execution_eligibility_gate.json: 836521335c4de16d80eac94c1dd301df60d7c1b863f1b160758d2424669a8d12
+  /artifacts/research_steps/S08L/identity_plane_spec.json: 97da734b808dfc69d2bffa5b9f99847868d22bf1e15a9d3228540f07cfa91f1e
+  /artifacts/research_steps/S08L/full_structural_identity_qualification.json: cbc9e3a4b67057b1e18aebaa65d06532185d8a9fd04674c6c3499078945b867d
+  /artifacts/research_steps/S08L/serialization_replay_worker_order_validation.json: a0ebe65cae737644f00075838dab9ed31fb5c788229a05fa9a07243d4ac17a54
+  /artifacts/research_steps/S08L/no_mutation_audit.json: ac934633e4c30d5875cc469c7d634612e23cfd346337016809ed5e25d85ef56b
+  /artifacts/research_steps/S08D/fail_atomic_publication_validation.json: a04b6d5485f02c7c393df989359a6cc81862d2fa888a3aa083525585f0f50974
+  /artifacts/research_steps/S05/policy_catalog.jsonl: 121e5e18892c9a4d50530b72442ccfadd663aafcb68663bb73a0be9691c79655
+frozenExecution:
+  counterDomain: E07/S08/portfolio-search/v1
+  seed: 70820260722
+  workers: 8
+  numericThreadsPerWorker: 1
+  smokeLogicalRows: 40
+  smokeIncludedInBudget: true
+  trainingLogicalRows: 11008
+  initialLogicalRows: 4864
+  initialUniquePhysicalRows: 4864
+  initialPhysicalDedupSavedRows: 0
+  adaptiveLogicalRows: 6144
+  adaptiveGenerations: 6
+  adaptiveTargetPortfoliosPerTaskGeneration: 16
+  adaptiveMatchedRandomPerTaskGeneration: 16
+  trainingScenarioFamilies: [300, 301, 302, 303]
+  mutationOperators:
+    - replace_one_member_same_native_carrier
+    - add_one_member_same_native_carrier
+    - drop_one_member_preserving_task_carrier_contract
+    - rotate_fixed_identity_assignment
+    - toggle_permitted_selector_signal
+    - flip_selector_branch_assignment
+  mutationOperatorSchedule: counter_addressed_cycle_by_generation_ordinal_retry
+  illegalOrDuplicateRetryMaximum: 128
+  policyMutation: forbidden
+  permissionExpansion: forbidden
+  stopping: exactly_six_generations_or_integrity_failure
+  efficacyEarlyStop: forbidden
+  runtimeDrivenWeakening: forbidden
+smokePublication:
+  cacheRootMustBeAbsentAtStart: true
+  cachePublication: atomic_directory_rename_after_all_40_worker_rows_pass
+  resultPublication: atomic_file_rename_after_all_40_integrity_rows_pass
+  onFailurePublishedSmokeRows: 0
+  forensicAccounting: exact_position_indexed_terminal_status
+identityPersistence:
+  version: e07.s08l.logical-identity-plane.v1
+  reservationRosterRows: 11008
+  initialRosterCommittedBeforeSmoke: true
+  adaptiveRosterCommittedBeforeEachGeneration: true
+  returnedPlaneValidatedAfterSmokeAndEveryGeneration: true
+  validationRosterCommittedBeforeValidationOutcomes: true
+  physicalToLogicalMembershipAuthenticated: true
+  missingCopiedAmbiguousInconsistentForgedOrNonUnique: fail_closed
+s08fContracts:
+  descriptorAvailabilityVersion: e07.s08f.e05-descriptor-availability.v1
+  incompleteE05SupportRetention: retain_record_exclude_from_cell
+  availabilityAsNovelty: forbidden
+  physicalDedupEquivalenceVersion: e07.s08f.physical-work.v1
+s08hContracts:
+  repairDescriptorDomainVersion: e07.s08h.e05-repair-domain.v1
+  rawFiniteDomain: [-495, 1]
+  clipping: forbidden
+  imputation: forbidden
+  zeroInitialDistance: explicitly_unavailable
+  targetChangeSemanticsVersion: e07.s08h.e05-target-deadline-probe.v1
+  phaseEventBudget: valid_retained_no_hit_right_censor_only
+  hitRequiresExactPostHitProbe: true
+  adaptationBudget: 6400
+  postHitProbeBudget: 160
+s08jContracts:
+  targetAuditProjectionSchemaVersion: e07.s08j.e05-target-change-audit-projection.v1
+  persistedPlane: nativeEvent.targetChangeAuditProjection
+  sourceResultCommitment: required_for_DSL_rows
+  projectionCommitment: required
+  missingInconsistentOrForgedMetadata: fail_closed
+  nativeOutcomeFieldsChanged: false
+  nativeStatusChanged: false
+  scientificEstimandChanged: false
+  validationRulesChanged: false
+validationBoundary:
+  candidateLockRequired: true
+  maximumPortfoliosPerTask: 8
+  familyOrdinals: [400, 401, 402, 403, 404, 405, 406, 407]
+  maximumLogicalRows: 3072
+  e05PhysicalFixtures: 4
+  e05EightLogicalFamiliesReuseFourFixturesInPrespecifiedPairs: true
+  e06CounterScheduleResampling: forbidden_outside_training
+  logicalFamiliesAreIndependentReplicates: false
+  confirmationLogicalRows: 0
+analysis:
+  universalNormalizedScore: forbidden
+  crossTaskPooling: forbidden
+  nativeOutcomesAndCostsRemainSeparate: true
+  failuresAndCensorsRetained: true
+  bootstrapReplicates: 2000
+  bootstrapSeed: 708004
+  multiplicity: Holm_within_task_target_contrast_family
+  deploymentThresholdsMayChange: false
+  e05DescriptorAvailabilityVersion: e07.s08f.e05-descriptor-availability.v1
+  e05RepairDescriptorDomainVersion: e07.s08h.e05-repair-domain.v1
+  incompleteE05SupportRetention: retain_record_exclude_from_cell
+  availabilityAsNovelty: forbidden
+  logicalIdentityPlaneVersion: e07.s08l.logical-identity-plane.v1
+  physicalDedupEquivalenceVersion: e07.s08f.physical-work.v1
+prohibitedDependencies:
+  modulePrefixes: [src.surrogate_models, src.surrogate_remediation]
+  artifactSubstrings: [/S06/models/, /S06/embeddings/, /S06A/models/, /S06A/embeddings/]
+  quarantineArtifactSteps: [S08C, S08E, S08G, S08I, S08K]
+  quarantineCacheRoots:
+    - /cache/e07-s08c
+    - /cache/e07-s08e
+    - /cache/e07-s08g
+    - /cache/e07-s08i
+    - /cache/e07-s08k
+  s07ArmPromotion: forbidden
+  pseudoLabeling: forbidden
+  warmStarts: forbidden
+  distillation: forbidden

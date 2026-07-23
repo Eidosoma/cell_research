@@ -11,8 +11,10 @@ from src.portfolio_search.identity import (
     IdentityPlaneError,
     bind_identity_plane,
     ensure_bound_identity_roster,
+    identity_commitment_projection_rows,
     validate_bound_identity_record,
     validate_bound_identity_roster,
+    validate_identity_commitment_projection_rows,
     validate_persisted_logical_identity_rows,
 )
 
@@ -243,3 +245,24 @@ def test_persisted_rows_restore_reservations_and_keep_distinct_stable_hashes() -
     forged = deepcopy(rows)
     forged[1]["reservedConfigurationSlotId"] = "copied"
     assert not validate_persisted_logical_identity_rows(forged)["success"]
+
+
+def test_compact_identity_projection_round_trip_authenticates_full_membership() -> None:
+    config = _configuration("1" * 64)
+    bound = bind_identity_plane(
+        [_work(0, config), _work(1, config)], physical_identity_resolver=_physical
+    )
+    projection = identity_commitment_projection_rows(bound)
+    audit = validate_identity_commitment_projection_rows(
+        json.loads(json.dumps(projection, sort_keys=True))
+    )
+    assert audit["success"]
+    assert audit["logicalRows"] == 2
+    assert audit["physicalExpansionGroups"] == 1
+    assert audit["physicalExpansionMemberCount"] == 2
+
+    forged = deepcopy(projection)
+    plane = json.loads(forged[1]["identityPlaneJson"])
+    plane["physicalToLogicalExpansion"]["members"].pop()
+    forged[1]["identityPlaneJson"] = json.dumps(plane, sort_keys=True)
+    assert not validate_identity_commitment_projection_rows(forged)["success"]
