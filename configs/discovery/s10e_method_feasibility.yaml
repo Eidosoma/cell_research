@@ -1,0 +1,104 @@
+schemaVersion: e07.s10e.method-feasibility-protocol.v1
+researchStepId: S10E
+title: Preregister and qualify an outcome-independent small-stratum method-feasibility rule
+prospectiveRegistration:
+  researchPlanPath: /workspace/RESEARCH_PLAN.md
+  researchPlanSha256: 3b6453089298fc6d9e652618bd4d6319208a9b55e15ea3a692fd2dbcbefee0f2
+authorizationBoundary:
+  qualificationOnly: true
+  frozenEpisodes: 0
+  reproductionRows: 0
+  humanAnnotations: 0
+  validationOutcomeRows: 0
+  confirmationOutcomeRows: 0
+  consumedOrQuarantinedOutcomeRows: 0
+  archiveMutations: 0
+  s11Rows: 0
+  allowedEvidence:
+    - frozen_method_definitions
+    - native_contract_schemas
+    - structural_metadata
+    - mathematical_feasibility_conditions
+    - synthetic_outcome_independent_fixtures
+immutableArtifactTrees:
+  S10P: {path: /artifacts/research_steps/S10P, fileCount: 26, totalBytes: 1536426, treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704}
+  S10: {path: /artifacts/research_steps/S10, fileCount: 18, totalBytes: 61921, treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40}
+  S10A: {path: /artifacts/research_steps/S10A, fileCount: 27, totalBytes: 202875, treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd}
+  S10B: {path: /artifacts/research_steps/S10B, fileCount: 17, totalBytes: 75692, treeSha256: 0968c06f19b488795efe7ce99bfbc50cfc1bff2e91102a2c7fbbff40891dcd16}
+  S10C: {path: /artifacts/research_steps/S10C, fileCount: 19, totalBytes: 53086, treeSha256: da1886a004f82f4555fb4d38958e8b09b743361722b2db69ed83eed2cbedb740}
+  S10D: {path: /artifacts/research_steps/S10D, fileCount: 20, totalBytes: 3144784, treeSha256: c688be35e36f7ed84f0eca794ed64983077e8f98f5df935cc964aa6b99261008}
+immutableConsumedOrQuarantinedCaches:
+  S08C: {path: /cache/e07-s08c, fileCount: 23, totalBytes: 284413, treeSha256: fa2abf3d8f0cbaf872cdba994e099ff7d6bbb1452eade74dad8a34af28c8f5e7}
+  S08E: {path: /cache/e07-s08e, fileCount: 4860, totalBytes: 75858250, treeSha256: 9a8240fd49033eaa878182d71295d154a8ddac2253161228867ab87e9ba58ce9}
+  S08G: {path: /cache/e07-s08g, fileCount: 4864, totalBytes: 75889608, treeSha256: 8757454b191f75aaeb253809483e43a9dfb396925e60716642a9c3801fbaaf4c}
+  S08I: {path: /cache/e07-s08i, fileCount: 40, totalBytes: 728710, treeSha256: 35e2ca923b962a3d6392f17d01ab7352e952bae56582ee6929ac419d4437f872}
+  S08K: {path: /cache/e07-s08k, fileCount: 9758, totalBytes: 188946893, treeSha256: b8a5f0a9844193fbaf71a26b97f25adb9c0d050d5d4d8758308d16e8ccfdd7bd}
+  S10: {path: /cache/e07-s10, fileCount: 0, totalBytes: 0, treeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10B: {path: /cache/e07-s10b, fileCount: 0, totalBytes: 0, treeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10D: {path: /cache/e07-s10d, fileCount: 2, totalBytes: 22269417, treeSha256: 63d73a82a47b65fd6802c3d5709086adedc87a70770cb49c6c6b6ef92de184a5}
+frozenScientificInputs:
+  methodRegistry: {path: /artifacts/research_steps/S10P/method_registry.json, sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6}
+  scientificProtocol: {path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml, sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd}
+  featureRegistry: {path: /artifacts/research_steps/S10P/native_event_feature_registry.json, sha256: a2507549c7871de709490ed4d50a17118a4968ccb878d454a3156e48979beb55}
+  candidatePopulation: {path: /artifacts/research_steps/S10P/candidate_population.jsonl, sha256: 6ad286757a846ea959d720ccbe1a91dc7ce6b277c97b736b377b072edaa126d8}
+  logicalRoster: {path: /artifacts/research_steps/S10P/s10_logical_roster.parquet, sha256: b29828a90cdeb9c7be56510a237e10d77e38398a6f19530f75958a3abb088621}
+  eligibilityGate: {path: /artifacts/research_steps/S10P/s10_eligibility_gate.json, sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef}
+methodFeasibility:
+  rareStatusRowThreshold: 8
+  minimumFeatureSupportInclusive: 0.90
+  minimumEligibleFeatures: 5
+  crossFitFolds: 5
+  crossFitMinimumObservedTrainRowsPerFeatureFold: 1
+  crossFitMinimumObservedTestRowsPerFeatureFold: 1
+  configurationProfile:
+    requireFiniteCoordinateForEveryEligibleFeature: true
+    identity: exact_canonical_profile_commitment_no_tolerance_tuning
+  resampling:
+    requireCompleteCandidateByScenarioFamilyIncidence: true
+    minimumScenarioFamilies: 2
+    bootstrapReplicates: 200
+    nullReplicates: 500
+  ward:
+    kGrid: [2, 3, 4, 5, 6]
+    minimumCandidateProfiles: 6
+    minimumDistinctProfiles: 6
+  diagonalGmm:
+    kGrid: [1, 2, 3, 4, 5, 6]
+    minimumCandidateProfiles: 6
+    minimumDistinctProfiles: 6
+    covarianceRegularization: 0.000001
+    initializations: 20
+  isolationForest:
+    estimators: 500
+    minimumCandidateProfiles: 2
+    minimumDistinctProfiles: 2
+    maxSamples: min_256_and_n
+  changePoint:
+    authenticTasks: [e07_s02_spatial2d_local, e07_s02_spatial2d_memory]
+    exactSeriesLength: 32
+    minimumSegmentLength: 4
+    maximumChangePoints: 3
+    minimumScenarioFamiliesPerCandidate: 2
+  reproduction:
+    requireLockedCandidatePopulationIdentity: true
+    requireLockedPreprocessingIdentity: true
+    requireSameMethodAdmissibility: true
+multiplicity:
+  method: Holm
+  alpha: 0.05
+  family: all_machine_generated_phenotype_candidates_across_two_tasks_and_three_method_families
+  globalUnionAcrossRealizedTaskStatusStrata: true
+  slotsPerRealizedTaskStatusStratum:
+    clustering: 6
+    anomaly: 1
+    changePoint: 14
+    total: 21
+  infeasibleSlotRawPValue: 1.0
+  absentOrUnusedSlotRawPValue: 1.0
+  shrinkFamilyAfterObservedResults: false
+  infeasibleClassification: non_evidentiary_not_candidate_not_null
+futureExecution:
+  authorized: false
+  requiresSeparateApproval: true
+  requiresGenuinelyFreshNamespace: true
+  mustRevalidateAllHashesAndGates: true
