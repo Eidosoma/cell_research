@@ -1,0 +1,166 @@
+schemaVersion: e07.s10h.fresh-native-event-execution.v1
+researchStepId: S10H
+title: Fresh S10 execution after S10G
+registeredDateUtc: "2026-07-23"
+continuationOf:
+  scientificDesign: S10P
+  missingnessAndAccountingContract: S10A
+  callbackBindingQualification: S10C
+  methodFeasibilityAndMultiplicityQualification: S10E
+  failedSerializationForensics: S10F
+  mixedSchemaAndGlobalPublicationQualification: S10G
+immutableInputs:
+  s10pTree: {path: /artifacts/research_steps/S10P, treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704, fileCount: 26, totalBytes: 1536426}
+  failedS10Tree: {path: /artifacts/research_steps/S10, treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40, fileCount: 18, totalBytes: 61921}
+  s10aTree: {path: /artifacts/research_steps/S10A, treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd, fileCount: 27, totalBytes: 202875}
+  s10bTree: {path: /artifacts/research_steps/S10B, treeSha256: 0968c06f19b488795efe7ce99bfbc50cfc1bff2e91102a2c7fbbff40891dcd16, fileCount: 17, totalBytes: 75692}
+  s10cTree: {path: /artifacts/research_steps/S10C, treeSha256: da1886a004f82f4555fb4d38958e8b09b743361722b2db69ed83eed2cbedb740, fileCount: 19, totalBytes: 53086}
+  s10dTree: {path: /artifacts/research_steps/S10D, treeSha256: c688be35e36f7ed84f0eca794ed64983077e8f98f5df935cc964aa6b99261008, fileCount: 20, totalBytes: 3144784}
+  s10eTree: {path: /artifacts/research_steps/S10E, treeSha256: be8e7581c9c0aa1726d679c68ffec99216914535c95e177c26cebe1631efff17, fileCount: 29, totalBytes: 104610}
+  s10gTree: {path: /artifacts/research_steps/S10G, treeSha256: 9c60c162eb407e6e36bb3fe2f43e7a3ccdb03f1e211056ccb98a9bae76186f71, fileCount: 30, totalBytes: 145087}
+  scientificProtocol: {path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml, sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd}
+  featureRegistry: {path: /artifacts/research_steps/S10P/native_event_feature_registry.json, sha256: a2507549c7871de709490ed4d50a17118a4968ccb878d454a3156e48979beb55}
+  methodRegistry: {path: /artifacts/research_steps/S10P/method_registry.json, sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6}
+  candidatePopulation: {path: /artifacts/research_steps/S10P/candidate_population.jsonl, sha256: 6ad286757a846ea959d720ccbe1a91dc7ce6b277c97b736b377b072edaa126d8}
+  logicalRoster: {path: /artifacts/research_steps/S10P/s10_logical_roster.parquet, sha256: b29828a90cdeb9c7be56510a237e10d77e38398a6f19530f75958a3abb088621}
+  eligibilityGate: {path: /artifacts/research_steps/S10P/s10_eligibility_gate.json, sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef}
+  s10aFreshExecutionGate: {path: /artifacts/research_steps/S10A/fresh_s10_execution_gate.json, sha256: 2a3e490b5eeec0d6fe5a7ccd714fe7ee854fb452002a53de866f5afe17bf2902}
+  s10cInstalledDispatchQualification: {path: /artifacts/research_steps/S10C/installed_dispatch_qualification.json, sha256: ba04a6822f07e4de7e4523931d75a0703d5fabda4c0fb14d3629516caac94cc1}
+  s10eMethodRegistry: {path: /artifacts/research_steps/S10E/method_feasibility_registry.json, sha256: 5d0268ce062f0ad0c93174abe3e573238950368d0f36ad9df994e1c4c4ad3d79}
+  s10eHolmRegistry: {path: /artifacts/research_steps/S10E/holm_family_contract.json, sha256: 7a5a8fdd61d828bf37ba11a06ce0f006ef8cdd05afa2f87604ffedc16f10c07b}
+  s10eExecutionReviewGate: {path: /artifacts/research_steps/S10E/execution_review_gate.json, sha256: 72e651a7b0d4bc887538d270e16ca216aeb60a5991db16d82c3e6f9ec554758c}
+  s10eValidation: {path: /artifacts/research_steps/S10E/validation_summary.json, sha256: 3c0e5bb3a758353565298092b59122859a7fcfa2e91ae2e9d9a22baf9830c319}
+  s10gPublicationRegistry: {path: /artifacts/research_steps/S10G/publication_registry.json, sha256: 369bb0dca4f62d67a73ed4a1f011cdf192cd030590a55694486f9628dbd5fc91}
+  s10gMethodRecordSchema: {path: /artifacts/research_steps/S10G/method_record_schema.json, sha256: 4168c51470df16a96944aa4e8b7b47d0108b77af337a95005110cb9781cd9a72}
+  s10gExecutionReviewGate: {path: /artifacts/research_steps/S10G/execution_review_gate.json, sha256: 7b4bc3f1bb93ef5868a0f4d5683363f0ee343c6b5ab3784e8a94e249812bbdac}
+  s10gValidation: {path: /artifacts/research_steps/S10G/validation_summary.json, sha256: 403f430eb8c97644934a099a9720a4e1a5dcf44bbfabdd29c3e0f6145d5c8149}
+  s10gPublicationCore: {path: /workspace/cell-research/src/phenotype_discovery/publication.py, sha256: b6f99b0950681b670660076e4d0dc62dd283ed018f49d82db81d0d8ffc883216}
+  s10eFeasibilityCore: {path: /workspace/cell-research/src/phenotype_discovery/method_feasibility.py, sha256: 5c613a86cbad895f5f4e01d1ee177f3218963b08133a74989771066103c37c59}
+  s10aAccountingCore: {path: /workspace/cell-research/src/phenotype_discovery/accounting.py, sha256: 32c7ebd5e68097aa42f229840da6315c547d0940b0ffd2eb3aa82bd74a264c20}
+  s10aNativeFeaturesCore: {path: /workspace/cell-research/src/phenotype_discovery/native_features.py, sha256: d177b18276b6fec5f4d354795981dd1b77c5121b05835f0ca534b05f8784d59d}
+  s10aSearchCore: {path: /workspace/cell-research/src/phenotype_discovery/search.py, sha256: c67ebd4f5e7a1e57f5e84f0a84346b2c9286c15075c1212bf760373d8fba71a2}
+  researchPlanAfterProspectiveRegistration: {path: /workspace/RESEARCH_PLAN.md, sha256: cffc3267fc14ff360d63678857edc7e39f9029f33237b173ff8b76c244280dd6}
+s10fQuarantineBoundary:
+  artifactRoot: /artifacts/research_steps/S10F
+  artifactFileCount: 28
+  artifactTotalBytes: 6451735
+  permittedContentFileCount: 25
+  permittedContentListSha256: d2d04126fdcc841d537eb66a6f52f1c1c54d3bb7778ef67bc8defa5824419e26
+  recordedQuarantineManifest: {path: /artifacts/research_steps/S10F/quarantine_manifest.json, sha256: 760184142f41676b2625162866cddfe130ed508ea3f77e4c61a88e5ec92f0302}
+  prohibitedArtifactFiles:
+    - {path: /artifacts/research_steps/S10F/discovery_lock.json, bytes: 197691, recordedSha256: c2065a0b2835dd7c984fc1dcc3185320327d59d2b1b597d59a1036ebf5267b82}
+    - {path: /artifacts/research_steps/S10F/native_event_feature_records.parquet, bytes: 986288, recordedSha256: f231ca302e8651f6e026f548522053ffa0c854f4859df45e1b91dfd2305508d8}
+    - {path: /artifacts/research_steps/S10F/ordered_event_summary_records.parquet, bytes: 568367, recordedSha256: 1923764d7453706f969dcc276d63d6194828964225d1ba6b0157b2342c476fe7}
+  prohibitedCache: {path: /cache/e07-s10f, fileCount: 4, totalBytes: 33404434, recordedTreeSha256: 659e725a6c4eb76e2f8b9b01b32327bbd9b4290643e1cf7d6dfc5527537a0c4d}
+immutableConsumedCacheMetadata:
+  S08C: {path: /cache/e07-s08c, fileCount: 23, totalBytes: 284413, recordedTreeSha256: fa2abf3d8f0cbaf872cdba994e099ff7d6bbb1452eade74dad8a34af28c8f5e7}
+  S08E: {path: /cache/e07-s08e, fileCount: 4860, totalBytes: 75858250, recordedTreeSha256: 9a8240fd49033eaa878182d71295d154a8ddac2253161228867ab87e9ba58ce9}
+  S08G: {path: /cache/e07-s08g, fileCount: 4864, totalBytes: 75889608, recordedTreeSha256: 8757454b191f75aaeb253809483e43a9dfb396925e60716642a9c3801fbaaf4c}
+  S08I: {path: /cache/e07-s08i, fileCount: 40, totalBytes: 728710, recordedTreeSha256: 35e2ca923b962a3d6392f17d01ab7352e952bae56582ee6929ac419d4437f872}
+  S08K: {path: /cache/e07-s08k, fileCount: 9758, totalBytes: 188946893, recordedTreeSha256: b8a5f0a9844193fbaf71a26b97f25adb9c0d050d5d4d8758308d16e8ccfdd7bd}
+  S10: {path: /cache/e07-s10, fileCount: 0, totalBytes: 0, recordedTreeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10B: {path: /cache/e07-s10b, fileCount: 0, totalBytes: 0, recordedTreeSha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+  S10D: {path: /cache/e07-s10d, fileCount: 2, totalBytes: 22269417, recordedTreeSha256: 63d73a82a47b65fd6802c3d5709086adedc87a70770cb49c6c6b6ef92de184a5}
+authorization:
+  separateS10HExecutionApprovalReceived: true
+  split: train
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  humanAnnotations: 0
+  s11Rows: 0
+  failedOrQuarantineCacheContentReads: 0
+  failedOrQuarantineOutcomeRowsDeserializedOrReused: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  completeTrajectoryReconstructions: 0
+  universalNoveltyScores: 0
+  archiveMutations: 0
+execution:
+  finalOutputDirectory: /artifacts/research_steps/S10H
+  scientificDestination: /artifacts/research_steps/S10H/scientific_publication
+  cacheNamespace: /cache/e07-s10h
+  cacheWorkDirectory: /cache/e07-s10h/work
+  cacheEpisodeDirectory: /cache/e07-s10h/runtime
+  workers: 8
+  numericThreadsPerWorker: 1
+  discoveryLogicalRows: 7168
+  independentReproductionLogicalRows: 3584
+  totalLogicalRows: 10752
+  physicalReplaysPerLogicalRow: 2
+  totalPhysicalReplays: 21504
+  completePositionIndexedDispositions: true
+  discoveryLockBeforeReproduction: true
+  runtimeDrivenWeakening: forbidden
+methodFeasibility:
+  implementation: src.phenotype_discovery.method_feasibility
+  executionAdapter: src.phenotype_discovery.feasible_search
+  uniformUnit: task_id_by_native_status_stratum
+  infeasibleClassification: non_evidentiary_not_candidate_not_null
+  fixedSlotsPerRealizedStratum: 21
+  fixedHolmFamilyMustNotShrink: true
+  infeasibleAbsentOrNoncandidateRawPValue: 1.0
+publication:
+  implementation: src.phenotype_discovery.publication.AtomicScientificPublisher
+  recordSchemaVersion: e07.s10g.method-record.v1
+  registryPath: /artifacts/research_steps/S10G/publication_registry.json
+  artifactClassCount: 20
+  destinationMustBeAbsent: true
+  completeSetOnly: true
+  commitRule: validate_complete_staging_then_one_same_filesystem_atomic_directory_rename
+  scientificIntermediatesRestrictedToFreshCache: true
+  resultProjection:
+    genericParquet:
+      schema: [position_int64, record_id_sha256, canonical_record_json]
+      nullCells: forbidden
+      nonFiniteScalars: forbidden
+      rowMeaning: exact_JSON_safe_source_record_envelope
+    clustering:
+      unit: discovery_fixed_Holm_clustering_slot
+      evidentiaryPayload:
+        algorithm: Ward_with_diagonal_GMM_cross_check
+        clusterLabel: selected_Ward_label_for_locked_membership
+        membership: locked_member_candidate_ids
+        stability: mean_bootstrap_adjusted_rand
+        nullThreshold: frozen_95_percent_max_ARI_null
+    anomaly:
+      unit: discovery_fixed_Holm_anomaly_slot
+      evidentiaryPayload:
+        algorithm: IsolationForest_500_trees
+        selectedConfigurationId: frozen_selected_configuration
+        scores: all_frozen_configuration_scores
+        medianScore: frozen_configuration_score_median
+        empiricalPValue: frozen_slot_raw_p_value
+    changePoint:
+      unit: discovery_candidate_specific_fixed_Holm_slot
+      evidentiaryPayload:
+        algorithm: exact_dynamic_programming_piecewise_constant_SSE
+        series: frozen_four_channel_ordered_event_summary
+        changePoints: locked_center_transition
+        prevalence: frozen_discovery_prevalence
+        empiricalPValue: frozen_slot_raw_p_value
+    fixedHolm:
+      discoverySlotIdentity: "discovery::<frozen_slot_id>"
+      reproductionSlotIdentity: "independent_reproduction::<frozen_slot_id>"
+      familySize: unchanged_all_21_slots_per_realized_stratum_per_phase
+      nonEvidentiaryRawPValue: 1.0
+      nonEvidentiaryClassification: non_evidentiary_not_candidate_not_null
+scientificDesign:
+  population: unchanged_from_S10P
+  estimands: unchanged_from_S10P
+  methodsAndHyperparameters: unchanged_from_S10P
+  thresholds: unchanged_from_S10P
+  nullAndMultiplicity: unchanged_from_S10E_nonshrinking_fixed_slots
+  independentReproduction: unchanged_from_S10P
+  traceSelectionAndCensoring: unchanged_from_S10P
+  absentTrajectoryReconstruction: forbidden
+  imputation: forbidden
+  externalReview:
+    boundary: after_machine_reproduction_lock
+    packetOnlyIfReached: true
+    annotationsMustRemainEmpty: true
+failureRule:
+  partialScientificPublicationPermitted: false
+  exactForensicsOutsideScientificDestination: true
+  preserveCompleteForensicDispositions: true
+  stopBeforeHumanAnnotation: true
+  stopBeforeS11: true
