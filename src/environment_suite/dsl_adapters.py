@@ -1925,8 +1925,16 @@ def run_spatial_dsl_episode(
     *,
     target_id: str,
     initial_state_override: MovementState | None = None,
+    offline_tracker: Any | None = None,
 ) -> dict[str, Any]:
-    """Run a complete fixed-clock E06 episode under an arbitrary spatial DSL."""
+    """Run a complete fixed-clock E06 episode under an arbitrary spatial DSL.
+
+    ``offline_tracker`` is an outcome-blind audit hook for explicitly
+    uncalibrated topologies.  It can observe committed native states and
+    summaries only; policy decisions, legality, clocks, and costs remain owned
+    by the unchanged E06 engine path.  The default calibrated S01/S02 tracker
+    remains byte-for-byte behaviorally unchanged.
+    """
 
     policies = compiled_policies(action)
     dispatcher = (
@@ -2018,7 +2026,11 @@ def run_spatial_dsl_episode(
     evaluation_grammar = next(
         item for item in context.grammars.values() if item.target_id == target_id
     )
-    tracker = TargetMetricTracker(environment, target, evaluation_grammar)
+    tracker = (
+        TargetMetricTracker(environment, target, evaluation_grammar)
+        if offline_tracker is None
+        else offline_tracker
+    )
     tracker.observe(-1, state, {"transitionKind": "initial_state"})
 
     for transition_index in range(definition.transitions):

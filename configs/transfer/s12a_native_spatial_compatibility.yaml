@@ -1,0 +1,174 @@
+schemaVersion: e07.s12a.native-spatial-compatibility.v1
+researchStepId: S12A
+title: Qualify native spatial transfer compatibility
+frozenQuestion: >-
+  Can the byte-frozen S12P population and roster be bound to E06's native
+  spatial contracts, targets, boundary semantics, and task-local endpoint
+  scopes without outcomes, protected access, roster changes, or invented
+  fault and scheduler families?
+
+authorizationBoundary:
+  qualificationOnly: true
+  allowedEvidence:
+    - authoritative_native_contracts
+    - schemas
+    - structural_metadata
+    - exact_frozen_configuration_and_policy_bytes
+    - dedicated_outcome_independent_fixtures
+  frozenS12LogicalRowsExecuted: 0
+  frozenS12PhysicalRowsExecuted: 0
+  transferOutcomeRowsRead: 0
+  validationOutcomeRowsRead: 0
+  confirmationOutcomeRowsRead: 0
+  civicSimulationRows: 0
+  s13OrS14ExecutionRows: 0
+  archiveMutations: 0
+  prohibited:
+    - S06_models_or_embeddings
+    - S06A_models_or_embeddings
+    - S07_allocation_arm_signals
+    - S10_or_S11_candidate_or_feature_values
+    - quarantined_cache_or_outcome_rows
+    - universal_normalized_score
+
+immutableDesign:
+  protocol: /artifacts/research_steps/S12P/s12p_broad_transfer_protocol.yaml
+  compatibilityRegistry: /artifacts/research_steps/S12P/compatibility_registry.json
+  logicalRoster: /artifacts/research_steps/S12P/s12_logical_roster.parquet
+  executionGate: /artifacts/research_steps/S12P/s12_execution_gate.json
+  estimandRegistry: /artifacts/research_steps/S12P/estimand_and_inference_registry.json
+  confirmationReserve: /previous-artifacts/E06/research_steps/S14/split_manifest.json
+  rosterMutation: forbidden
+  panelMutation: forbidden
+  budgetMutation: forbidden
+  estimandMutation: forbidden
+
+bindingQualification:
+  candidateConfigurationCount: 14
+  adaptationVariantCount: 30
+  taskIds:
+    - e07_s02_spatial2d_local
+    - e07_s02_spatial2d_memory
+  panelCount: 8
+  expectedBindingRows: 704
+  exactFrozenPolicyBytes: required
+  exactConfigurationIdentity: required
+  targetTaskBinding:
+    selectorSignalMustBeInTargetTaskAllowlist: true
+    nativeCarrierMustRemainSpatial: true
+    dslEnvironmentMustRemainSpatial2dV1: true
+    authorityBearingChannelImpersonation: forbidden
+    actionRebinding: forbidden
+    costRebinding: forbidden
+
+endpointQualification:
+  calibratedTargets:
+    - stripes_alternating_three_band
+    - layers_three_ordered_tissues
+    - bilateral_lobes_with_midline
+    - tissue_single_hole
+    - tissue_two_holes
+  calibratedRule: >-
+    S02 local grammar acceptance AND independent S01 count, equivalence,
+    component, and topology success on an unobstructed bounded square matching
+    the exact S01 target shape.
+  holeBoundaryRule:
+    signalMode: domain_edge_flags
+    observable: true
+    noSignalDisposition: fail_closed
+  displacementRule: >-
+    The frozen one-swap displacement remains a native perturbation. If its
+    initial post-swap state remains inside the calibrated target, it is
+    maintenance-eligible and explicitly not a repair risk set.
+  diagnosticFixtures:
+    - larger_square_layers_15x15
+    - irregular_pruned_layers_9x9
+  diagnosticRule:
+    completionAvailable: false
+    repairAvailable: false
+    endpointTimeAvailable: false
+    unavailableReason: TOPOLOGY_SPECIFIC_COMPLETION_NOT_CALIBRATED
+    allowedFields:
+      - reference_mismatch
+      - graph_component_error
+      - normalized_boundary_error
+      - composition_corrected_homotypic_edge_excess
+      - task_native_event_and_state_hash_summaries
+    promotionUse: forbidden
+
+nativeAuthorityAudit:
+  fault:
+    requiredGate: G06
+    eligibleOnlyIf: authoritative_unseen_E06_spatial_fault_family
+    forbiddenSubstitutions:
+      - one_swap_displacement
+      - E06_S10_lesion_or_external_intervention
+      - E06_S10_temporary_proposal_gate
+      - E06_S06_direct_controller_actuation_miss
+      - E01_E02_E05_fault_rebinding
+  scheduler:
+    requiredGate: G07
+    eligibleOnlyIf: authoritative_unseen_E06_spatial_scheduler_family
+    nativeControl: state_blind_identity_hash_rank_without_replacement_per_transition
+    forbiddenSubstitutions:
+      - scheduler_seed_variation
+      - E01_E02_E05_scheduler_rebinding
+
+runtimeQualification:
+  frozenEpisodes: 0
+  dedicatedFixtureLogicalRows: 16
+  exactReplayPerFixture: 1
+  dedicatedFixturePhysicalRows: 32
+  transitionsPerFixture: 32
+  actorSlotsPerTransition: 4
+  orderings: [forward, reverse]
+  persistedOutcomeValues: forbidden
+  requiredChecks:
+    - exact_replay
+    - worker_order_independence
+    - native_clock_and_budget
+    - policy_controlled_dispatch
+    - portfolio_assignment_audit
+    - separate_movement_observation_channel_portfolio_memory_and_licensed_costs
+    - endpoint_availability_contract
+    - explicit_failure_dispositions
+
+accounting:
+  frozenRosterLogical: 65024
+  frozenRosterPhysicalIncludingReplay: 130048
+  frozenSmokeLogical: 56
+  everyLogicalReservationMustResolve: true
+  adaptedWinnerPlaceholderMustRemainPreOutcome: true
+  completeConservationRequired: true
+
+publication:
+  scientificDestinationAbsentDuringS12A: true
+  artifactClasses:
+    - transfer_results
+    - transfer_profiles
+    - adaptation_lock
+    - paired_estimands
+    - failure_censor_ledger
+    - native_cost_ledger
+    - replay_audit
+    - complete_accounting
+  staging: same_filesystem
+  fullValidationBeforeCommit: required
+  commitBoundary: one_atomic_directory_rename
+  injectedFailureCoverage: before_during_after_each_class_and_commit_boundaries
+  validStates: [complete_validated_publication, zero_scientific_publication]
+
+gatePolicy:
+  passRowsToQualify: [G04, G05, G08]
+  runtimeRowToQualify: G10
+  auditRows: [G06, G07]
+  substantiveS12AuthorizedOnlyIfAllG01ThroughG10Pass: true
+  missingFaultOrSchedulerDisposition: fail_closed_without_scope_narrowing
+
+claimBoundary:
+  - qualification_fixtures_are_not_efficacy_evidence
+  - diagnostic_topology_fields_are_not_completion_or_repair
+  - one_swap_displacement_is_not_a_fault
+  - schedule_seed_variation_is_not_scheduler_transfer
+  - no_cross_predecessor_rebinding
+  - no_universal_score_revealed_preference_biological_morphology_agency_or_civic_claim
