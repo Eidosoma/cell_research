@@ -1,0 +1,219 @@
+schemaVersion: e07.s09.ablation-compression-protocol.v1
+researchStepId: S09
+title: Ablate and compress discoveries
+frozenQuestion: >-
+  Within the seven S08M-eligible spatial portfolios, which member, selector,
+  rule, memory, observation, and sensing mechanisms are necessary on paired
+  authorized training scenarios, and how far can each portfolio be compressed
+  under a bounded deterministic edit registry without claiming global
+  minimality?
+
+authorizationBoundary:
+  allowedParentConfigurationCount: 7
+  allowedTasks:
+    - e07_s02_spatial2d_local
+    - e07_s02_spatial2d_memory
+  allowedSplit: train
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  s06OrS06AArtifactLoads: 0
+  s07ArmSignalUses: 0
+  s08mMutation: forbidden
+  historicalQuarantineMutation: forbidden
+  s05Mutation: forbidden
+
+frozenInputs:
+  s08mCandidateLock:
+    path: /artifacts/research_steps/S08M/validation_candidate_lock.json
+    sha256: 07029679313e699e652f6e0939a70e3357b4121c2941c44c573f5a1fb8334a87
+  s08mEligibilityGate:
+    path: /artifacts/research_steps/S08M/s09_eligibility_gate.json
+  s08mConfigurationRegistry:
+    path: /artifacts/research_steps/S08M/portfolio_configuration_registry.jsonl
+  s08mPairedNativeEstimands:
+    path: /artifacts/research_steps/S08M/paired_native_estimands.csv
+  s08mPairedCostEstimands:
+    path: /artifacts/research_steps/S08M/paired_cost_estimands.csv
+  s08mFailureCensorGuards:
+    path: /artifacts/research_steps/S08M/failure_censor_guards.csv
+  s05PolicyCatalog:
+    path: /artifacts/research_steps/S05/policy_catalog.jsonl
+  s02TaskRegistry:
+    path: /artifacts/research_steps/S02/environment_suite/task_registry.yaml
+  s02SplitManifest:
+    path: /artifacts/research_steps/S02/environment_suite/split_manifest.json
+  s08pNativeComparisonRegistry:
+    path: /artifacts/research_steps/S08P/paired_native_comparison_registry.json
+  s08lIdentitySpecification:
+    path: /artifacts/research_steps/S08L/identity_plane_spec.json
+
+eligibleConfigurationIds:
+  - 099b5b0acf495e0dc1733a684f3995c3ad87ae7d4fa5cb4a345d159da0160657
+  - 14ce5f7e959c804ee191d552fa87ad51fdf5feb25a4fa9aed77d31494c5afd71
+  - 53d56bd0b5354f74233b0db779b139270da31c9287ab64094d833fa22a26f0fb
+  - 63fe86388370fc5a047cf3b5968b13bbc3a189b5723d593d3e174ca19cce4a20
+  - 6a3741450a03d169e21f516dbd2d4f2834fbfdab0473804cf709db847bfe0a4b
+  - 763e3110f4c6bd593862accb471b52fecefdf7623d74eaf4e3250bc9cc1abaaf
+  - e20c105d240403920f8617e68c178f6f4d9cad50e9b0f8b8e34d41815d12f0ba
+
+editRegistry:
+  order:
+    - member_delete
+    - selector_remove_to_fixed_balanced
+    - selector_branch_flip_control
+    - fixed_assignment_rotation_control
+    - rule_delete
+    - memory_freeze_register
+    - observation_predicate_erase
+    - sensing_delta_to_counter_index
+    - sensing_restrict_adjacent_radius_one
+    - sensing_remove_positive_filter
+    - exact_runtime_sham
+  memberDeletionMinimumPortfolioSize: 2
+  ruleDeletion: each_declared_rule
+  memoryAblation: freeze_one_register_at_its_declared_initial_value
+  observationAblation: replace_each_condition_using_one_scalar_with_true_then_simplify
+  sensingAblations:
+    - replace_candidate_delta_arg_selector_with_counter_index
+    - restrict_nonlocal_movement_kinds_to_adjacent_swap_and_radius_one
+    - remove_positive_candidate_filter
+  signalAblation: structurally_inapplicable_when_all_member_channels_zero
+  communicationAblation: structurally_inapplicable_when_all_member_channels_zero
+  selectorAblations:
+    conditioned:
+      - remove_selector_and_use_fixed_balanced_identity
+      - reverse_the_two_frozen_branches_as_complexity_matched_control
+    fixed:
+      - rotate_balanced_assignment_by_one_as_complexity_matched_control
+  sham: exact_member_programs_mode_selector_and_costs_with_a_hash_distinct_audit_tag
+  arbitraryNewRules: forbidden
+  thresholdTuning: forbidden
+  outcomeTunedEditGeneration: forbidden
+
+deltaDebugging:
+  candidateOrder: >-
+    individually-equivalent causal edits only, descending structural byte
+    reduction, then frozen edit-family order, then edit ID
+  freshPanelRequired: true
+  reapplyToCurrentCompressedState: true
+  maximumAcceptedEditsPerParent: 8
+  stopWhen:
+    - all_individually_equivalent_candidates_attempted
+    - eight_edits_accepted
+    - integrity_failure
+  rejectedEditReconsideration: forbidden
+
+scenarioPanels:
+  screening:
+    ordinals: [500, 627]
+    count: 128
+    purpose: every_first_order_edit_and_parent_sham
+  cumulative:
+    ordinals: [700, 955]
+    count: 256
+    purpose: deterministic_delta_debugging_attempts
+  crossSpatialRegression:
+    ordinals: [1100, 1355]
+    count: 256
+    purpose: frozen_parent_and_final_compression_on_both_spatial_tasks
+  derivation: outcome_blind_counter_schedule_key_from_task_panel_and_ordinal
+  pairingUnit: task_and_scenario_family
+  crossTaskCommonRandomNumbersClaim: false
+
+execution:
+  workers: 8
+  numericThreadsPerWorker: 1
+  rawCacheRoot: /cache/e07-s09
+  noRuntimeDrivenWeakening: true
+  failAtomicPanelPublication: true
+  retainFailuresAndCensors: true
+  retainAllTaskNativeStatuses: true
+  replayEveryRow: true
+
+taskLocalEndpoints:
+  conjunctive_completion:
+    field: conjunctiveCompletion
+    direction: maximize
+    margin: 0.0
+  s01_global_mismatch:
+    field: s01GlobalCompletionAudit.normalizedMismatch
+    direction: minimize
+    margin: 0.01
+  s02_local_acceptance:
+    field: s02LocalGrammar.accepted
+    direction: maximize
+    margin: 0.0
+  formation_success:
+    field: formationCompletion
+    direction: maximize
+    margin: 0.0
+    missing: retain_unavailable_without_imputation
+  repair_success:
+    field: repairCompletion
+    direction: maximize
+    margin: 0.0
+
+functionalEquivalence:
+  exact:
+    requiresIdentical:
+      - stop_reason
+      - failed
+      - censored
+      - task_local_outcome_projection
+      - final_state_hash
+    label: exact_on_tested_panel_only
+  bounded:
+    confidenceLevel: 0.95
+    requires:
+      - every_available_endpoint_lower_confidence_bound_at_or_above_negative_margin
+      - no_increase_in_failure_or_censor_risk
+      - all_native_contract_and_replay_checks_pass
+      - structural_complexity_does_not_increase_for_causal_compression_edits
+    label: endpoint_equivalent_on_tested_panel_only
+  shamMustBeExact: true
+
+statistics:
+  pairedBootstrapReplicates: 2000
+  pairedSignFlipReplicates: 2000
+  seed: 70920260723
+  multiplicity:
+    method: Holm
+    family: within_parent_and_edit_family_across_available_native_endpoints
+  costAnalysis: fieldwise_paired_difference_only
+  universalScore: forbidden
+  crossTaskPooling: forbidden
+
+causalInterpretation:
+  necessaryWithinPanel: >-
+    A prespecified edit produces Holm-significant harm beyond the frozen
+    endpoint margin while the exact sham passes.
+  removableWithinPanel: >-
+    A prespecified edit passes bounded equivalence and all integrity guards on
+    its paired panel.
+  claimLimits:
+    - simulator_internal
+    - task_local
+    - edit_relative
+    - finite_panel
+    - no_global_minimality
+    - no_cross_task_generalization
+    - no_biological_mechanism
+    - no_confirmation_claim
+
+artifacts:
+  required:
+    - compressed_policies.jsonl
+    - ablation_effects.parquet
+    - ablation_effects.csv
+    - minimality_certificates.jsonl
+    - evaluation_accounting.json
+    - access_control_validation.json
+    - replay_worker_order_validation.json
+    - native_contract_validation.json
+    - cost_accounting.json
+    - hash_and_immutability_validation.json
+    - validation_summary.json
+    - status.json
+    - provenance.json
+    - artifact_manifest.json
+    - research_step_full_results.md
