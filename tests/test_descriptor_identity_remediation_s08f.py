@@ -102,12 +102,18 @@ def _logical(config: dict, slot: str) -> dict:
     return {
         "stage": "qualification",
         "generation": 0,
+        "taskId": config["taskId"],
         "logicalSlotId": slot,
+        "logicalSlotOrdinal": int(
+            canonical_hash("E07/S08F/qualification-ordinal/v1", slot)[:8], 16
+        ),
         "reservedConfigurationSlotId": config["configurationId"],
         "configurationRole": config["mode"],
+        "pairedSlotId": None,
         "scenarioFamilyOrdinal": 300,
         "split": "train",
         "configuration": config,
+        "smoke": False,
     }
 
 

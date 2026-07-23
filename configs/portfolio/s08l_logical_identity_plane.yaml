@@ -1,0 +1,173 @@
+schemaVersion: e07.s08l.logical-identity-plane-preregistration.v1
+researchStepId: S08L
+title: Preregister and qualify the outcome-independent logical-identity plane
+preregisteredAtUtc: '2026-07-23T00:00:00Z'
+
+frozenQuestion: >-
+  Can four distinct pre-outcome identities—reservation slot, runtime
+  configuration, physical execution, and logical result—make every legal
+  one-to-many physical expansion unambiguous, restore every frozen reservation
+  attribution, and keep every logical hash distinct without changing S08P?
+
+authorizationBoundary:
+  qualificationOnly: true
+  structuralMetadataOnly: true
+  qualificationFixturesOnly: true
+  frozenSmokeRowsExecuted: 0
+  episodeEvaluations: 0
+  efficacyRowsRead: 0
+  archiveConstructionCalls: 0
+  validationOutcomeAccesses: 0
+  confirmationOutcomeAccesses: 0
+  s09Actions: 0
+  s08kCacheReads: 0
+  historicalQuarantineOutcomeReads: 0
+  historicalArtifactMutations: 0
+
+immutableScientificDesign:
+  protocol: /artifacts/research_steps/S08P/s08p_portfolio_protocol.yaml
+  mayChange:
+    - pre_outcome_identity_metadata
+    - identity_validation
+    - logical_expansion_attribution
+    - stable_logical_hash_domain
+  mayNotChange:
+    - candidate_eligibility
+    - portfolio_members
+    - comparators
+    - selectors
+    - member_memory
+    - communication
+    - native_costs
+    - portfolio_costs
+    - licensed_capability_costs
+    - scenario_coupling
+    - train_validation_confirmation_boundaries
+    - budgets
+    - stopping
+    - objectives
+    - descriptors
+    - estimands
+    - uncertainty
+    - multiplicity
+    - failure_or_censor_semantics
+    - native_contracts
+    - claim_boundaries
+  scientificChangeRequired: fail_closed_and_return_for_human_review
+
+identityContract:
+  version: e07.s08l.logical-identity-plane.v1
+  generatedBeforeOutcome: true
+  reservationSlot:
+    purpose: bind_exact_frozen_budget_reservation
+    configurationReferenceSemantics: >-
+      reservedConfigurationSlotId is the immutable S08P reservation reference.
+      For adaptive slots it is not asserted to equal a generated runtime
+      configuration ID.
+    requiredFields:
+      - stage
+      - generation
+      - taskId
+      - split
+      - scenarioFamilyOrdinal
+      - logicalSlotOrdinal
+      - logicalSlotId
+      - reservedConfigurationSlotId
+      - configurationRole
+      - pairedSlotId
+      - smoke
+  runtimeConfiguration:
+    purpose: bind_the_immutable_configuration_actually_dispatched
+    requiredFields:
+      - taskId
+      - configurationId
+      - configurationDefinitionSha256
+      - mode
+      - memberSetId
+      - memberPolicySha256
+  physicalExecution:
+    purpose: bind_complete_equivalence_work_independent_of_logical_aliases
+    source: e07.s08f.physical-dedup-equivalence.v1
+    deduplicationLegalOnlyWhen:
+      - action_behavior
+      - native_task_scenario_carrier
+      - selector_and_assignment
+      - communication
+      - portfolio_structural_cost
+      - native_cost
+      - licensed_capability_cost
+    allEquivalent: required
+  logicalResult:
+    purpose: bind_one_logical_slot_to_one_reservation_runtime_and_physical_identity
+    uniquenessKey: logicalSlotId
+    distinctStableHashUnderPhysicalReuse: required
+  physicalToLogicalExpansion:
+    purpose: authenticate_the_complete_one_to_many_membership_before_outcomes
+    membershipOrdering: canonical_sorted_logical_result_identity
+    exactCardinality: required
+    copiedOrAmbiguousMembership: fail_closed
+  hash:
+    algorithm: SHA-256
+    canonicalization: sorted_key_compact_ascii_json_no_nan
+    domainSeparated: true
+
+qualificationPopulation:
+  frozenInitialConfigurationBindings: 1216
+  frozenInitialLogicalReservations: 4864
+  frozenSmokeStructuralBindings: 40
+  frozenAdaptiveLogicalReservations: 6144
+  totalFrozenTrainingLogicalReservations: 11008
+  adaptiveFixtureRuntimeChoice: >-
+    Deterministic task/role-indexed selection from already frozen legal S08P
+    configurations, using no objective, outcome, archive, promotion, or S07 arm
+    field. Repeated choices are intentional alias/reuse stress cases and are
+    not a reconstruction of any quarantined adaptive search.
+  physicalRowsExecuted: 0
+
+adversarialQualification:
+  requiredCases:
+    - repeated_same_configuration_same_scenario_distinct_slots
+    - complete_equivalence_configuration_alias
+    - adaptive_target_reservation_runtime_mismatch
+    - adaptive_matched_random_reservation_runtime_mismatch
+    - component_single_reservation
+    - missing_binding
+    - copied_binding_to_different_slot
+    - duplicate_logical_slot
+    - ambiguous_physical_membership
+    - forged_reservation_commitment
+    - forged_runtime_commitment
+    - forged_physical_commitment
+    - forged_expansion_membership
+    - forged_binding_commitment
+    - serialization_field_loss
+  validCasesMustRoundTrip: true
+  invalidCasesMustFailClosed: true
+
+validation:
+  exactReplay: required
+  workerOrderIndependence: required
+  serializationRoundTrip: required
+  logicalCardinalityConservation: required
+  physicalToLogicalCardinalityConservation: required
+  all1216StructuralBindings: required
+  all40SmokeBindingsStructuralOnly: required
+  g01ToG06: required
+  protectedDenialBeforeMaterialization: required
+  rejectedDependencyExclusion: required
+  s08pThroughS08kImmutable: required
+  noArchiveOrProtectedOrExecutionMutation: required
+
+gates:
+  G01: frozen_inputs_and_historical_artifacts_unchanged
+  G02: canonical_candidates_and_runtime_configurations_remain_authoritative
+  G03: frozen_S08P_design_and_complete_equivalence_contract_unchanged
+  G04: logical_identity_plane_qualified_fail_closed
+  G05: protected_access_and_rejected_dependencies_denied
+  G06: reservation_logical_physical_and_zero_execution_accounting_complete
+
+nextBoundary:
+  executionAuthorized: false
+  freshNamespaceRequiredAfterSeparateApproval: true
+  s08kRetryForbidden: true
+  s09Authorized: false

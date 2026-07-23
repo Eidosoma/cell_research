@@ -63,6 +63,10 @@ from src.portfolio_search.preflight import (
     tree_digest,
     validate_executable_bindings,
 )
+from src.portfolio_search.identity import (
+    ensure_bound_identity_roster,
+    validate_bound_identity_record,
+)
 from src.quality_diversity.core import (
     BASE_SCENARIOS,
     OBJECTIVES,
@@ -580,8 +584,20 @@ def _expand_logical_result(
 ) -> dict[str, Any]:
     """Restore the reserved logical configuration while retaining provenance."""
 
+    if "identityPlane" in logical:
+        audit = validate_bound_identity_record(
+            logical, physical_identity_resolver=_physical_key
+        )
+        if not audit["success"]:
+            raise ValueError(f"logical identity failed closed: {audit['errors']}")
+        bound = dict(logical)
+    else:
+        bound = ensure_bound_identity_roster(
+            [logical], physical_identity_resolver=_physical_key
+        )[0]
+    plane = bound["identityPlane"]
     row = dict(physical)
-    configuration = logical.get("configuration")
+    configuration = bound.get("configuration")
     if configuration is not None:
         config = dict(configuration)
         physical_stable = str(row["stableEvaluationSha256"])
@@ -606,27 +622,39 @@ def _expand_logical_result(
             }
         )
         row["stableEvaluationSha256"] = canonical_sha256(
-            "E07/S08F/logical-evaluation/v1",
+            "E07/S08L/logical-result-record/v1",
             {
+                "logicalResultIdentitySha256": plane["logicalResultIdentitySha256"],
+                "logicalIdentityBindingSha256": plane["logicalIdentityBindingSha256"],
                 "physicalStableEvaluationSha256": physical_stable,
-                "configurationId": row["configurationId"],
-                "configurationDefinitionSha256": row["configurationDefinitionSha256"],
-                "scenarioFamilyOrdinal": int(logical["scenarioFamilyOrdinal"]),
             },
         )
         row["logicalEvaluationSha256"] = row["stableEvaluationSha256"]
     row.update(
         {
-            "stage": str(logical["stage"]),
-            "generation": int(logical["generation"]),
-            "logicalSlotId": str(logical["logicalSlotId"]),
-            "reservedConfigurationSlotId": str(logical["reservedConfigurationSlotId"]),
-            "configurationRole": str(logical["configurationRole"]),
-            "scenarioFamilyOrdinal": int(logical["scenarioFamilyOrdinal"]),
+            "stage": str(bound["stage"]),
+            "generation": int(bound["generation"]),
+            "logicalSlotId": str(bound["logicalSlotId"]),
+            "logicalSlotOrdinal": int(bound["logicalSlotOrdinal"]),
+            "reservedConfigurationSlotId": str(bound["reservedConfigurationSlotId"]),
+            "configurationRole": str(bound["configurationRole"]),
+            "pairedSlotId": bound.get("pairedSlotId"),
+            "scenarioFamilyOrdinal": int(bound["scenarioFamilyOrdinal"]),
+            "identityPlane": plane,
+            "reservationSlotIdentitySha256": plane["reservationSlotIdentitySha256"],
+            "runtimeConfigurationIdentitySha256": plane[
+                "runtimeConfigurationIdentitySha256"
+            ],
+            "physicalExecutionIdentitySha256": plane["physicalExecutionIdentitySha256"],
+            "logicalResultIdentitySha256": plane["logicalResultIdentitySha256"],
+            "physicalToLogicalExpansionCommitmentSha256": plane[
+                "physicalToLogicalExpansionCommitmentSha256"
+            ],
+            "logicalIdentityBindingSha256": plane["logicalIdentityBindingSha256"],
         }
     )
     row["logicalExpansionSha256"] = canonical_sha256(
-        "E07/S08F/logical-expansion/v1",
+        "E07/S08L/logical-expansion/v1",
         {
             "physicalWorkSha256": physical_key,
             "physicalStableEvaluationSha256": row.get(
@@ -638,6 +666,11 @@ def _expand_logical_result(
             "configurationId": row.get("configurationId"),
             "configurationDefinitionSha256": row.get("configurationDefinitionSha256"),
             "configurationRole": row["configurationRole"],
+            "logicalResultIdentitySha256": row["logicalResultIdentitySha256"],
+            "logicalIdentityBindingSha256": row["logicalIdentityBindingSha256"],
+            "physicalToLogicalExpansionCommitmentSha256": row[
+                "physicalToLogicalExpansionCommitmentSha256"
+            ],
         },
     )
     return row
@@ -654,6 +687,7 @@ def execute_work(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Execute unique physical rows and expand them to the exact logical roster."""
 
+    work = ensure_bound_identity_roster(work, physical_identity_resolver=_physical_key)
     if atomic_new_cache and cache_dir.exists():
         raise FileExistsError(
             f"fail-atomic batch requires a new cache directory: {cache_dir}"
@@ -661,12 +695,19 @@ def execute_work(
     cache_dir.parent.mkdir(parents=True, exist_ok=True)
     if not atomic_new_cache:
         cache_dir.mkdir(parents=True, exist_ok=True)
-    unique: dict[str, Mapping[str, Any]] = {}
+    grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     logical_keys = []
     for row in work:
         key = _physical_key(row)
-        unique.setdefault(key, row)
+        grouped[key].append(row)
         logical_keys.append(key)
+    unique = {
+        key: min(
+            rows,
+            key=lambda row: row["identityPlane"]["logicalResultIdentitySha256"],
+        )
+        for key, rows in grouped.items()
+    }
     results: dict[str, dict[str, Any]] = {}
     pending = []
     pending_keys = []
@@ -724,7 +765,8 @@ def execute_work(
         "uniquePhysicalRows": len(unique),
         "physicalDedupSavedRows": len(work) - len(unique),
         "physicalDedupEquivalenceVersion": "e07.s08f.physical-work.v1",
-        "logicalExpansionVersion": "e07.s08f.logical-expansion.v1",
+        "logicalExpansionVersion": "e07.s08l.logical-expansion.v1",
+        "logicalIdentityPlaneVersion": "e07.s08l.logical-identity-plane.v1",
         "cacheHits": len(unique) - len(pending),
         "physicalRowsExecutedNow": len(pending),
         "failAtomic": True,
@@ -766,13 +808,19 @@ def _initial_work(
                 "split": "train",
                 "scenarioFamilyOrdinal": int(item["scenarioFamilyOrdinal"]),
                 "logicalSlotId": str(item["logicalSlotId"]),
+                "logicalSlotOrdinal": int(item["logicalSlotOrdinal"]),
                 "reservedConfigurationSlotId": cid,
                 "configurationRole": str(item["configurationRole"]),
+                "pairedSlotId": (
+                    None
+                    if pd.isna(item.get("pairedSlotId"))
+                    else str(item["pairedSlotId"])
+                ),
                 "configuration": dict(configurations[cid]),
                 "smoke": bool(item["smoke"]),
             }
         )
-    return rows
+    return ensure_bound_identity_roster(rows, physical_identity_resolver=_physical_key)
 
 
 def aggregate_configuration(
@@ -1245,15 +1293,21 @@ def generate_adaptive_generation(
                             "split": "train",
                             "scenarioFamilyOrdinal": int(slot["scenarioFamilyOrdinal"]),
                             "logicalSlotId": str(slot["logicalSlotId"]),
+                            "logicalSlotOrdinal": int(slot["logicalSlotOrdinal"]),
                             "reservedConfigurationSlotId": str(slot["configurationId"]),
                             "configurationRole": role,
+                            "pairedSlotId": str(pair_id),
                             "configuration": definition,
                             "smoke": False,
                         }
                     )
     if len(works) != 1024 or not 128 <= len(generated) <= 256 or len(lineage) != 128:
         raise RuntimeError("adaptive generation accounting diverged from frozen budget")
-    return works, generated, lineage
+    return (
+        ensure_bound_identity_roster(works, physical_identity_resolver=_physical_key),
+        generated,
+        lineage,
+    )
 
 
 def _archive_rows(
@@ -1460,18 +1514,23 @@ def build_validation_plan(
                         "split": "validation",
                         "scenarioFamilyOrdinal": family,
                         "logicalSlotId": logical_id,
+                        "logicalSlotOrdinal": ordinal,
                         "reservedConfigurationSlotId": cid,
                         "configurationRole": "locked_validation",
+                        "pairedSlotId": None,
                         "configuration": validation_definitions[cid],
                         "candidateLockPath": str(lock_path),
                         "candidateLockSha256": lock_sha,
-                        "logicalSlotOrdinal": ordinal,
                     }
                 )
                 ordinal += 1
     if len(work) > 3072:
         raise RuntimeError("validation plan exceeds frozen 3,072-row ceiling")
-    return work, lock, validation_definitions
+    return (
+        ensure_bound_identity_roster(work, physical_identity_resolver=_physical_key),
+        lock,
+        validation_definitions,
+    )
 
 
 def _margin(objective_id: str) -> float:

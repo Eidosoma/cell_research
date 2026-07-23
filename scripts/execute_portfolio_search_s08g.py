@@ -53,6 +53,7 @@ from src.portfolio_search.execution import (
     validate_rows,
     _archive_rows,
 )
+from src.portfolio_search.identity import validate_persisted_logical_identity_rows
 
 
 STEP_ID = os.environ.get("E07_PORTFOLIO_STEP_ID", "S08G")
@@ -292,8 +293,7 @@ def s08j_contract_revalidation() -> dict[str, Any]:
         and all(row.get("status") == "pass" for row in gate.get("rows", [])),
         "projectionSchema": spec.get("schemaVersion")
         == TARGET_CHANGE_AUDIT_PROJECTION_SCHEMA_VERSION
-        and spec.get("persistedPlane")
-        == "nativeEvent.targetChangeAuditProjection",
+        and spec.get("persistedPlane") == "nativeEvent.targetChangeAuditProjection",
         "nativeContractsUnchanged": spec.get("nativeOutcomeFieldsChanged") is False
         and spec.get("nativeStatusChanged") is False
         and spec.get("scientificEstimandChanged") is False
@@ -499,17 +499,16 @@ def logical_identity_audit(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     for row in rows:
         by_physical[str(row["physicalWorkSha256"])].append(row)
     reused = [items for items in by_physical.values() if len(items) > 1]
+    persisted = validate_persisted_logical_identity_rows(rows)
     checks = {
-        "everyLogicalIdentityRestored": all(
-            row["configurationId"] == row["reservedConfigurationSlotId"] for row in rows
-        ),
+        "everyLogicalIdentityRestored": persisted["success"],
         "physicalProvenanceRetained": all(
             row.get("physicalStableEvaluationSha256")
             and row.get("physicalDedupEquivalenceSha256")
             and row.get("logicalExpansionSha256")
             for row in rows
         ),
-        "logicalSlotsUnique": len({row["logicalSlotId"] for row in rows}) == len(rows),
+        "logicalSlotsUnique": persisted["uniqueLogicalSlots"] == len(rows),
         "reusedRowsKeepDistinctLogicalHashes": all(
             len({item["stableEvaluationSha256"] for item in items}) == len(items)
             for items in reused
@@ -522,6 +521,8 @@ def logical_identity_audit(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "uniquePhysicalKeys": len(by_physical),
         "legallyReusedPhysicalKeys": len(reused),
         "logicalRowsInReusedGroups": sum(len(items) for items in reused),
+        "identityPlaneVersion": "e07.s08l.logical-identity-plane.v1",
+        "persistedIdentityValidation": persisted,
         "checks": checks,
         "success": all(checks.values()),
     }
@@ -956,6 +957,7 @@ def main() -> int:
             "physicalDedupEquivalenceVersion"
         ],
         "logicalExpansionVersion": initial_physical["logicalExpansionVersion"],
+        "logicalIdentityPlaneVersion": initial_physical["logicalIdentityPlaneVersion"],
     }
     initial_execution_accounting["success"] = (
         initial_execution_accounting["initialLogicalRows"] == 4864
@@ -969,7 +971,9 @@ def main() -> int:
         and initial_execution_accounting["physicalDedupEquivalenceVersion"]
         == "e07.s08f.physical-work.v1"
         and initial_execution_accounting["logicalExpansionVersion"]
-        == "e07.s08f.logical-expansion.v1"
+        == "e07.s08l.logical-expansion.v1"
+        and initial_execution_accounting["logicalIdentityPlaneVersion"]
+        == "e07.s08l.logical-identity-plane.v1"
     )
     _write_json(
         output / "initial_execution_physical_accounting.json",

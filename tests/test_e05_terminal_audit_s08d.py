@@ -110,6 +110,34 @@ def _execution_success_worker(item: dict) -> dict:
     }
 
 
+def _identity_qualified_work_item(position: int, *, fail: bool = False) -> dict:
+    key = f"{position + 100:064x}"
+    configuration_id = f"{position + 200:064x}"
+    return {
+        "key": key,
+        "position": position,
+        "fail": fail,
+        "stage": "qualification",
+        "generation": 0,
+        "taskId": "qualification_task",
+        "split": "train",
+        "logicalSlotId": f"logical-{position}",
+        "logicalSlotOrdinal": position,
+        "reservedConfigurationSlotId": f"reservation-{position}",
+        "configurationRole": "qualification",
+        "pairedSlotId": None,
+        "scenarioFamilyOrdinal": position,
+        "smoke": False,
+        "configuration": {
+            "taskId": "qualification_task",
+            "configurationId": configuration_id,
+            "mode": "single_policy",
+            "memberSetId": f"{position + 300:064x}",
+            "members": [{"policySha256": f"{position + 400:064x}"}],
+        },
+    }
+
+
 @pytest.mark.parametrize("failure_position", [0, 2, 4])
 def test_fail_atomic_batch_accounts_all_positions_and_publishes_zero(
     failure_position: int,
@@ -171,7 +199,7 @@ def test_execute_work_writes_forensics_but_no_cache_rows_on_failure(
     monkeypatch.setattr(execution, "_physical_key", lambda item: item["key"])
     monkeypatch.setattr(execution, "evaluate_work_item", _qualification_worker)
     work = [
-        {"key": f"physical-{position}", "position": position, "fail": position == 2}
+        _identity_qualified_work_item(position, fail=position == 2)
         for position in range(5)
     ]
     cache = tmp_path / "cache"
@@ -199,19 +227,7 @@ def test_execute_work_commits_complete_cache_directory_after_success(
 
     monkeypatch.setattr(execution, "_physical_key", lambda item: item["key"])
     monkeypatch.setattr(execution, "evaluate_work_item", _execution_success_worker)
-    work = [
-        {
-            "key": f"physical-{position}",
-            "position": position,
-            "stage": "qualification",
-            "generation": 0,
-            "logicalSlotId": f"logical-{position}",
-            "reservedConfigurationSlotId": f"configuration-{position}",
-            "configurationRole": "qualification",
-            "scenarioFamilyOrdinal": position,
-        }
-        for position in range(5)
-    ]
+    work = [_identity_qualified_work_item(position) for position in range(5)]
     cache = tmp_path / "committed-cache"
     rows, accounting = execute_work(
         work,
