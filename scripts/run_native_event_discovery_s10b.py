@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import gzip
 import hashlib
 import json
 from pathlib import Path
 import sys
-from typing import Any, Mapping
+from types import MappingProxyType
+from typing import Any, Iterator, Mapping
 
 import yaml
 
@@ -40,6 +42,19 @@ HISTORICAL = (
     FAILED_S10,
     S10A,
 )
+_ORIGINAL_BASE_CALLBACKS = MappingProxyType(
+    {
+        "revalidate_frozen_inputs": base.revalidate_frozen_inputs,
+        "prospective_freeze": base.prospective_freeze,
+        "reviewer_instructions": base.reviewer_instructions,
+        "report_markdown": base.report_markdown,
+        "manifest_for_output": base.manifest_for_output,
+    }
+)
+
+
+class CallbackBindingError(RuntimeError):
+    """Raised before execution when callback installation is ambiguous."""
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -121,7 +136,7 @@ def revalidate_frozen_inputs() -> dict[str, Any]:
     active_config = base.CONFIG
     try:
         base.CONFIG = ORIGINAL_EXECUTION_CONFIG
-        result = base.revalidate_frozen_inputs()
+        result = _ORIGINAL_BASE_CALLBACKS["revalidate_frozen_inputs"]()
     finally:
         base.CONFIG = active_config
     config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
@@ -267,7 +282,7 @@ def revalidate_frozen_inputs() -> dict[str, Any]:
 
 
 def prospective_freeze(preflight: Mapping[str, Any]) -> dict[str, Any]:
-    result = base.prospective_freeze(preflight)
+    result = _ORIGINAL_BASE_CALLBACKS["prospective_freeze"](preflight)
     result.pop("executionFreezeSha256", None)
     result.update(
         {
@@ -894,6 +909,102 @@ def _write_failure(exc: BaseException) -> None:
     write_json(OUTPUT / "artifact_manifest.json", manifest_for_output())
 
 
+def execution_callback_overrides() -> Mapping[str, Any]:
+    """Return the exact callback objects installed by the S10B continuation."""
+
+    return MappingProxyType(
+        {
+            "revalidate_frozen_inputs": revalidate_frozen_inputs,
+            "prospective_freeze": prospective_freeze,
+            "reviewer_instructions": reviewer_instructions,
+            "report_markdown": report_markdown,
+            "manifest_for_output": manifest_for_output,
+        }
+    )
+
+
+@contextmanager
+def installed_base_callbacks(
+    *,
+    surface: Any = base,
+    captured: Mapping[str, Any] | None = None,
+    overrides: Mapping[str, Any] | None = None,
+) -> Iterator[dict[str, Any]]:
+    """Install callbacks atomically and restore the exact prior binding.
+
+    A callback may be installed over its captured original or over the same
+    target during a nested/repeated installation. Any other pre-existing
+    wrapper is ambiguous and is rejected before the surface is changed.
+    """
+
+    original_bindings = (
+        _ORIGINAL_BASE_CALLBACKS if captured is None else dict(captured)
+    )
+    target_bindings = (
+        execution_callback_overrides() if overrides is None else dict(overrides)
+    )
+    if set(original_bindings) != set(target_bindings):
+        raise CallbackBindingError("callback binding name set mismatch")
+
+    snapshots: dict[str, Any] = {}
+    states: list[dict[str, Any]] = []
+    for name in sorted(target_bindings):
+        original = original_bindings[name]
+        target = target_bindings[name]
+        current = getattr(surface, name)
+        if target is original:
+            raise CallbackBindingError(
+                f"self-reference rejected for callback {name}"
+            )
+        if current is not original and current is not target:
+            raise CallbackBindingError(
+                f"conflicting pre-installed callback rejected for {name}"
+            )
+        snapshots[name] = current
+        states.append(
+            {
+                "name": name,
+                "priorWasCapturedOriginal": current is original,
+                "priorWasSameTarget": current is target,
+            }
+        )
+
+    for name, target in target_bindings.items():
+        setattr(surface, name, target)
+    if any(
+        getattr(surface, name) is not target
+        for name, target in target_bindings.items()
+    ):
+        for name, prior in snapshots.items():
+            setattr(surface, name, prior)
+        raise CallbackBindingError("callback installation identity check failed")
+
+    audit = {
+        "installed": True,
+        "callbacks": states,
+        "nestedOrRepeated": any(row["priorWasSameTarget"] for row in states),
+    }
+    body_failed = False
+    try:
+        yield audit
+    except BaseException:
+        body_failed = True
+        raise
+    finally:
+        replaced = [
+            name
+            for name, target in target_bindings.items()
+            if getattr(surface, name) is not target
+        ]
+        for name, prior in snapshots.items():
+            setattr(surface, name, prior)
+        if replaced and not body_failed:
+            raise CallbackBindingError(
+                "installed callback was replaced before restoration: "
+                + ", ".join(sorted(replaced))
+            )
+
+
 def execute() -> None:
     base.OUTPUT = OUTPUT
     base.CACHE = CACHE
@@ -901,24 +1012,20 @@ def execute() -> None:
     base.SCRIPT = SCRIPT
     base.TEST = TEST
     base.HISTORICAL = HISTORICAL
-    base.revalidate_frozen_inputs = revalidate_frozen_inputs
-    base.prospective_freeze = prospective_freeze
-    base.reviewer_instructions = reviewer_instructions
-    base.report_markdown = report_markdown
-    base.manifest_for_output = manifest_for_output
     try:
-        base.execute()
-        dispositions = [
-            promote_disposition(
-                CACHE / "discovery_dispositions.json",
-                OUTPUT / "discovery_dispositions.json.gz",
-            ),
-            promote_disposition(
-                CACHE / "reproduction_dispositions.json",
-                OUTPUT / "reproduction_dispositions.json.gz",
-            ),
-        ]
-        _rewrite_success_controls(dispositions)
+        with installed_base_callbacks():
+            base.execute()
+            dispositions = [
+                promote_disposition(
+                    CACHE / "discovery_dispositions.json",
+                    OUTPUT / "discovery_dispositions.json.gz",
+                ),
+                promote_disposition(
+                    CACHE / "reproduction_dispositions.json",
+                    OUTPUT / "reproduction_dispositions.json.gz",
+                ),
+            ]
+            _rewrite_success_controls(dispositions)
     except BaseException as exc:
         _write_failure(exc)
         raise

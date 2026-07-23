@@ -1,0 +1,116 @@
+schemaVersion: e07.s10c.callback-binding-qualification.v1
+researchStepId: S10C
+title: Qualify installed preflight-callback binding
+registeredDateUtc: "2026-07-23"
+scope: bounded_outcome_free_remediation
+
+immutablePredecessors:
+  s10p:
+    path: /artifacts/research_steps/S10P
+    treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704
+    fileCount: 26
+    totalBytes: 1536426
+  failedS10:
+    path: /artifacts/research_steps/S10
+    treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40
+    fileCount: 18
+    totalBytes: 61921
+  s10a:
+    path: /artifacts/research_steps/S10A
+    treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd
+    fileCount: 27
+    totalBytes: 202875
+  s10b:
+    path: /artifacts/research_steps/S10B
+    treeSha256: 0968c06f19b488795efe7ce99bfbc50cfc1bff2e91102a2c7fbbff40891dcd16
+    fileCount: 17
+    totalBytes: 75692
+
+prospectiveInputs:
+  researchPlan:
+    path: /workspace/RESEARCH_PLAN.md
+    sha256AfterS10CRegistration: 018a516f4221d9dce4fdc266ff4da5b2bded944b8ea60facaf63eb29fb8afb5d
+  fullPlan:
+    path: /workspace/FULL_PLAN.md
+    sha256: e216205732cf5712e3478f1e427b40b577a58b63d9e2956ffbd93ed14394699a
+  agents:
+    path: /workspace/AGENTS.md
+    sha256: 121c7906f1eee37791cc9c11c9c226a1478d86b7e35123f9439c66a6daa0e920
+  attachmentManifest:
+    path: /workspace/input-attachments/MANIFEST.json
+    sha256: ed788c1187c3f03d936993a26003d5a9e4d0d836bb0b020178f8fa44b16a9463
+  s10bWrapperBeforeRepair:
+    path: /workspace/cell-research/scripts/run_native_event_discovery_s10b.py
+    sha256: 5e5fd6f25e989a8f7d412fc0932a8618dc9e3bb2667186af212e0077be28d9e1
+  s10bFocusedTestBeforeRepair:
+    path: /workspace/cell-research/tests/test_s10b_fresh_execution.py
+    sha256: ae1877241f3ec0606c59b5371b7391e6a9b3b451357fd942ab8a2c79b063b85d
+  s10aAccountingCore:
+    path: /workspace/cell-research/src/phenotype_discovery/accounting.py
+    sha256: 32c7ebd5e68097aa42f229840da6315c547d0940b0ffd2eb3aa82bd74a264c20
+  s10aNativeFeaturesCore:
+    path: /workspace/cell-research/src/phenotype_discovery/native_features.py
+    sha256: d177b18276b6fec5f4d354795981dd1b77c5121b05835f0ca534b05f8784d59d
+  s10aSearchCore:
+    path: /workspace/cell-research/src/phenotype_discovery/search.py
+    sha256: c67ebd4f5e7a1e57f5e84f0a84346b2c9286c15075c1212bf760373d8fba71a2
+
+repair:
+  scientificDesignChange: forbidden
+  captureOriginalBeforeInstallation: required
+  installedTargetIdentityCheck: required
+  conflictPolicy: fail_closed_before_overwrite
+  repeatedInstallationPolicy: idempotent_nested_with_exact_restoration
+  exceptionPolicy: propagate_original_exception_and_restore
+  mutableBaseStateRestoration: required
+  callbacks:
+    - revalidate_frozen_inputs
+    - prospective_freeze
+    - reviewer_instructions
+    - report_markdown
+    - manifest_for_output
+
+qualification:
+  actualInstalledDispatch: required
+  originalInvocationCountPerDispatch: 1
+  noSelfReferenceOrRecursion: required
+  cases:
+    - normal_installed_preflight_dispatch
+    - normal_installed_freeze_dispatch
+    - nested_repeated_installation
+    - preexisting_wrapper_conflict
+    - self_reference_target
+    - installed_callback_replacement
+    - original_exception_propagation
+    - restoration_after_success
+    - restoration_after_exception
+  structuralCommitments:
+    gateIds: [G01, G02, G03, G04, G05, G06, G07, G08]
+    bindingRows: 28
+    logicalReservations: 10752
+    physicalReplayCommitments: 21504
+  replayOrders:
+    - natural
+    - reverse
+
+authorization:
+  evidence: structural_metadata_and_outcome_independent_fixtures_only
+  frozenEpisodesSubmitted: 0
+  phenotypeFits: 0
+  reproductionRows: 0
+  humanAnnotations: 0
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  failedOrQuarantineOutcomeReads: 0
+  failedOrQuarantineCacheReads: 0
+  s10bCacheRetryOrReuse: forbidden
+  freshExecutionNamespaceCreation: forbidden
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  archiveMutations: 0
+  s11Rows: 0
+
+completionRule:
+  allQualificationChecksMustPass: true
+  anyFailure: stop_fail_closed
+  nextAction: hand_back_for_separate_fresh_namespace_decision
