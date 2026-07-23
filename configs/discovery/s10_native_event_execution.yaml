@@ -1,0 +1,57 @@
+schemaVersion: e07.s10.native-event-execution.v1
+researchStepId: S10
+title: Search broadly for unanticipated behavior
+scientificProtocol:
+  path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml
+  sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd
+featureRegistry:
+  path: /artifacts/research_steps/S10P/native_event_feature_registry.json
+  sha256: a2507549c7871de709490ed4d50a17118a4968ccb878d454a3156e48979beb55
+methodRegistry:
+  path: /artifacts/research_steps/S10P/method_registry.json
+  sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6
+candidatePopulation:
+  path: /artifacts/research_steps/S10P/candidate_population.jsonl
+  sha256: 6ad286757a846ea959d720ccbe1a91dc7ce6b277c97b736b377b072edaa126d8
+logicalRoster:
+  path: /artifacts/research_steps/S10P/s10_logical_roster.parquet
+  sha256: b29828a90cdeb9c7be56510a237e10d77e38398a6f19530f75958a3abb088621
+eligibilityGate:
+  path: /artifacts/research_steps/S10P/s10_eligibility_gate.json
+  sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef
+preregistrationFreeze:
+  path: /artifacts/research_steps/S10P/preregistration_freeze.json
+  sha256: b057e5867ab1a86af2461e6b7c1f3998bc4cfa6ec0a6a74527143c500ea37556
+execution:
+  split: train
+  workers: 8
+  numericThreadsPerWorker: 1
+  discoveryLogicalRows: 7168
+  independentReproductionLogicalRows: 3584
+  totalLogicalRows: 10752
+  exactReplayExecutionsPerLogicalRow: 2
+  discoveryMustHashLockBeforeReproduction: true
+  runtimeDrivenWeakening: forbidden
+  failAtomicByPhase: true
+  cacheNamespace: /cache/e07-s10
+analysisOperationalization:
+  note: >-
+    This file adds no scientific method or threshold. It only fixes deterministic
+    implementation details needed to execute the byte-frozen S10P registries.
+  configurationProfileAggregation: coordinatewise_median
+  bootstrapClusterJaccard: minimum_best_matched_set_Jaccard
+  clusterNullStatistic: maximum_over_frozen_k_grid_per_null_replicate
+  anomalyDirection: higher_negative_IsolationForest_score_is_more_anomalous
+  changePointWindow: plus_or_minus_one_transition
+  deterministicTieBreak: canonical_hash_then_lexical_id
+  discoveryLockRequiredBeforeReproduction: true
+  reproductionRefit: forbidden
+protectedBoundary:
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  quarantineOutcomeOrCacheReads: 0
+  completeTrajectoryReconstructions: 0
+  universalNoveltyScores: 0
+  archiveMutations: 0
