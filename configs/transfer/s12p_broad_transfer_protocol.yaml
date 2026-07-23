@@ -1,0 +1,416 @@
+schemaVersion: e07.s12p.broad-transfer-protocol.v1
+researchStepId: S12P
+title: Preregister broad transfer after phenotype-branch closure
+frozenQuestion: >-
+  Do the seven S09 parent/compressed spatial lineages define an S11-independent
+  transfer population, and what outcome-independent native spatial protocol
+  would be required to test zero-shot and bounded light adaptation without
+  changing E06 semantics or opening protected outcomes?
+
+authorizationBoundary:
+  designOnly: true
+  allowedEvidence:
+    - schemas
+    - native_contracts
+    - structural_metadata
+    - immutable_candidate_and_comparator_identities
+    - published_step_status_and_integrity_metadata
+    - outcome_independent_synthetic_fixtures
+  transferEpisodes: 0
+  civicSimulationRows: 0
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  humanAnnotations: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  quarantinedOutcomeOrCacheReads: 0
+  archiveMutations: 0
+  s13OrS14Work: 0
+
+phenotypeBranchClosure:
+  s10hClassification: valid_bounded_machine_null_on_evidentiary_slots
+  infeasibleSlots: non_evidentiary_not_nulls
+  uncorrectedCandidatePromotion: forbidden
+  infeasibleSlotPromotion: forbidden
+  independentlyReproducedCandidateCount: 0
+  s11Disposition: closed_not_run_no_eligible_machine_candidate
+  s12DependenceOnS11: none
+  rationale: >-
+    Transfer units were frozen by S08M eligibility and S09 parent/compression
+    identity before S10; no phenotype label, machine candidate, annotation, or
+    S11 result enters population membership, adaptation, estimation, or gates.
+
+candidatePopulation:
+  unit: s09_parent_compressed_lineage
+  lineageCount: 7
+  configurationsPerLineage: 2
+  configurationCount: 14
+  roles: [s08m_parent, s09_compressed]
+  sourceTasks:
+    e07_s02_spatial2d_local: 2
+    e07_s02_spatial2d_memory: 5
+  executionTasks:
+    - e07_s02_spatial2d_local
+    - e07_s02_spatial2d_memory
+  crossSpatialBinding: required_for_every_configuration
+  inclusionUses:
+    - s08m_s09_eligibility_gate
+    - s09_structural_parent_compression_pair
+  inclusionDoesNotUse:
+    - s09_ablation_effect_size
+    - s09_cross_task_regression_result
+    - s10_or_s10h_feature_value
+    - s10_machine_candidate
+    - s11_label_or_annotation
+    - s07_allocation_arm
+    - s06_or_s06a_model_or_embedding
+  otherPredecessorTasks:
+    eligibility: excluded
+    reason: >-
+      The 14 configurations use spatial2d.v1 actions and candidate surfaces.
+      E01-E05 use one-dimensional actions, clocks, targets, failures, and costs;
+      rebinding would change the estimand rather than measure transfer.
+
+compatibility:
+  nativeCarrier: spatial2d.v1
+  nativeTasks:
+    - taskId: e07_s02_spatial2d_local
+      status: compatible_pending_binding_qualification
+      nativeClock: synchronous_graph_transition_with_four_actor_slots
+      nativeBudget: {graphTransitions: 32, actorSlotsPerTransition: 4}
+    - taskId: e07_s02_spatial2d_memory
+      status: compatible_pending_binding_qualification
+      nativeClock: synchronous_graph_transition_with_four_actor_slots
+      nativeBudget: {graphTransitions: 32, actorSlotsPerTransition: 4}
+  targets:
+    - targetId: task_native_reference
+      status: compatible_control
+      taskMapping:
+        e07_s02_spatial2d_local: stripes_alternating_three_band
+        e07_s02_spatial2d_memory: layers_three_ordered_tissues
+    - targetId: bilateral_lobes_with_midline
+      status: compatible_pending_target_grammar_and_endpoint_qualification
+    - targetId: tissue_single_hole
+      status: compatible_pending_boundary_signal_and_endpoint_qualification
+    - targetId: tissue_two_holes
+      status: compatible_pending_boundary_signal_and_endpoint_qualification
+    - targetId: ring_core_shell_translatable
+      status: excluded_reserved_S14_confirmation
+    - targetId: separated_paired_regions
+      status: excluded_reserved_S14_confirmation
+  sizesAndTopologies:
+    - fixtureId: canonical_target_domain
+      status: compatible_subject_to_target_specific_contract
+      endpointScope: calibrated_conjunctive_endpoint_only_where_E06_contract_allows
+    - fixtureId: larger_square_layers_15x15
+      status: diagnostic_only_pending_topology_specific_completion_calibration
+      endpointScope: native_morphometrics_and_costs_no_formation_or_repair
+    - fixtureId: irregular_pruned_layers_9x9
+      status: diagnostic_only_pending_topology_specific_completion_calibration
+      endpointScope: native_morphometrics_and_costs_no_formation_or_repair
+  faults:
+    compatibleUnseenFamilies: []
+    excluded:
+      - family: E01_E02_passive_stuck_action_failure_and_retry
+        reason: one_dimensional_identity_and_scheduler_contract
+      - family: E05_dynamic_movement_faults
+        reason: one_dimensional_phase_and_target_contract
+    nativePerturbationControls:
+      - one_swap_displacement_diagnostic
+    claimBoundary: >-
+      A one-swap displacement is a native E06 perturbation, not a portable fault
+      model. No fault-transfer estimand exists until a spatial fault contract is
+      separately frozen and qualified.
+  schedulers:
+    compatibleUnseenFamilies: []
+    nativeControl: E06_state_blind_identity_hash_batch4
+    seedVariationClaim: within_scheduler_scenario_variation_only
+    excluded:
+      - E02_deterministic_scan
+      - E02_uniform_random_activation
+      - E02_random_permutation_sweep
+      - E02_synchronous_batch_deterministic_conflict
+      - E02_fair_adversarial
+    claimBoundary: >-
+      E02 schedulers own a one-dimensional actor-opportunity contract and cannot
+      be imported into E06. No scheduler-family transfer claim is eligible.
+
+transferPanels:
+  - panelId: native_reference_control
+    targetId: task_native_reference
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    inferentialRole: calibration_control
+    endpointMode: calibrated_task_native
+  - panelId: unseen_target_bilateral
+    targetId: bilateral_lobes_with_midline
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    inferentialRole: single_axis_target
+    endpointMode: pending_qualification
+  - panelId: unseen_target_single_hole
+    targetId: tissue_single_hole
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    inferentialRole: single_axis_target
+    endpointMode: pending_qualification
+  - panelId: unseen_target_two_holes
+    targetId: tissue_two_holes
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    inferentialRole: single_axis_target
+    endpointMode: pending_qualification
+  - panelId: unseen_size_layers_15x15
+    targetId: layers_three_ordered_tissues
+    fixtureId: larger_square_layers_15x15
+    challengeId: exact_reference_retention
+    inferentialRole: size_diagnostic
+    endpointMode: diagnostic_only
+  - panelId: unseen_topology_irregular_layers_9x9
+    targetId: layers_three_ordered_tissues
+    fixtureId: irregular_pruned_layers_9x9
+    challengeId: exact_reference_retention
+    inferentialRole: topology_diagnostic
+    endpointMode: diagnostic_only
+  - panelId: displacement_native_target
+    targetId: task_native_reference
+    fixtureId: canonical_target_domain
+    challengeId: one_swap_displacement_diagnostic
+    inferentialRole: native_perturbation_not_fault
+    endpointMode: calibrated_task_native_if_qualification_passes
+  - panelId: combined_size_displacement
+    targetId: layers_three_ordered_tissues
+    fixtureId: larger_square_layers_15x15
+    challengeId: one_swap_displacement_diagnostic
+    inferentialRole: combined_diagnostic_not_fault
+    endpointMode: diagnostic_only
+
+conditions:
+  zeroShot:
+    policyAndPortfolioBytes: exact_frozen_configuration
+    memberSetChanges: forbidden
+    memberRuleChanges: forbidden
+    selectorChanges: forbidden
+    memoryChanges: forbidden
+    signalOrCommunicationChanges: forbidden
+    targetOutcomeAccess: 0
+  lightAdaptation:
+    purpose: bounded_selector_or_assignment_recalibration
+    developmentPartitionOnly: true
+    permittedEdits:
+      fixed_balanced_identity:
+        assignmentRotation: every_existing_member_rotation
+      environment_conditioned:
+        selectorVariants: [original, exact_true_false_branch_swap]
+      allModes:
+        noMemberRuleMemoryObservationSignalCommunicationOrCostChange: true
+    selection:
+      stratum: configuration_by_execution_task_by_transfer_panel
+      rule: >-
+        lexicographic task-native endpoint rule with failure/censor and cost
+        gates, then lowest stable adaptation-variant hash
+      noUniversalScore: true
+    lockBeforeTransferEvaluation: required
+    zeroShotRemainsReportedSeparately: true
+    claimBoundary: bounded_train_only_recalibration_not_learning_or_revealed_preference
+
+baselines:
+  parentCompressed:
+    comparison: paired_within_lineage_on_identical_scenario_family
+  componentSingles:
+    source: S08M_frozen_comparison_registry_for_each_parent
+    reservationSemantics: lineage_specific_even_when_physical_configuration_repeats
+  matchedRandom:
+    source: S08M_frozen_matched_random_configuration_for_each_parent
+    preserveModeAndCosts: true
+  native:
+    e07_s02_spatial2d_local: spatial_greedy_local_native_v1
+    e07_s02_spatial2d_memory: spatial_memory_local_native_v1
+  sham:
+    role: identical_configuration_replay
+    purpose: identity_replay_and_dispatch_control_only
+  noPhenotypeOrS11Baseline: true
+
+scenarioPartitions:
+  assignmentUsesOutcomes: false
+  familyIdentity: sha256_of_partition_task_panel_and_ordinal
+  adaptationDevelopment:
+    split: new_S12_training_only
+    ordinals: [0, 15]
+    familiesPerTaskPanel: 16
+    outcomeAccess: only_after_future_S12_authorization
+    allowedUse: adaptation_variant_selection_and_adapter_diagnostics
+  transferEvaluation:
+    split: new_S12_post_lock_evaluation
+    ordinals: [1000, 1063]
+    familiesPerTaskPanel: 64
+    outcomeAccess: sealed_until_candidate_adapter_and_adaptation_locks_pass
+    allowedUse: frozen_transfer_estimands_only
+  confirmation:
+    split: S02_and_E06_confirmation
+    scenarioPayloadsMaterialized: false
+    outcomeAccess: sealed_for_S14
+    optimizationUse: forbidden
+    targetIds:
+      - ring_core_shell_translatable
+      - separated_paired_regions
+  overlap: forbidden
+  coupling:
+    withinTaskPanelOrdinal: all_candidates_conditions_and_baselines
+    parentCompressed: exact_scenario_family_pairing
+    acrossTask: no_common_random_number_claim
+    acrossSchedulerFamily: not_applicable
+
+budgets:
+  panelCount: 8
+  taskCount: 2
+  adaptationVariantCount: 30
+  adaptationDevelopmentLogical: 7680
+  zeroShotEvaluationLogical: 14336
+  adaptedEvaluationLogical: 14336
+  matchedRandomEvaluationLogical: 7168
+  componentSingleEvaluationLogical: 20480
+  nativeBaselineEvaluationLogical: 1024
+  totalLogical: 65024
+  exactReplayPerLogical: 1
+  totalPhysicalIncludingReplay: 130048
+  smoke:
+    stage1ZeroShotBindings: 28
+    stage2PostAdaptationLock: 28
+    totalLogical: 56
+    subsetOfDeclaredBudget: true
+  graphTransitionsPerEpisode: 32
+  actorSlotsPerTransition: 4
+  runtimeDrivenWeakening: forbidden
+  firstIntegrityFailure: fail_atomic_stop_no_scientific_publication
+
+estimands:
+  universalScore: null
+  revealedPreferenceClaim: forbidden
+  analysisPopulation: all_reserved_rows_including_failures_and_censors
+  primary:
+    - id: parent_vs_compressed_completion_or_native_endpoint
+      scope: each_task_panel_condition
+      contrast: compressed_minus_parent
+      pairing: lineage_scenario_family
+    - id: zero_shot_vs_light_adaptation
+      scope: each_configuration_task_panel
+      contrast: adapted_minus_zero_shot
+      pairing: configuration_scenario_family
+    - id: candidate_vs_matched_random
+      scope: each_parent_lineage_task_panel_condition
+      contrast: candidate_minus_frozen_matched_random
+      pairing: scenario_family
+  endpoints:
+    calibratedTaskNative:
+      - conjunctive_S02_local_S01_global_completion_when_contract_valid
+      - image_distance_modulo_equivalence
+      - component_counts
+      - holes
+      - endpoint_time_with_right_censor
+    diagnostics:
+      - grammar_satisfaction
+      - categorical_earth_movers_distance
+      - boundary_length
+      - region_purity
+      - symmetry
+      - task_native_event_and_state_hash_summaries
+    costs:
+      - E06_movement_fields_separate
+      - E06_observation_fields_separate
+      - E06_channel_fields_separate
+      - portfolio_assignment_and_switching_separate
+      - persistent_memory_bits_separate
+      - configuration_bits_charged_once_unamortized
+  failureCensor:
+    retainAll: true
+    invariantError: failure
+    nativeBudgetNoncompletion: right_censor_only_when_calibrated_endpoint_exists
+    diagnosticOnlyPanel: no_completion_event_or_time_imputation
+    competingStatuses: never_relabel_drop_or_promote
+
+inference:
+  confidenceLevel: 0.95
+  scenarioFamilyBootstrapReplicates: 2000
+  bootstrapUnit: paired_scenario_family
+  effectScale:
+    binary: paired_risk_difference
+    continuous: paired_native_difference_and_Hodges_Lehmann_sensitivity
+    censoredTime: restricted_native_transition_difference_at_32
+  multiplicity:
+    method: Holm
+    alpha: 0.05
+    fixedFamilies:
+      - parent_compressed_by_task_panel_condition_primary_endpoint
+      - adaptation_by_task_panel_primary_endpoint
+      - candidate_matched_random_by_task_panel_condition_primary_endpoint
+      - separate_failure_harm_family
+      - separate_cost_harm_family_per_native_cost_component
+    diagnosticPanels: descriptive_precision_intervals_no_promotion
+    infeasibleTests: retained_as_non_evidentiary_raw_p_1
+    observedFamilyShrinkage: forbidden
+  supportiveRule: >-
+    At least one lineage passes a calibrated zero-shot single-axis target panel
+    and the displacement panel versus its frozen parent/comparators after Holm,
+    with no adjusted failure or native-cost harm; diagnostic size/topology
+    panels cannot satisfy this rule.
+  nullRule: >-
+    All required gates pass but no lineage satisfies the supportive rule and no
+    adjusted harm is found; infeasible axes are excluded from the null claim.
+  constrainingRule: >-
+    Any native-contract/access/accounting failure, adjusted harm, or inability
+    to define a requested transfer axis without changing semantics.
+
+leakageAndDependencyControls:
+  validationAndConfirmationAtS12P: sealed
+  s14ConfirmationTargetsAtS12: sealed
+  prohibited:
+    - S06_models_or_embeddings
+    - S06A_models_or_embeddings
+    - S07_allocation_arm_signals
+    - S10_candidate_or_feature_values_for_population_or_tuning
+    - S11_labels_or_annotations
+    - quarantined_cache_or_outcome_rows
+    - universal_normalized_reward
+    - civic_simulation
+  accessDenialBeforeMaterialization: required
+  candidateAndAdaptationLocksBeforeEvaluation: required
+
+executionGate:
+  failClosed: true
+  rows:
+    G01: immutable_inputs_and_predecessor_publications_unchanged
+    G02: S10H_valid_bounded_null_and_S10_S11_branch_closed_without_promotion
+    G03: exact_seven_lineages_fourteen_configurations_and_comparator_lock
+    G04: every_configuration_binds_to_both_native_spatial_tasks
+    G05: every_target_boundary_signal_and_endpoint_contract_qualified
+    G06: requested_fault_transfer_has_an_authoritative_E06_native_contract
+    G07: requested_scheduler_transfer_has_an_authoritative_E06_native_contract
+    G08: size_and_topology_endpoint_scope_is_qualified_and_not_overclaimed
+    G09: scenario_partitions_access_denial_dependencies_and_candidate_locks_pass
+    G10: exact_roster_budget_identity_replay_and_fail_atomic_publication_qualified
+  currentDisposition:
+    G01: pass
+    G02: pass
+    G03: pass
+    G04: pending_outcome_free_binding_qualification
+    G05: pending_outcome_free_target_and_boundary_qualification
+    G06: fail_no_compatible_unseen_spatial_fault_contract
+    G07: fail_no_compatible_unseen_spatial_scheduler_family_contract
+    G08: pending_diagnostic_endpoint_qualification
+    G09: pass_design_layer
+    G10: pass_structural_roster_pending_runtime_qualification
+  substantiveS12Authorized: false
+  nextRequiredStep: >-
+    Human review of the compatibility constraint, followed only if approved by
+    an outcome-free S12A native spatial transfer-adapter/fault/scheduler
+    qualification. Do not execute a narrowed transfer silently.
+
+claimBoundary:
+  - transfer_is_simulator_internal_and_task_local
+  - S11_independence_does_not_imply_cross_semantic_portability
+  - diagnostic_size_or_topology_results_are_not_completion_or_repair
+  - one_swap_displacement_is_not_a_fault_family
+  - schedule_seed_variation_is_not_scheduler_family_transfer
+  - no_universal_score_revealed_preference_biological_morphology_agency_or_civic_claim
+  - confirmation_remains_reserved_for_S14
