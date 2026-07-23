@@ -47,6 +47,9 @@ from src.phenotype_discovery.search import (
     serializable_discovery_lock,
     sha256_file,
 )
+from src.phenotype_discovery.native_features import (
+    validate_feature_availability_record,
+)
 
 
 OUTPUT = ARTIFACT_ROOT / "S10"
@@ -109,6 +112,28 @@ def write_cache_rows(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
                 )
                 + "\n"
             )
+
+
+def availability_integrity(row: Mapping[str, Any]) -> bool:
+    """Validate the complete feature-availability plane without imputation."""
+
+    try:
+        summary = validate_feature_availability_record(
+            {
+                "taskId": row["taskId"],
+                "analysisFeatures": row["analysisFeatures"],
+                "availability": row["availability"],
+            },
+            expected_task_id=str(row["taskId"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+    return bool(
+        summary["registeredFeatureCount"] == 18
+        and summary["observedFeatureCount"] + summary["unavailableFeatureCount"] == 18
+        and summary["imputedFeatureCount"] == 0
+        and summary["silentDropCount"] == 0
+    )
 
 
 def directory_digest(path: Path) -> str:
@@ -902,8 +927,11 @@ def execute() -> None:
             "nativeContractPassRows": sum(
                 row["nativeContractPass"] for row in all_rows
             ),
-            "featureCountPerRow": sorted(
+            "observedFeatureCountPerRow": sorted(
                 set(len(row["analysisFeatures"]) for row in all_rows)
+            ),
+            "availabilityPlaneCountPerRow": sorted(
+                set(len(row["availability"]) for row in all_rows)
             ),
             "orderedTransitionCountPerRow": sorted(
                 set(len(row["orderedEventSeries"]["proposalCount"]) for row in all_rows)
@@ -913,7 +941,7 @@ def execute() -> None:
             "pass": all(
                 row["replayPass"]
                 and row["nativeContractPass"]
-                and len(row["analysisFeatures"]) == 18
+                and availability_integrity(row)
                 and len(row["orderedEventSeries"]["proposalCount"]) == 32
                 for row in all_rows
             ),
@@ -948,7 +976,9 @@ def execute() -> None:
         "G01_preflightHashes": preflight["allPass"],
         "G02_exactAccounting": len(all_rows) == 10752,
         "G03_featureAndOrderedSupport": all(
-            len(row["analysisFeatures"]) == 18 for row in all_rows
+            availability_integrity(row)
+            and len(row["orderedEventSeries"]["proposalCount"]) == 32
+            for row in all_rows
         ),
         "G04_missingnessStatusConfounds": all(
             audit["pass"] for audit in catalog["results"]["confounds"].values()

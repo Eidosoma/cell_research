@@ -1,0 +1,114 @@
+schemaVersion: e07.s10b.fresh-native-event-execution.v1
+researchStepId: S10B
+title: Fresh S10 execution after S10A
+continuationOf:
+  scientificDesign: S10P
+  remediatedExecutionContract: S10A
+  failedHistoricalExecution: S10
+
+immutableInputs:
+  s10pTree:
+    path: /artifacts/research_steps/S10P
+    treeSha256: 541a0ecb17c8bcc2df498a935d075c8df5eab7509c80d5f591e60c152d6fd704
+  failedS10Tree:
+    path: /artifacts/research_steps/S10
+    treeSha256: 20b8869c7892107357df401fea816a0a95ccbb7125372d5fb7492dc5c8502c40
+  s10aTree:
+    path: /artifacts/research_steps/S10A
+    treeSha256: c40264a5109a0565c7c363341f806740255ac91425c2879d8f52f0d6401558cd
+  scientificProtocol:
+    path: /artifacts/research_steps/S10P/s10p_native_event_protocol.yaml
+    sha256: fbf6f7d3645ac901c3d93e378a7118bf5a2262902b0428451840d7b8dbd276dd
+  featureRegistry:
+    path: /artifacts/research_steps/S10P/native_event_feature_registry.json
+    sha256: a2507549c7871de709490ed4d50a17118a4968ccb878d454a3156e48979beb55
+  methodRegistry:
+    path: /artifacts/research_steps/S10P/method_registry.json
+    sha256: ec37a2965192d5edf882e3ba0c482931c79aa45ab2e4d2a6a70611f244b23ad6
+  candidatePopulation:
+    path: /artifacts/research_steps/S10P/candidate_population.jsonl
+    sha256: 6ad286757a846ea959d720ccbe1a91dc7ce6b277c97b736b377b072edaa126d8
+  logicalRoster:
+    path: /artifacts/research_steps/S10P/s10_logical_roster.parquet
+    sha256: b29828a90cdeb9c7be56510a237e10d77e38398a6f19530f75958a3abb088621
+  eligibilityGate:
+    path: /artifacts/research_steps/S10P/s10_eligibility_gate.json
+    sha256: 1614ed88526073fea8d40d395dc70b4bf42831ddb9668d0b2acab397bca7c4ef
+  s10aFreshExecutionGate:
+    path: /artifacts/research_steps/S10A/fresh_s10_execution_gate.json
+    sha256: 2a3e490b5eeec0d6fe5a7ccd714fe7ee854fb452002a53de866f5afe17bf2902
+
+authorization:
+  separateFreshExecutionApprovalReceived: true
+  split: train
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  humanAnnotations: 0
+  s11Rows: 0
+  failedS10CacheReads: 0
+  failedS10OutcomeRowsReused: 0
+  quarantineOutcomeOrCacheReads: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  completeTrajectoryReconstructions: 0
+  universalNoveltyScores: 0
+  archiveMutations: 0
+
+execution:
+  outputDirectory: /artifacts/research_steps/S10B
+  cacheNamespace: /cache/e07-s10b
+  failedCacheNamespace:
+    path: /cache/e07-s10
+    access: prohibited
+  workers: 8
+  numericThreadsPerWorker: 1
+  discoveryLogicalRows: 7168
+  independentReproductionLogicalRows: 3584
+  totalLogicalRows: 10752
+  physicalReplaysPerLogicalRow: 2
+  totalPhysicalReplays: 21504
+  failAtomicByPhase: true
+  completePositionIndexedDispositions: true
+  discoveryLockBeforeReproduction: true
+  runtimeDrivenWeakening: forbidden
+
+missingness:
+  explicitUnavailableStateAndReasonRequired: true
+  imputation: forbidden
+  silentDrop: forbidden
+  supportUnit: task_id_by_native_status_stratum
+  minimumAvailability: 0.90
+  comparison: greater_than_or_equal
+  minimumEligibleAnalysisFeatures: 5
+  availabilityAsPhenotype: forbidden
+
+scientificDesign:
+  population: unchanged_from_S10P
+  estimands: unchanged_from_S10P
+  methodsAndHyperparameters: unchanged_from_S10P
+  thresholds: unchanged_from_S10P
+  nullAndMultiplicity: unchanged_from_S10P
+  independentReproduction: unchanged_from_S10P
+  traceSelectionAndCensoring: unchanged_from_S10P
+  externalReview:
+    boundary: after_machine_reproduction_lock
+    packetOnlyIfReached: true
+    reviewerInstructionsOnlyIfReached: true
+    annotationsMustRemainEmpty: true
+  claimBoundaries: unchanged_from_S10P
+
+failureRule:
+  failClosedOn:
+    - immutable_hash_mismatch
+    - gate_failure
+    - binding_failure
+    - protected_access
+    - prohibited_dependency
+    - identity_failure
+    - feature_contract_failure
+    - replay_mismatch
+    - accounting_failure
+    - native_contract_failure
+  publishScientificRowsOnFailure: false
+  preserveCompleteForensicDispositions: true
+  stopBeforeS11: true
