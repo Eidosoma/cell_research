@@ -1,0 +1,115 @@
+schemaVersion: e07.s12u.execution-control.v1
+researchStepId: S12U
+title: Fresh execution of the byte-frozen S12R replacement study after S12T
+registeredDateUtc: "2026-07-28"
+
+historicalRelationship:
+  executesS12RReplacementEstimand: true
+  executesS12P: false
+  executesS12A: false
+  executesOriginalS12Estimand: false
+  amendsOrNarrowsS12R: false
+  patchesResumesOrRetriesS12S: false
+
+freshness:
+  executionNamespace: e07-s12u
+  cacheNamespace: /cache/e07-s12u
+  artifactNamespace: /artifacts/research_steps/S12U
+  preRegistrationRepositoryHead: 2f0c3753380796f3f4d4ea520d777235cd325ce0
+  preRegistrationRepositoryTree: 5e87c5e78e3b0b79c23d8cf708270b9733d71534
+  preRegistrationRemoteHead: 72f412445e362d403dd88dda165cbb7502c2e8ad
+  priorAttemptReuse: forbidden
+  predecessorOutcomeOrCacheReads: forbidden
+  requireNoPriorFilesystemMentionAtProspectiveRegistration: true
+  requireNoPriorGitHistoryMentionAtProspectiveRegistration: true
+
+frozenS12R:
+  protocolSha256: aefa8d4bfc56776df69cc45de26bc38e1d7cbda563c0713441e24b658998d85a
+  preregistrationFreezeSha256: b7ff300c0eff455d29bad5c0bf64a9992a84b9ca63e5cab95991c6114550e79e
+  artifactManifestSha256: e16f8d1ac56645756146e350b19d430e1bbe6bfcc12c9cffbdf11f3afb4b5762
+  logicalRosterFileSha256: 888b06524e24dcbf84cce6ca0e44ad3edd5a39e974a45d6a7a091bae9582c158
+  physicalCommitmentFileSha256: eccc33f134f871ed6643d8b3e95ae13ccfb87af7531e507435c1ebf67e23b7b6
+  logicalRosterSemanticSha256: 58c5af390888da6eda90e9069a749707fefe07c515946d37f009365bb07e9d71
+  physicalPlanSemanticSha256: cb8a2ccf97aa45935ee2d58dba934e2728a40f4b9a274d52f04305e1a8f2f55c
+  candidateLockSha256: 1af21d999091a1bd9d46615c367d40ce5efb005e8ccf78e6e145c4d968150839
+  gates: [G01, G02, G03, G04, G05, G06, G07, G08, G09, G10]
+  lineageCount: 7
+  configurationCount: 14
+  adaptationVariantCount: 30
+  replacementComparatorCount: 2
+  taskConditionCellCount: 48
+  scenarioFamilyCount: 3840
+  logicalReservationCount: 195072
+  physicalReplayCommitmentCount: 390144
+  graphTransitionsPerEpisode: 32
+  actorSlotsPerTransition: 4
+
+frozenS12T:
+  protocolSha256: 60d51fc7891ee160832525812064f51c16de126a1cebf65202e3a957e186ffbc
+  registrySha256: 04f2669b2e84193fefdaf545165e66dec367d6ba3ef9ebbceb3c0dc1f450ef37
+  preregistrationFreezeSha256: ae616d0cd72672d65cad0c92f3cc133b3dbdba0dfaee97a2916ccdc2057891a8
+  implementationSha256: 590a177ed5bc0e5f1707701f8e98c35e66230985434a93268f6a1e8bbb5b4a6d
+  executionReviewGateSha256: b4c0a84bebddf9ed5c3a9021769d999272f85591a761744e22ee0f6aaa9a2cb1
+  artifactManifestSha256: 7f2201daac2f73efcc00279773ec840dd01947fc7de2700306c2ed3f8f377ac2
+  exactImplementationRequired: true
+  staticImportGraphRequired: true
+  runtimeModuleProvenanceRequired: true
+  authenticatedPathOpenLedgerRequired: true
+  authenticatedCacheLedgerRequired: true
+  authenticatedSignalLedgerRequired: true
+  installOnEveryWorkerDispatch: true
+  unresolvedOrMissingEvidence: fail_closed
+
+outputAccess:
+  baseDependencyPermissionsMayBeWidened: false
+  allowedReadWriteRoots:
+    - /cache/e07-s12u
+    - /artifacts/research_steps/S12U
+  pathNormalization: absolute_realpath_with_symlink_resolution_before_policy
+  everyEventAuthenticated: true
+  missingForgedOrDeniedEvent: fail_closed
+  purpose: >-
+    Authenticate only the newly authorized S12U cache and artifact writes.
+    All dependency inputs, imports, runtime origins, and protected signals
+    remain governed by the exact frozen S12T registry.
+
+adaptationLockImplementation:
+  population: S12R_development_only
+  diagnosticsUsedForSelection: false
+  universalScore: null
+  rule: >-
+    Compute separately named, direction-aligned means for every calibrated
+    task/panel/condition endpoint; retain the Pareto-nondominated variants for
+    each frozen base configuration; choose the lowest stable S12R variant hash
+    only when more than one variant remains nondominated.
+  tieBreak: lowest_stable_S12R_variant_hash
+  lockBeforePostLockTransfer: true
+
+execution:
+  workers: 8
+  exactReplaysPerLogical: 2
+  earlyStopping: forbidden
+  runtimeDrivenWeakening: forbidden
+  failuresCensorsAndUnavailableEndpointsRetained: true
+  universalOutcomeScore: null
+  scalarCrossFamilyCost: null
+  diagnosticPanelsPromotionEligible: false
+  firstIntegrityFailure: quarantine_attempt_and_publish_zero_scientific_outputs
+
+accessBoundary:
+  validationOutcomeRows: 0
+  confirmationOutcomeRows: 0
+  protectedOutcomeRows: 0
+  s14ReservePayloadMaterializations: 0
+  civicRows: 0
+  s13Rows: 0
+  s14Rows: 0
+  s06OrS06AArtifactLoads: 0
+  s07ArmSignalUses: 0
+
+publication:
+  registry: /artifacts/research_steps/S12R/future_publication_registry.json
+  artifactClassCount: 10
+  completeOrZero: true
+  singleAtomicCommit: true
+  scientificDestination: /artifacts/research_steps/S12U/scientific_publication
