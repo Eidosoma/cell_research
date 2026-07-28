@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "e07.s12t.dependency-registry.v1",
+  "researchStepId": "S12T",
+  "purpose": "Outcome-independent actual-use dependency control for a possible later, separately authorized S12R execution continuation.",
+  "precedence": [
+    "prohibited_module_or_path_or_signal",
+    "unresolved_dynamic_import_or_path",
+    "authenticated_exact_or_manifest_bound_evidence",
+    "permitted_repository_or_qualification_fixture",
+    "fail_closed"
+  ],
+  "modulePolicy": {
+    "allowPythonStandardLibrary": true,
+    "allowedThirdPartyTopLevels": [
+      "numpy",
+      "pandas",
+      "pyarrow",
+      "jsonschema",
+      "matplotlib",
+      "scipy",
+      "polars",
+      "torch",
+      "yaml"
+    ],
+    "allowedLocalTopLevels": [
+      "scripts",
+      "src"
+    ],
+    "prohibitedModulePrefixes": [
+      "src.allocation_redesign",
+      "src.non_surrogate_allocation",
+      "src.surrogate_models",
+      "src.surrogate_remediation"
+    ],
+    "unresolvedImportDisposition": "fail_closed",
+    "unresolvedDynamicImportDisposition": "fail_closed"
+  },
+  "pathPolicy": {
+    "allowedRepositoryRoots": [
+      "/workspace/cell-research"
+    ],
+    "allowedQualificationRoots": [
+      "/cache/e07-s12t-qualification",
+      "/artifacts/research_steps/S12T"
+    ],
+    "allowedEvidenceManifestFiles": [
+      "/artifacts/research_steps/S12R/artifact_manifest.json",
+      "/artifacts/research_steps/S12R/input_hash_freeze.json",
+      "/artifacts/research_steps/S12R/preregistration_freeze.json"
+    ],
+    "allowedExactStructuralFiles": [
+      "/workspace/AGENTS.md",
+      "/workspace/FULL_PLAN.md",
+      "/workspace/RESEARCH_PLAN.md",
+      "/workspace/PREVIOUS_ARTIFACTS.md",
+      "/workspace/PREVIOUS_ARTIFACTS.json",
+      "/workspace/input-attachments/MANIFEST.json",
+      "/workspace/input-attachments/21c2278b-9950-4e39-a2c8-df578a2508ec/_metadata/ATTACHMENT.md",
+      "/previous-artifacts/E01/research_steps/S03/transition_contract.json",
+      "/previous-artifacts/E02/research_steps/S04/scheduler_package/scheduler_contract.md",
+      "/previous-artifacts/E02/research_steps/S05/fault_package/fault_semantics_contract.md",
+      "/previous-artifacts/E03/research_steps/S14/e07_handoff.md",
+      "/previous-artifacts/E04/research_steps/S14/e06_e07_handoff.md",
+      "/previous-artifacts/E05/research_steps/S14/regeneration_benchmark/E07_HANDOFF.md",
+      "/previous-artifacts/E06/report_inputs/e07_handoff.md",
+      "/previous-artifacts/E06/research_steps/S03/environment_spec.md",
+      "/previous-artifacts/E06/research_steps/S04/movement_spec.md",
+      "/previous-artifacts/E06/research_steps/S05/policy_spec.md",
+      "/previous-artifacts/E06/research_steps/S06/control_channel_spec.md",
+      "/previous-artifacts/E06/research_steps/S07/engine_spec.md",
+      "/previous-artifacts/E06/research_steps/S10/frozen_perturbation_design.yaml",
+      "/previous-artifacts/E06/research_steps/S14/split_manifest.json"
+    ],
+    "prohibitedPathPrefixes": [
+      "/artifacts/research_steps/S06",
+      "/artifacts/research_steps/S06A",
+      "/artifacts/research_steps/S07",
+      "/artifacts/research_steps/S08C",
+      "/artifacts/research_steps/S08E",
+      "/artifacts/research_steps/S08G",
+      "/artifacts/research_steps/S08I",
+      "/artifacts/research_steps/S08K",
+      "/artifacts/research_steps/S10",
+      "/artifacts/research_steps/S10B",
+      "/artifacts/research_steps/S10D",
+      "/artifacts/research_steps/S10F",
+      "/artifacts/research_steps/S14",
+      "/cache/e07-s08",
+      "/cache/e07-s10",
+      "/cache/e07-s12r",
+      "/cache/e07-s12s"
+    ],
+    "pathNormalization": "absolute_realpath_with_symlink_resolution_before_policy",
+    "missingOrUnresolvedPathDisposition": "fail_closed"
+  },
+  "signalPolicy": {
+    "prohibitedSignalPrefixes": [
+      "S07.",
+      "validation.",
+      "confirmation.",
+      "protected.",
+      "S14."
+    ],
+    "missingSignalLedgerDisposition": "fail_closed"
+  },
+  "ledgerPolicy": {
+    "schemaVersion": "e07.s12t.authenticated-access-ledger.v1",
+    "eventHashDomain": "E07/S12T/access-event/v1",
+    "ledgerHashDomain": "E07/S12T/access-ledger/v1",
+    "authenticatorDomain": "E07/S12T/access-ledger-authenticator/v1",
+    "requireContiguousOrdinals": true,
+    "requireCanonicalSerialization": true,
+    "rejectMissingLedger": true,
+    "rejectForgedEvent": true,
+    "rejectForgedAuthenticator": true
+  },
+  "scientificBoundary": {
+    "qualificationOnly": true,
+    "transferEpisodes": 0,
+    "validationOutcomeReads": 0,
+    "confirmationOutcomeReads": 0,
+    "protectedOutcomeReads": 0,
+    "civicRows": 0,
+    "s13Rows": 0,
+    "s14Rows": 0,
+    "efficacyRowsPublished": 0,
+    "scientificExecutionNamespacesAuthorized": []
+  }
+}

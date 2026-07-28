@@ -1,0 +1,135 @@
+schemaVersion: e07.s12t.dependency-preflight-protocol.v1
+researchStepId: S12T
+title: Qualify the outcome-independent dependency preflight
+stepKind: outcome_free_design_implementation_and_qualification
+frozenQuestion: >-
+  Can the self-referential S12S literal scanner be replaced prospectively by
+  a fail-closed actual-use control that distinguishes harmless source text
+  from prohibited imports, loaded modules, opened paths, cache reads, and
+  S07/protected signal access without submitting a scientific episode?
+
+historicalBoundary:
+  preservesS12P: true
+  preservesS12A: true
+  preservesS12R: true
+  preservesS12S: true
+  patchesOrRetriesS12S: false
+  createsS12RScientificExecutionNamespace: false
+  authorizesLaterExecution: false
+  s12rRemainsDistinctLessHistoricallyAnchoredEstimand: true
+
+authorizationBoundary:
+  permittedEvidence:
+    - structural_metadata
+    - authoritative_native_contracts
+    - frozen_S12R_manifests_and_registries
+    - S12S_integrity_forensics
+    - dedicated_outcome_independent_synthetic_fixtures
+  transferEpisodes: 0
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  protectedOutcomeAccess: 0
+  civicSimulationRows: 0
+  s13Episodes: 0
+  s14Episodes: 0
+  scientificEfficacyRows: 0
+  scientificExecutionNamespaces: []
+  qualificationCache: /cache/e07-s12t-qualification
+
+dependencyControl:
+  registryPath: configs/transfer/s12t_dependency_registry.json
+  benignLiteralMentionsAreEvidence: false
+  static:
+    parseWithPythonAst: true
+    resolveDirectImports: true
+    resolveLocalImportGraph: true
+    detectIndirectForbiddenImports: true
+    detectImportlibAndBuiltinDynamicImports: true
+    detectAliasesAndSimpleWrapperDispatch: true
+    unresolvedDynamicTarget: fail_closed
+  runtime:
+    recordLoadedModuleNamesAndResolvedOrigins: true
+    inspectPreloadedAndNewModules: true
+    rejectForbiddenModuleOrOrigin: true
+  access:
+    instrumentBuiltinsIoPathlibAndOsOpen: true
+    normalizeAndResolveSymlinksBeforeDecision: true
+    authenticateEveryEventBeforeSerialization: true
+    cacheAndSignalLedgersRequired: true
+    missingInconsistentOrForgedLedger: fail_closed
+  conjunction:
+    staticImportGraphMustPass: true
+    runtimeModuleProvenanceMustPass: true
+    authenticatedAccessLedgerMustPass: true
+    cacheSignalLedgerMustPass: true
+    protectedAccessDenialMustPass: true
+
+qualificationMatrix:
+  requiredCases:
+    - benign_source_literal
+    - self_referential_registry_literal
+    - direct_forbidden_import
+    - indirect_forbidden_import
+    - dynamic_import_literal
+    - dynamic_import_alias
+    - builtin_dynamic_import
+    - wrapper_dispatch
+    - unresolved_dynamic_import
+    - forbidden_builtin_open
+    - forbidden_pathlib_open
+    - forbidden_os_open
+    - symlink_to_forbidden_path
+    - dotdot_path_normalization
+    - forbidden_cache_access
+    - S07_signal_access
+    - missing_ledger
+    - forged_event
+    - forged_authenticator
+    - serialization_round_trip
+    - preloaded_forbidden_module_provenance
+    - newly_loaded_permitted_module_provenance
+    - S12S_source_passes_despite_harmless_literals
+  deterministicOrders:
+    - lexical
+    - reverse
+    - even_then_odd
+    - odd_then_even
+
+s12rRevalidation:
+  exactArtifactManifest: true
+  exactPreregistrationFreeze: true
+  gateRows: [G01, G02, G03, G04, G05, G06, G07, G08, G09, G10]
+  lineageCount: 7
+  configurationCount: 14
+  adaptationVariantCount: 30
+  replacementComparatorCount: 2
+  taskConditionCellCount: 48
+  scenarioFamilyCount: 3840
+  logicalReservationCount: 195072
+  physicalReplayCommitmentCount: 390144
+  bindingCount: 3120
+  protectedReserveDenialRequired: true
+  completeSetPublisherRevalidationRequired: true
+
+successCriterion: >-
+  The frozen registry and all actual-use controls pass their benign,
+  adversarial, serialization, replay, and worker-order qualification; S12R
+  hashes, G01-G10, 3,120 bindings, reserve denial, predecessor immutability,
+  and zero-execution accounting all revalidate; and no scientific execution
+  namespace or efficacy publication is created.
+failureRule: >-
+  Fail closed on any unresolved import, prohibited module or origin, denied
+  path or signal, missing or forged ledger, non-deterministic qualification,
+  changed S12R byte/identity/count/gate, access-control defect, accounting
+  mismatch, or predecessor mutation. Qualification failure does not authorize
+  scientific execution.
+
+futureBoundary:
+  separateHumanExecutionDecisionRequired: true
+  futureExecutionMustUseNeverUsedNamespace: true
+  laterRuntimeFailureStillPossible:
+    - runtime_integrity
+    - replay_integrity
+    - accounting_integrity
+    - access_integrity
+    - publication_integrity
