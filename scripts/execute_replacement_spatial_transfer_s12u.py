@@ -595,6 +595,8 @@ def _freshness_validation(raw_control: Mapping[str, Any]) -> dict[str, Any]:
     remote_lines = subprocess.run(
         [
             "git",
+            "-c",
+            f"safe.directory={REPOSITORY}",
             "ls-remote",
             "origin",
             "refs/heads/eidosoma/groups/28",
