@@ -1,0 +1,514 @@
+schemaVersion: e07.s12r.replacement-spatial-transfer-protocol.v1
+researchStepId: S12R
+title: Preregister and qualify the replacement broad spatial-transfer study
+designOnly: true
+newEstimand: true
+frozenQuestion: >-
+  Under a separately identified, outcome-free E07 extension of the native
+  spatial contracts, do the seven S09 parent/compressed lineages retain
+  task-local completion, maintenance, and repair behavior across new targets,
+  a target-breaking identity-locus fault, and a genuinely alternate scheduler,
+  while size and irregular-topology panels remain diagnostic?
+
+historicalRelationship:
+  amendsS12P: false
+  amendsS12A: false
+  executionOfS12PFrozenEstimand: false
+  directEquivalenceToS12P: false
+  priorArtifactsRemainImmutable: true
+  rationale: >-
+    S12P/S12A required authoritative unseen E06 fault and scheduler contracts
+    and exact old comparator identities. S12R instead defines new E07
+    extensions and, where necessary, new comparator identities. It is
+    therefore a new estimand with additional researcher degrees of freedom.
+  postSelectionControl: >-
+    Every population, extension, comparator, reservation, endpoint, budget,
+    inference, and gate is frozen from structural metadata and
+    outcome-independent fixtures before a transfer episode may be submitted.
+
+authorizationBoundary:
+  allowedEvidence:
+    - public_native_contracts
+    - structural_metadata
+    - authoritative_recovery_materials
+    - immutable_candidate_and_comparator_identities
+    - published_integrity_and_status_records
+    - dedicated_outcome_independent_fixtures
+  transferEpisodes: 0
+  civicSimulationRows: 0
+  validationOutcomeAccess: 0
+  confirmationOutcomeAccess: 0
+  protectedOutcomeAccess: 0
+  s13Episodes: 0
+  s14Episodes: 0
+  archiveMutations: 0
+  outcomeBearingCacheReads: 0
+  s06OrS06AModelOrEmbeddingLoads: 0
+  s07ArmSignalUses: 0
+  substantiveTransferAuthorized: false
+  separateHumanExecutionApprovalRequired: true
+
+candidatePopulation:
+  unit: s09_parent_compressed_lineage
+  lineageCount: 7
+  configurationCount: 14
+  configurationsPerLineage: 2
+  roles: [s08m_parent, s09_compressed]
+  sourceTaskCounts:
+    e07_s02_spatial2d_local: 2
+    e07_s02_spatial2d_memory: 5
+  executionTasks:
+    - e07_s02_spatial2d_local
+    - e07_s02_spatial2d_memory
+  crossSpatialBindingRequired: true
+  structuralExclusions: []
+  retainedReason: >-
+    No outcome-independent native-contract incompatibility excludes any of the
+    seven lineages or fourteen exact parent/compressed configurations.
+  prohibitedInclusionSignals:
+    - s09_effect_size
+    - s09_cross_task_regression
+    - s10_feature_or_candidate_value
+    - s11_label_or_annotation
+    - s07_arm_membership
+    - s06_or_s06a_model_or_embedding
+
+adaptation:
+  zeroShot:
+    exactFrozenConfigurationBytes: true
+  boundedLightAdaptation:
+    source: exact_S12P_structural_edit_set
+    variantCount: 30
+    newS12RVariantIdentities: true
+    developmentOnly: true
+    permitted:
+      fixed_balanced_identity: existing_member_assignment_rotations_only
+      environment_conditioned: original_or_exact_branch_swap_only
+    forbidden:
+      - member_addition_or_removal
+      - rule_edit
+      - memory_edit
+      - observation_edit
+      - selector_signal_edit
+      - communication_edit
+      - cost_semantics_edit
+    lockBeforePostLockTransfer: true
+    outcomeFreeTieBreak: lowest_stable_S12R_variant_hash
+  universalAdaptationScore: null
+
+comparatorRecovery:
+  searchFirst: exact_authoritative_runtime_definition
+  requiredDefinitionFields:
+    - configurationId
+    - taskId
+    - mode
+    - members
+    - assignmentCounterDomain
+    - assignmentRotation
+    - selector
+    - portfolioStructuralCosts
+  summariesAreInsufficient:
+    - member_hash_list
+    - action_hash
+    - definition_hash_without_bytes
+    - efficacy_or_cost_rows
+  exactRecoveryFailureRule: >-
+    Never reconstruct or reuse an unresolved old ID. Define a new executable
+    comparator with a new domain-separated ID and regenerate every affected
+    reservation, logical identity, coupling commitment, budget count, and
+    multiplicity-family membership.
+  unresolvedOldConfigurationIds:
+    - d3537d6d43fede6a531120babaff28675d56caf6d5a299ab0ff99c72cb2c5074
+    - fc3a833fb46284e83db19a1943a998ab9ef97eb2bd5e2835b96eb8993d66775a
+  oldIdsRetiredFromS12RExecution: true
+  allSevenLineagesKeepMatchedRandomComparator: true
+
+spatialFaultFamily:
+  familyId: identity_locus_target_breaking_spurious_swap_v1
+  scientificStatus: new_S12R_extension_less_historically_anchored
+  locus: >-
+    One immutable mobile occupant identity and an adjacent unequal-token mobile
+    occupant identity on a native edge whose swap algebraically leaves the
+    calibrated target. A conserved vacancy identity is eligible where the
+    target natively contains vacancies.
+  timing: before_native_transition_0_before_first_policy_observation
+  persistence: single_pulse_source_inactive_after_commit_state_effect_persists
+  observability: >-
+    Fault identity, locus, counter address, and audit are hidden. Policies may
+    observe only post-fault consequences available through existing S05
+    permissions.
+  randomStream:
+    domain: E07/S12R/spatial-fault-locus/v1
+    counterAddressed: true
+    mutableState: false
+    workerOrderInfluence: false
+  costs:
+    ledger: separate_fault_ledger
+    policyOpportunityUnits: 0
+    nativeProposalUnits: 0
+    scalarAggregation: forbidden
+  failureAndCensor:
+    noEligibleLocus: design_or_execution_failure_not_censor
+    invalidOrForgedAudit: integrity_failure_not_censor
+    nativeInvariantOrExecutionFailure: failure_not_censor
+    noRepairByTransition32: right_censor
+    exclusions: none
+  repairRiskSet:
+    exactPreFaultConjunction: required
+    falsePostFaultConjunction: required
+    identityTokenKindSiteCardinalityConservation: required
+    origin: post_fault_state_before_native_transition_0
+  holdoutGeneration:
+    developmentDomain: E07/S12R/fault/development/v1
+    postLockTransferDomain: E07/S12R/fault/transfer/v1
+    futureS14ReserveDomain: E07/S12R/fault/S14-reserve/v1
+    crossDomainReuse: forbidden
+    outcomeAssignment: forbidden
+  distinctFrom:
+    acceptedDisplacement: target_preserving_interface_witness
+    externalLesion: no_mask_removal_wound_barrier_or_count_change
+    proposalGate: no_proposal_suppression_delay_retry_or_relabel
+    authorityChannelActuationMiss: no_controller_query_override_or_channel_action
+
+alternateSchedulerFamily:
+  familyId: identity_round_robin_batch4_v1
+  scientificStatus: new_S12R_extension_less_historically_anchored
+  actorSelection: canonical_immutable_identity_order_with_scenario_start_offset
+  ordering: persistent_cursor_slot_order
+  replacement: without_replacement_within_each_identity_sweep
+  stateVisibility: none
+  randomness:
+    domain: E07/S12R/scheduler-start-offset/v1
+    drawsPerEpisode: 1
+    purpose: initial_cursor_offset_only
+    mutableState: false
+    workerOrderInfluence: false
+  clock:
+    graphTransitions: 32
+    actorSlotsPerTransition: 4
+    fixedBudgetOnly: true
+    earlyStop: false
+  costs:
+    ledger: separate_scheduler_ledger
+    nativeMovementObservationChannelCostsUnchanged: true
+    scalarAggregation: forbidden
+  distinctFromNativeE06: >-
+    Native E06 independently hash-ranks all identities at each transition.
+    S12R preserves a cross-transition sweep cursor, which cannot be produced by
+    seed variation inside the native family.
+
+targetTopologyPanels:
+  - panelId: native_reference_control
+    targetId: task_native_reference
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    endpointMode: calibrated_task_native
+    inferentialRole: calibration_control
+  - panelId: unseen_target_bilateral
+    targetId: bilateral_lobes_with_midline
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    endpointMode: calibrated_task_native
+    inferentialRole: single_axis_target
+  - panelId: unseen_target_single_hole
+    targetId: tissue_single_hole
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    endpointMode: calibrated_task_native
+    inferentialRole: single_axis_target
+  - panelId: unseen_target_two_holes
+    targetId: tissue_two_holes
+    fixtureId: canonical_target_domain
+    challengeId: exact_maintenance
+    endpointMode: calibrated_task_native
+    inferentialRole: single_axis_target
+  - panelId: unseen_size_layers_15x15
+    targetId: layers_three_ordered_tissues
+    fixtureId: larger_square_layers_15x15
+    challengeId: exact_reference_retention
+    endpointMode: diagnostic_only
+    inferentialRole: size_diagnostic
+  - panelId: unseen_topology_irregular_layers_9x9
+    targetId: layers_three_ordered_tissues
+    fixtureId: irregular_pruned_layers_9x9
+    challengeId: exact_reference_retention
+    endpointMode: diagnostic_only
+    inferentialRole: topology_diagnostic
+  - panelId: displacement_native_target
+    targetId: task_native_reference
+    fixtureId: canonical_target_domain
+    challengeId: accepted_target_set_displacement
+    endpointMode: calibrated_maintenance_not_repair
+    inferentialRole: target_preserving_displacement_control_not_fault
+  - panelId: combined_size_displacement
+    targetId: layers_three_ordered_tissues
+    fixtureId: larger_square_layers_15x15
+    challengeId: one_swap_displacement_diagnostic
+    endpointMode: diagnostic_only
+    inferentialRole: combined_size_displacement_diagnostic_not_fault
+
+conditionCells:
+  - conditionId: native_scheduler_no_fault
+    schedulerFamilyId: E06_state_blind_identity_hash_batch4
+    faultFamilyId: none
+    applicablePanels: all_eight
+  - conditionId: alternate_scheduler_no_fault
+    schedulerFamilyId: identity_round_robin_batch4_v1
+    faultFamilyId: none
+    applicablePanels: all_eight
+  - conditionId: native_scheduler_spurious_swap_fault
+    schedulerFamilyId: E06_state_blind_identity_hash_batch4
+    faultFamilyId: identity_locus_target_breaking_spurious_swap_v1
+    applicablePanels:
+      - native_reference_control
+      - unseen_target_bilateral
+      - unseen_target_single_hole
+      - unseen_target_two_holes
+  - conditionId: alternate_scheduler_spurious_swap_fault
+    schedulerFamilyId: identity_round_robin_batch4_v1
+    faultFamilyId: identity_locus_target_breaking_spurious_swap_v1
+    applicablePanels:
+      - native_reference_control
+      - unseen_target_bilateral
+      - unseen_target_single_hole
+      - unseen_target_two_holes
+conditionCellAccounting:
+  cellsPerTask: 24
+  totalTaskCells: 48
+  rationale: >-
+    Fault overlays are confined to calibrated exact targets. Applying a
+    target-breaking repair estimand to uncalibrated topology diagnostics or
+    the already displaced controls would be semantically ambiguous.
+
+scenarioPartitions:
+  assignmentUsesOutcomes: false
+  development:
+    split: new_S12R_training_only
+    ordinals: [0, 15]
+    familiesPerTaskCell: 16
+    outcomeAccess: sealed_until_separate_execution_approval
+    purpose: bounded_adaptation_selection_only
+  postLockTransfer:
+    split: new_S12R_post_lock_transfer
+    ordinals: [1000, 1063]
+    familiesPerTaskCell: 64
+    outcomeAccess: sealed_until_candidate_comparator_adapter_and_adaptation_locks
+    purpose: frozen_task_local_transfer_estimands_only
+  originalS14Reserve:
+    source: E06_S14_split_manifest
+    targets: [ring_core_shell_translatable, separated_paired_regions]
+    outcomeAccess: sealed
+    scenarioPayloadMaterialization: forbidden
+    optimizationUse: forbidden
+  newS12RExtensionReserve:
+    targetIds: [ring_core_shell_translatable, separated_paired_regions]
+    faultAndSchedulerDomains: opaque_commitments_only
+    scenarioPayloadMaterialization: forbidden
+    outcomeAccess: sealed_for_separately_approved_S14
+  overlapAcrossPartitions: forbidden
+  commonRandomNumberClaims:
+    withinTaskCellScenarioFamily: candidates_conditions_and_baselines
+    acrossTask: none
+    acrossSchedulerFamilies: >-
+      shared source state and fault locus commitment only; scheduler random
+      streams are distinct and no draw-by-draw coupling is claimed
+
+endpoints:
+  universalScore: null
+  calibratedNoFault:
+    primary:
+      - terminal_conjunctive_completion
+      - minimum_S01_mismatch_fraction
+    completion: S02_local_accepted_AND_independent_S01_global_success
+    noncompletionAt32: right_censor_only_for_first_completion_time
+  calibratedFault:
+    primary:
+      - repair_by_transition_32
+      - terminal_conjunctive_completion
+      - minimum_post_fault_S01_mismatch_fraction
+    repair: post_fault_first_S02_and_S01_conjunction
+    origin: post_fault_state_before_transition_0
+    nonrepairAt32: right_censor
+  acceptedDisplacement:
+    primary:
+      - terminal_conjunctive_maintenance
+      - departure_from_target_by_transition_32
+    repairEndpoint: unavailable_post_displacement_already_inside_target
+  diagnosticTopology:
+    primary: none
+    descriptive:
+      - terminal_reference_mismatch_fraction
+      - minimum_reference_mismatch_fraction
+      - graph_component_error
+      - normalized_boundary_error
+      - composition_corrected_homotypic_edge_excess
+    completionRepairAndTime: unavailable
+    promotionEligible: false
+  failureAndCensor:
+    retainEveryReservedRow: true
+    invariantOrExecutionFailure: failure_not_censor
+    missingOrForgedExtensionAudit: integrity_failure_stop
+    diagnosticNoncompletion: not_defined_not_imputed
+    competingStatuses: never_relabel_drop_or_promote
+
+costs:
+  scalarCost: forbidden
+  native:
+    - E06_movement_24_field_ledger
+    - E06_observation_ledger
+    - E06_channel_ledger
+  portfolio:
+    - structural_ledger
+    - coordination_assignment_switching_communication_ledger
+  licensedCapabilities:
+    - insertion_prefix_ledger_retained_if_ever_applicable
+    - selection_cursor_and_range_ledger_retained_if_ever_applicable
+  newExtension:
+    - fault_ledger
+    - scheduler_ledger
+  configurationBits: charged_once_never_amortized
+  crossFamilyNormalization: forbidden
+
+rosterAndBudget:
+  taskCount: 2
+  targetTopologyPanelCount: 8
+  conditionCellsPerTask: 24
+  taskCellCount: 48
+  developmentScenarioFamilies: 768
+  postLockTransferScenarioFamilies: 3072
+  totalScenarioFamilies: 3840
+  adaptationVariantCount: 30
+  developmentLogicalReservations: 23040
+  postLockRowsPerScenarioFamily:
+    zeroShot: 14
+    adaptedWinner: 14
+    componentSingle: 20
+    matchedRandom: 7
+    nativeBaseline: 1
+    total: 56
+  postLockTransferLogicalReservations: 172032
+  totalLogicalReservations: 195072
+  exactReplayPerLogicalReservation: 1
+  totalPhysicalExecutionsIncludingReplay: 390144
+  graphTransitionsPerEpisode: 32
+  actorSlotsPerTransition: 4
+  earlyStopping: forbidden
+  runtimeDrivenWeakening: forbidden
+  firstIntegrityFailure: fail_atomic_stop_no_scientific_publication
+
+estimands:
+  analysisPopulation: all_reserved_rows_including_failures_and_censors
+  primary:
+    - id: parent_vs_compressed_within_task_cell
+      contrast: compressed_minus_parent
+      pairing: lineage_scenario_family
+    - id: zero_shot_vs_bounded_adaptation
+      contrast: adapted_minus_zero_shot
+      pairing: configuration_scenario_family
+    - id: candidate_vs_matched_random
+      contrast: candidate_minus_lineage_matched_random
+      pairing: lineage_scenario_family
+    - id: alternate_vs_native_scheduler
+      contrast: alternate_minus_native
+      pairing: configuration_panel_scenario_ordinal
+    - id: fault_vs_no_fault
+      contrast: target_breaking_fault_minus_no_fault
+      pairing: configuration_scheduler_panel_scenario_ordinal
+  descriptiveOnly:
+    - fixed_nonrandom_comparator_contrasts
+    - topology_diagnostic_panels
+  revealedPreferenceClaim: forbidden
+
+inference:
+  confidenceLevel: 0.95
+  pairedScenarioBootstrapReplicates: 2000
+  bootstrapUnit: paired_scenario_family
+  binary: paired_risk_difference
+  continuous:
+    - paired_task_native_difference
+    - Hodges_Lehmann_sensitivity
+  censoredTime: restricted_native_transition_difference_at_32
+  rareEvent:
+    - exact_binomial_interval
+    - paired_discordant_count
+  multiplicity:
+    method: Holm
+    alpha: 0.05
+    fixedFamilies:
+      - parent_compressed_calibrated_endpoint_family
+      - adaptation_calibrated_endpoint_family
+      - matched_random_calibrated_endpoint_family
+      - scheduler_calibrated_endpoint_family
+      - fault_repair_endpoint_family
+      - failure_harm_family
+      - native_cost_harm_family_by_component
+      - extension_cost_harm_family_by_component
+    diagnosticPanels: descriptive_precision_only
+    infeasibleTests: fixed_slot_raw_p_1_non_evidentiary
+    observedFamilyShrinkage: forbidden
+  supportiveRule: >-
+    At least one lineage has a Holm-retained task-local calibrated transfer or
+    repair effect against its frozen parent and applicable comparators, with
+    no Holm-retained failure or task-native/extension-cost harm.
+  nullRule: >-
+    Every integrity and feasibility gate passes but no calibrated evidentiary
+    test satisfies the supportive rule and no adjusted harm is found.
+  constrainingRule: >-
+    Any access, identity, native-contract, extension, accounting, replay,
+    publication, or estimator defect, or any adjusted harm.
+
+publication:
+  failAtomic: global_complete_set_single_commit
+  classes:
+    - transfer_results
+    - adaptation_lock
+    - paired_estimands
+    - failure_censor_ledger
+    - native_cost_ledger
+    - fault_cost_ledger
+    - scheduler_cost_ledger
+    - replay_audit
+    - complete_accounting
+    - access_and_provenance
+  partialScientificPublication: forbidden
+  forensicsOutsideScientificCommit: exact_position_indexed
+
+accessAndDependencies:
+  validationAndConfirmation: sealed
+  originalS14Reserve: sealed
+  newExtensionReserve: sealed
+  prohibited:
+    - S06_models_or_embeddings
+    - S06A_models_or_embeddings
+    - S07_allocation_arm_signals
+    - S10_or_S11_signals_for_population_or_tuning
+    - quarantined_cache_or_outcome_rows
+    - universal_normalized_reward
+    - civic_simulation
+  denialBeforeMaterialization: required
+
+executionGate:
+  failClosed: true
+  rows:
+    G01: immutable_predecessors_S12P_and_S12A
+    G02: S12R_is_distinct_new_estimand_and_outcome_free
+    G03: exact_seven_lineages_fourteen_configurations_thirty_adaptations_and_all_comparators
+    G04: every_runtime_definition_binds_to_both_tasks_and_every_applicable_cell
+    G05: new_spatial_fault_contract_and_all_target_breaking_branches_qualified
+    G06: alternate_scheduler_contract_replay_fairness_order_and_cost_qualified
+    G07: endpoint_topology_failure_and_censor_contracts_qualified
+    G08: exact_roster_logical_identity_coupling_and_budget_accounting
+    G09: protected_denial_dependency_exclusion_and_original_S14_reserve
+    G10: replay_worker_order_and_global_fail_atomic_publication
+  substantiveTransferAuthorized: false
+  executionReviewRequired: true
+  failureDisposition: retain_exact_blocker_and_return_without_episode
+
+claimBoundary:
+  - S12R_is_not_directly_equivalent_to_S12P
+  - new_E06_extensions_are_less_historically_anchored_than_native_contracts
+  - qualification_can_still_fail_before_execution
+  - transfer_is_simulator_internal_and_task_local
+  - diagnostic_topology_is_not_completion_formation_or_repair
+  - no_universal_score_revealed_preference_biology_cognition_agency_or_civic_claim
+  - validation_confirmation_and_S14_reserves_remain_sealed
