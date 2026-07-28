@@ -1,0 +1,77 @@
+schemaVersion: e07.s12s.execution-control.v1
+researchStepId: S12S
+title: Fresh execution of the byte-frozen S12R replacement spatial-transfer study
+registeredDateUtc: "2026-07-28"
+
+historicalRelationship:
+  executesS12RReplacementEstimand: true
+  executesS12P: false
+  executesS12A: false
+  executesOriginalS12Estimand: false
+  amendsOrNarrowsS12R: false
+
+freshness:
+  executionNamespace: e07-s12s
+  cacheNamespace: /cache/e07-s12s
+  priorAttemptReuse: forbidden
+  predecessorOutcomeOrCacheReads: forbidden
+
+frozenS12R:
+  protocolSha256: aefa8d4bfc56776df69cc45de26bc38e1d7cbda563c0713441e24b658998d85a
+  logicalRosterFileSha256: 888b06524e24dcbf84cce6ca0e44ad3edd5a39e974a45d6a7a091bae9582c158
+  physicalCommitmentFileSha256: eccc33f134f871ed6643d8b3e95ae13ccfb87af7531e507435c1ebf67e23b7b6
+  logicalRosterSemanticSha256: 58c5af390888da6eda90e9069a749707fefe07c515946d37f009365bb07e9d71
+  physicalPlanSemanticSha256: cb8a2ccf97aa45935ee2d58dba934e2728a40f4b9a274d52f04305e1a8f2f55c
+  candidateLockSha256: 1af21d999091a1bd9d46615c367d40ce5efb005e8ccf78e6e145c4d968150839
+  gates: [G01, G02, G03, G04, G05, G06, G07, G08, G09, G10]
+  lineageCount: 7
+  configurationCount: 14
+  adaptationVariantCount: 30
+  replacementComparatorCount: 2
+  taskConditionCellCount: 48
+  scenarioFamilyCount: 3840
+  logicalReservationCount: 195072
+  physicalReplayCommitmentCount: 390144
+  graphTransitionsPerEpisode: 32
+  actorSlotsPerTransition: 4
+
+adaptationLockImplementation:
+  population: S12R_development_only
+  diagnosticsUsedForSelection: false
+  universalScore: null
+  rule: >-
+    Compute separately named, direction-aligned means for every calibrated
+    task/panel/condition endpoint; retain the Pareto-nondominated variants for
+    each frozen base configuration; choose the lowest stable S12R variant hash
+    only when more than one variant remains nondominated.
+  tieBreak: lowest_stable_S12R_variant_hash
+  lockBeforePostLockTransfer: true
+
+execution:
+  workers: 8
+  exactReplaysPerLogical: 2
+  earlyStopping: forbidden
+  runtimeDrivenWeakening: forbidden
+  failuresCensorsAndUnavailableEndpointsRetained: true
+  universalOutcomeScore: null
+  scalarCrossFamilyCost: null
+  diagnosticPanelsPromotionEligible: false
+  firstIntegrityFailure: quarantine_attempt_and_publish_zero_scientific_outputs
+
+accessBoundary:
+  validationOutcomeRows: 0
+  confirmationOutcomeRows: 0
+  protectedOutcomeRows: 0
+  s14ReservePayloadMaterializations: 0
+  civicRows: 0
+  s13Rows: 0
+  s14Rows: 0
+  s06OrS06AArtifactLoads: 0
+  s07ArmSignalUses: 0
+
+publication:
+  registry: /artifacts/research_steps/S12R/future_publication_registry.json
+  artifactClassCount: 10
+  completeOrZero: true
+  singleAtomicCommit: true
+  scientificDestination: /artifacts/research_steps/S12S/scientific_publication

@@ -14,7 +14,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 import hashlib
 import math
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Callable, Literal, Mapping, Sequence
 
 from causal_simulator.action_interface import (
     ActionEnvelope,
@@ -1926,6 +1926,9 @@ def run_spatial_dsl_episode(
     target_id: str,
     initial_state_override: MovementState | None = None,
     offline_tracker: Any | None = None,
+    actor_schedule: (
+        Callable[[str, int, Sequence[str], int], Sequence[str]] | None
+    ) = None,
 ) -> dict[str, Any]:
     """Run a complete fixed-clock E06 episode under an arbitrary spatial DSL.
 
@@ -2035,12 +2038,23 @@ def run_spatial_dsl_episode(
 
     for transition_index in range(definition.transitions):
         before_hash = movement_state_sha256(state)
-        scheduled = _state_blind_actor_schedule(
-            definition.scenario_id,
-            transition_index,
-            actor_ids,
-            definition.actor_batch_size,
+        scheduler = actor_schedule or _state_blind_actor_schedule
+        scheduled = tuple(
+            scheduler(
+                definition.scenario_id,
+                transition_index,
+                actor_ids,
+                definition.actor_batch_size,
+            )
         )
+        if (
+            len(scheduled) > definition.actor_batch_size
+            or len(set(scheduled)) != len(scheduled)
+            or set(scheduled) - set(actor_ids)
+        ):
+            raise SuiteValidationError(
+                "actor scheduler returned an invalid native identity batch"
+            )
         proposals: list[MovementProposal] = []
         proposal_actor: dict[str, str] = {}
         pending_emissions = []

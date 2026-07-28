@@ -120,6 +120,10 @@ TransitionAudit = Callable[
     None,
 ]
 StateAudit = Callable[[int, MovementState, Mapping[str, Any]], None]
+ActorSchedule = Callable[
+    [str, int, Sequence[str], int],
+    Sequence[str],
+]
 ProposalGate = Callable[
     [int, Environment, MovementState, Sequence[MovementProposal]],
     Sequence[MovementProposal],
@@ -411,6 +415,8 @@ def run_cpu_episode(
     actor_policy_assignments: ActorPolicyAssignments | None = None,
     actor_relation_profiles: ActorRelationProfiles | None = None,
     actor_assignment_switches: ActorAssignmentSwitches | None = None,
+    actor_schedule: ActorSchedule | None = None,
+    actor_schedule_id: str | None = None,
 ) -> dict[str, Any]:
     """Execute one exact fixed-budget reference episode.
 
@@ -808,16 +814,26 @@ def run_cpu_episode(
                 )
             continue
 
-        scheduled_actors = (
-            _state_blind_actor_schedule(
-                definition.scenario_id,
-                transition_index,
-                actor_ids,
-                definition.actor_batch_size,
+        if native_batch_gate is None or native_batch_gate(transition_index):
+            scheduler = actor_schedule or _state_blind_actor_schedule
+            scheduled_actors = tuple(
+                scheduler(
+                    definition.scenario_id,
+                    transition_index,
+                    actor_ids,
+                    definition.actor_batch_size,
+                )
             )
-            if native_batch_gate is None or native_batch_gate(transition_index)
-            else ()
-        )
+            if (
+                len(scheduled_actors) > definition.actor_batch_size
+                or len(set(scheduled_actors)) != len(scheduled_actors)
+                or set(scheduled_actors) - set(actor_ids)
+            ):
+                raise EpisodeValidationError(
+                    "actor scheduler returned an invalid native identity batch"
+                )
+        else:
+            scheduled_actors = ()
         builds: list[ObservationBuild] = []
         decision_payloads: list[Mapping[str, Any]] = []
         decisions: list[PolicyDecision] = []
@@ -1058,7 +1074,11 @@ def run_cpu_episode(
         "transitionBudget": definition.transitions,
         "epochLengthTransitions": EPOCH_LENGTH_TRANSITIONS,
         "actorBatchSize": definition.actor_batch_size,
-        "scheduler": "state_blind_identity_hash_rank_without_replacement_per_transition",
+        "scheduler": (
+            "state_blind_identity_hash_rank_without_replacement_per_transition"
+            if actor_schedule is None
+            else str(actor_schedule_id or "engine_owned_external_actor_schedule")
+        ),
         "initialStateSha256": initial_state_sha256,
         "initialTransformSha256": (
             None if initial_transform is None else initial_transform["transitionSha256"]
