@@ -21,6 +21,12 @@ from typing import Any, Mapping
 
 import numpy as np
 
+from .elapsed_clock import (
+    build_first_completion_projection,
+    genesis_commitment,
+    parse_and_validate_elapsed_clock_record,
+    summarize_elapsed_clock_records,
+)
 from .engine import (
     EngineContext,
     EpisodeDefinition,
@@ -431,6 +437,9 @@ class TargetMetricTracker:
         self.first_conjunctive_transition: int | None = None
         self.observation_count = 0
         self.last_state: MovementState | None = None
+        self._clock_mode: str | None = None
+        self._authenticated_clock_records: list[dict[str, Any]] = []
+        self._first_completion_record_commitment: str | None = None
 
     def _mismatch(self, grid: Grid) -> int:
         candidate = np.fromiter(
@@ -440,11 +449,12 @@ class TargetMetricTracker:
         )
         return int(np.count_nonzero(self.orbit != candidate, axis=1).min())
 
-    def observe(
+    def _observe_at_elapsed(
         self,
-        transition_index: int,
+        elapsed_transition: int,
         state: MovementState,
-        _summary: Mapping[str, Any],
+        *,
+        completion_record_commitment: str | None,
     ) -> None:
         grid = state_grid(self.environment, state)
         mismatch = self._mismatch(grid)
@@ -452,7 +462,7 @@ class TargetMetricTracker:
             self.initial_mismatch = mismatch
         if mismatch < self.minimum_mismatch:
             self.minimum_mismatch = mismatch
-            self.minimum_transition = transition_index
+            self.minimum_transition = elapsed_transition
         if mismatch <= int(self.target.success["maxMismatches"]):
             global_audit = evaluate_success(
                 grid, self.target, equivalence_orbit=self.orbit_grids
@@ -460,13 +470,76 @@ class TargetMetricTracker:
             if global_audit["success"]:
                 if not self.ever_s01:
                     self.ever_s01 = True
-                    self.first_s01_transition = transition_index
+                    self.first_s01_transition = elapsed_transition
                 local = score_grid(grid, self.grammar)
                 if local["accepted"] and not self.ever_conjunctive:
                     self.ever_conjunctive = True
-                    self.first_conjunctive_transition = transition_index
+                    self.first_conjunctive_transition = elapsed_transition
+                    self._first_completion_record_commitment = (
+                        completion_record_commitment
+                    )
         self.observation_count += 1
         self.last_state = state
+
+    def observe(
+        self,
+        transition_index: int,
+        state: MovementState,
+        _summary: Mapping[str, Any],
+    ) -> None:
+        """Legacy observation-label path retained for predecessor compatibility."""
+
+        if self._clock_mode == "authenticated_elapsed":
+            raise ValueError("cannot mix legacy and authenticated clock observations")
+        self._clock_mode = "legacy_observation_label"
+        self._observe_at_elapsed(
+            transition_index,
+            state,
+            completion_record_commitment=None,
+        )
+
+    def observe_authenticated(
+        self,
+        clock_record: Mapping[str, Any],
+        state: MovementState,
+        _summary: Mapping[str, Any],
+    ) -> None:
+        """Observe one engine-authenticated elapsed-clock record."""
+
+        if self._clock_mode == "legacy_observation_label":
+            raise ValueError("cannot mix authenticated and legacy clock observations")
+        self._clock_mode = "authenticated_elapsed"
+        expected_ordinal = len(self._authenticated_clock_records)
+        if expected_ordinal == 0:
+            scenario_id = clock_record.get("scenarioId")
+            horizon = clock_record.get("horizonTransitions")
+            if not isinstance(scenario_id, str) or type(horizon) is not int:
+                raise ValueError("authenticated clock genesis metadata is invalid")
+            expected_previous = genesis_commitment(
+                scenario_id=scenario_id,
+                horizon_transitions=horizon,
+            )
+        else:
+            previous = self._authenticated_clock_records[-1]
+            scenario_id = str(previous["scenarioId"])
+            horizon = int(previous["horizonTransitions"])
+            expected_previous = str(previous["recordCommitmentSha256"])
+        parsed = parse_and_validate_elapsed_clock_record(
+            clock_record,
+            expected_scenario_id=scenario_id,
+            expected_horizon=horizon,
+            expected_ordinal=expected_ordinal,
+            expected_elapsed=expected_ordinal,
+            expected_previous_commitment=expected_previous,
+            state=state,
+        )
+        canonical = parsed.to_mapping()
+        self._authenticated_clock_records.append(canonical)
+        self._observe_at_elapsed(
+            parsed.elapsed_transition,
+            state,
+            completion_record_commitment=parsed.record_commitment_sha256,
+        )
 
     def finalize(self) -> dict[str, Any]:
         if self.initial_mismatch is None or self.last_state is None:
@@ -476,7 +549,7 @@ class TargetMetricTracker:
             final_grid, self.target, equivalence_orbit=self.orbit_grids
         )
         local = score_grid(final_grid, self.grammar)
-        return {
+        result = {
             "initialS01MismatchCount": self.initial_mismatch,
             "initialS01MismatchFraction": self.initial_mismatch / self.site_count,
             "minimumS01MismatchCount": self.minimum_mismatch,
@@ -508,6 +581,30 @@ class TargetMetricTracker:
                 ["".join(row) for row in final_grid], separators=(",", ":")
             ),
         }
+        if self._clock_mode == "authenticated_elapsed":
+            first = self._authenticated_clock_records[0]
+            clock_summary = summarize_elapsed_clock_records(
+                self._authenticated_clock_records,
+                scenario_id=str(first["scenarioId"]),
+                horizon_transitions=int(first["horizonTransitions"]),
+                require_complete=True,
+            )
+            projection = build_first_completion_projection(
+                clock_summary=clock_summary,
+                first_completion_transition=self.first_conjunctive_transition,
+                first_completion_record_commitment_sha256=(
+                    self._first_completion_record_commitment
+                ),
+            )
+            result.update(
+                {
+                    "clockMode": "authenticated_elapsed_transition",
+                    "authenticatedElapsedClockSummary": clock_summary,
+                    "authenticatedFirstCompletionProjection": projection,
+                    "rawObservationLabelsUsedAsScientificTime": False,
+                }
+            )
+        return result
 
 
 def _episode_definition(

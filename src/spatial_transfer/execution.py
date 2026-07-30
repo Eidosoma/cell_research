@@ -29,6 +29,10 @@ from src.morph2d.baseline import (
     state_grid,
 )
 from src.morph2d.engine import EpisodeDefinition, run_cpu_episode
+from src.morph2d.elapsed_clock import (
+    validate_elapsed_clock_summary,
+    validate_first_completion_projection,
+)
 from src.morph2d.grammar import score_grid
 from src.morph2d.movements import MovementState
 from src.morph2d.targets import evaluate_success
@@ -83,13 +87,7 @@ class CalibratedTransferTracker:
         self.inner = TargetMetricTracker(environment, target, grammar)
         self.completion_sequence: list[bool] = []
 
-    def observe(
-        self,
-        transition_index: int,
-        state: MovementState,
-        summary: Mapping[str, Any],
-    ) -> None:
-        self.inner.observe(transition_index, state, summary)
+    def _observe_completion(self, state: MovementState) -> None:
         grid = state_grid(self.environment, state)
         global_audit = evaluate_success(
             grid,
@@ -100,6 +98,24 @@ class CalibratedTransferTracker:
         self.completion_sequence.append(
             bool(global_audit["success"] and local["accepted"])
         )
+
+    def observe(
+        self,
+        transition_index: int,
+        state: MovementState,
+        summary: Mapping[str, Any],
+    ) -> None:
+        self.inner.observe(transition_index, state, summary)
+        self._observe_completion(state)
+
+    def observe_authenticated(
+        self,
+        clock_record: Mapping[str, Any],
+        state: MovementState,
+        summary: Mapping[str, Any],
+    ) -> None:
+        self.inner.observe_authenticated(clock_record, state, summary)
+        self._observe_completion(state)
 
     def finalize(self) -> dict[str, Any]:
         result = self.inner.finalize()
@@ -236,12 +252,15 @@ def _native_baseline_episode(
         actor_batch_size=4,
         parameters=parameters,
     )
+    authenticated_audit = getattr(tracker, "observe_authenticated", None)
     result = run_cpu_episode(
         context,
         definition,
         include_selected_traces=False,
         initial_state_override=initial_state,
-        state_audit=tracker.observe,
+        state_audit=(tracker.observe if authenticated_audit is None else None),
+        authenticated_state_audit=authenticated_audit,
+        authenticated_elapsed_clock=True,
         actor_schedule=_scheduler(str(logical["schedulerFamilyId"])),
         actor_schedule_id=str(logical["schedulerFamilyId"]),
     )
@@ -257,6 +276,9 @@ def _native_baseline_episode(
         "licensedCapabilityLedger": {},
         "portfolioCoordinationLedger": {},
         "transitionSummaries": list(result["transitionSummaries"]),
+        "authenticatedElapsedClockAudit": dict(
+            result["authenticatedElapsedClockAudit"]
+        ),
         "stopReason": str(result["stopReason"]),
         "authorityAudit": {
             **dict(result["permissionAudit"]),
@@ -303,6 +325,7 @@ def _dsl_episode(
         target_id=str(fixture["targetId"]),
         initial_state_override=initial_state,
         offline_tracker=tracker,
+        authenticated_elapsed_clock=True,
         actor_schedule=_scheduler(str(logical["schedulerFamilyId"])),
     )
     if not all(bool(value) for value in result["authorityAudit"].values()):
@@ -321,6 +344,9 @@ def _dsl_episode(
             result.get("portfolioCoordinationLedger", {})
         ),
         "transitionSummaries": list(result["transitionSummaries"]),
+        "authenticatedElapsedClockAudit": dict(
+            result["authenticatedElapsedClockAudit"]
+        ),
         "stopReason": str(result["stopReason"]),
         "authorityAudit": dict(result["authorityAudit"]),
     }
@@ -364,6 +390,11 @@ def execute_physical(
             for key, value in configuration["portfolioStructuralCosts"].items()
         }
     endpoint = tracker.finalize()
+    clock_summary = validate_elapsed_clock_summary(
+        native["authenticatedElapsedClockAudit"],
+        expected_scenario_id=str(logical["scenarioFamilyId"]),
+        expected_horizon=32,
+    )
     actor_count = sum(
         occupant.kind == "cell" for _, occupant in initial_state.occupancy
     )
@@ -416,8 +447,38 @@ def execute_physical(
         "adaptationObservationChanges": 0,
         "adaptationSignalOrCommunicationChanges": 0,
     }
+    if diagnostic:
+        first_completion = None
+        completion_projection = None
+    else:
+        endpoint_clock_summary = validate_elapsed_clock_summary(
+            endpoint["authenticatedElapsedClockSummary"],
+            expected_scenario_id=str(logical["scenarioFamilyId"]),
+            expected_horizon=32,
+        )
+        if (
+            endpoint_clock_summary["summaryCommitmentSha256"]
+            != clock_summary["summaryCommitmentSha256"]
+        ):
+            raise SuiteValidationError(
+                "native episode and endpoint elapsed-clock commitments differ"
+            )
+        completion_projection = validate_first_completion_projection(
+            endpoint["authenticatedFirstCompletionProjection"],
+            expected_scenario_id=str(logical["scenarioFamilyId"]),
+            expected_horizon=32,
+            clock_summary=clock_summary,
+        )
+        if (
+            completion_projection["clockSummaryCommitmentSha256"]
+            != clock_summary["summaryCommitmentSha256"]
+        ):
+            raise SuiteValidationError(
+                "completion projection is detached from native elapsed clock"
+            )
+        first_completion = completion_projection["firstCompletionTransition"]
     result_projection = {
-        "schemaVersion": "e07.s12s.physical-result-projection.v1",
+        "schemaVersion": "e07.s12z.physical-result-projection.v2",
         "logicalReservationId": str(logical["logicalReservationId"]),
         "scenarioFamilyId": str(logical["scenarioFamilyId"]),
         "partition": str(logical["partition"]),
@@ -450,9 +511,14 @@ def execute_physical(
         "completionByBudget": (
             None if diagnostic else bool(endpoint["conjunctiveCompletionByBudget"])
         ),
-        "firstCompletionTransition": (
-            None if diagnostic else endpoint["firstCompletionTransition"]
+        "firstCompletionTransition": first_completion,
+        "authenticatedElapsedClockSummaryJson": canonical_json_text(clock_summary),
+        "authenticatedFirstCompletionProjectionJson": (
+            None
+            if completion_projection is None
+            else canonical_json_text(completion_projection)
         ),
+        "rawObservationLabelsUsedAsScientificTime": False,
         "minimumMismatchFraction": (
             None if diagnostic else float(endpoint["minimumS01MismatchFraction"])
         ),

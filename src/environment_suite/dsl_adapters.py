@@ -37,6 +37,7 @@ from reference_simulator.policies import _prefix_is_ordered
 from reference_simulator.transition_primitives import validate_proposal
 from src.morph2d.baseline import TargetMetricTracker, load_baseline_assets
 from src.morph2d.channels import CHANNEL_LEDGER_FIELDS
+from src.morph2d.elapsed_clock import ElapsedClockAuthenticator
 from src.morph2d.engine import (
     EpisodeDefinition,
     _initial_state,
@@ -1926,6 +1927,7 @@ def run_spatial_dsl_episode(
     target_id: str,
     initial_state_override: MovementState | None = None,
     offline_tracker: Any | None = None,
+    authenticated_elapsed_clock: bool = False,
     actor_schedule: (
         Callable[[str, int, Sequence[str], int], Sequence[str]] | None
     ) = None,
@@ -2034,7 +2036,33 @@ def run_spatial_dsl_episode(
         if offline_tracker is None
         else offline_tracker
     )
-    tracker.observe(-1, state, {"transitionKind": "initial_state"})
+    elapsed_clock = (
+        ElapsedClockAuthenticator(
+            scenario_id=definition.scenario_id,
+            horizon_transitions=definition.transitions,
+        )
+        if authenticated_elapsed_clock
+        else None
+    )
+    if elapsed_clock is None:
+        tracker.observe(-1, state, {"transitionKind": "initial_state"})
+    else:
+        initial_record = elapsed_clock.issue(
+            elapsed_transition=0,
+            raw_observation_label=-1,
+            state=state,
+        )
+        if hasattr(tracker, "observe_authenticated"):
+            tracker.observe_authenticated(
+                initial_record.to_mapping(),
+                state,
+                {
+                    "transitionKind": "initial_state",
+                    "rawObservationLabel": -1,
+                },
+            )
+        else:
+            tracker.observe(-1, state, {"transitionKind": "initial_state"})
 
     for transition_index in range(definition.transitions):
         before_hash = movement_state_sha256(state)
@@ -2204,7 +2232,22 @@ def run_spatial_dsl_episode(
             "transitionSha256": batch["transitionSha256"],
         }
         transition_summaries.append(summary)
-        tracker.observe(transition_index, state, summary)
+        if elapsed_clock is None:
+            tracker.observe(transition_index, state, summary)
+        else:
+            elapsed_record = elapsed_clock.issue(
+                elapsed_transition=state.transition_index,
+                raw_observation_label=transition_index,
+                state=state,
+            )
+            if hasattr(tracker, "observe_authenticated"):
+                tracker.observe_authenticated(
+                    elapsed_record.to_mapping(),
+                    state,
+                    summary,
+                )
+            else:
+                tracker.observe(transition_index, state, summary)
 
     metrics = tracker.finalize()
     total_accepted = sum(movement_kind_counts.values())
@@ -2343,5 +2386,7 @@ def run_spatial_dsl_episode(
         },
         "stopReason": "transition_budget",
     }
+    if elapsed_clock is not None:
+        body["authenticatedElapsedClockAudit"] = elapsed_clock.finalize()
     body["episodeSha256"] = canonical_sha256("E07/S04A/E06-dsl-episode/v1", body)
     return body

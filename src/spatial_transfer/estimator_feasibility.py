@@ -11,6 +11,7 @@ or outcome-specific special case.
 
 from __future__ import annotations
 
+import json
 import math
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -24,6 +25,11 @@ from scipy import stats
 from src.phenotype_discovery.publication import (
     canonical_json_bytes,
     canonical_sha256,
+)
+from src.morph2d.elapsed_clock import (
+    ElapsedClockValidationError,
+    validate_elapsed_clock_summary,
+    validate_first_completion_projection,
 )
 
 FIXED_FAMILIES = (
@@ -366,6 +372,86 @@ def _finite_number(value: Any, *, field: str) -> float:
     return result
 
 
+def _strict_json_mapping(value: Any, *, field: str) -> Mapping[str, Any]:
+    if not isinstance(value, str) or not value:
+        raise EstimatorFeasibilityError(f"{field}: authenticated JSON required")
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise EstimatorFeasibilityError(
+            f"{field}: invalid authenticated JSON"
+        ) from exc
+    if not isinstance(parsed, Mapping):
+        raise EstimatorFeasibilityError(f"{field}: JSON object required")
+    return parsed
+
+
+def project_authenticated_restricted_time(
+    row: Mapping[str, Any],
+) -> float:
+    """Project S12Z time only from authenticated elapsed-clock metadata."""
+
+    status = validate_native_status(row)
+    if not endpoint_applies("restricted_native_transition_time_at_32", status):
+        raise EstimatorFeasibilityError(
+            "restrictedNativeTransitionTimeAt32: status outside declared endpoint domain"
+        )
+    scenario_id = row.get("scenarioFamilyId")
+    if not isinstance(scenario_id, str) or not scenario_id:
+        raise EstimatorFeasibilityError(
+            "scenarioFamilyId: required for authenticated clock projection"
+        )
+    summary_raw = _strict_json_mapping(
+        row.get("authenticatedElapsedClockSummaryJson"),
+        field="authenticatedElapsedClockSummaryJson",
+    )
+    projection_raw = _strict_json_mapping(
+        row.get("authenticatedFirstCompletionProjectionJson"),
+        field="authenticatedFirstCompletionProjectionJson",
+    )
+    try:
+        summary = validate_elapsed_clock_summary(
+            summary_raw,
+            expected_scenario_id=scenario_id,
+            expected_horizon=32,
+        )
+        projection = validate_first_completion_projection(
+            projection_raw,
+            expected_scenario_id=scenario_id,
+            expected_horizon=32,
+            clock_summary=summary,
+        )
+    except ElapsedClockValidationError as exc:
+        raise EstimatorFeasibilityError(
+            f"authenticated elapsed-clock projection failed: {exc}"
+        ) from exc
+    if (
+        projection["clockSummaryCommitmentSha256"]
+        != summary["summaryCommitmentSha256"]
+        or projection["clockFinalRecordCommitmentSha256"]
+        != summary["finalRecordCommitmentSha256"]
+    ):
+        raise EstimatorFeasibilityError(
+            "authenticated completion projection is detached from clock summary"
+        )
+    if row.get("rawObservationLabelsUsedAsScientificTime") is not False:
+        raise EstimatorFeasibilityError(
+            "raw observation labels cannot control scientific time"
+        )
+    first = projection["firstCompletionTransition"]
+    if row.get("firstCompletionTransition") != first:
+        raise EstimatorFeasibilityError(
+            "persisted firstCompletionTransition disagrees with authenticated projection"
+        )
+    if status == "right_censored_at_transition_32":
+        if first is not None:
+            raise EstimatorFeasibilityError(
+                "right-censored row cannot contain an authenticated completion event"
+            )
+        return 32.0
+    return 32.0 if first is None else float(first)
+
+
 def project_endpoint_value(
     row: Mapping[str, Any],
     spec: EndpointSpec,
@@ -378,6 +464,12 @@ def project_endpoint_value(
             f"{spec.output_endpoint}: status outside declared endpoint domain"
         )
     if spec.endpoint_kind == "restricted_native_transition_time_at_32":
+        if (
+            row.get("schemaVersion") == "e07.s12z.physical-result-projection.v2"
+            or "authenticatedElapsedClockSummaryJson" in row
+            or "authenticatedFirstCompletionProjectionJson" in row
+        ):
+            return project_authenticated_restricted_time(row)
         value = row.get(spec.source_column)
         if value is None:
             # The frozen registered estimand treats noncompletion as a

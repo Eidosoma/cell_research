@@ -36,6 +36,10 @@ from .channels import (
     realize_noisy_gradient,
 )
 from .environments import Environment, load_environment_catalog, neighbor_map
+from .elapsed_clock import (
+    ElapsedClockAuthenticator,
+    validate_elapsed_clock_summary,
+)
 from .grammar import RelationalGrammar, load_grammar_catalog
 from .movements import (
     LEDGER_FIELDS,
@@ -120,6 +124,10 @@ TransitionAudit = Callable[
     None,
 ]
 StateAudit = Callable[[int, MovementState, Mapping[str, Any]], None]
+AuthenticatedStateAudit = Callable[
+    [Mapping[str, Any], MovementState, Mapping[str, Any]],
+    None,
+]
 ActorSchedule = Callable[
     [str, int, Sequence[str], int],
     Sequence[str],
@@ -408,6 +416,8 @@ def run_cpu_episode(
     policy_batch_audit: PolicyBatchAudit | None = None,
     transition_audit: TransitionAudit | None = None,
     state_audit: StateAudit | None = None,
+    authenticated_state_audit: AuthenticatedStateAudit | None = None,
+    authenticated_elapsed_clock: bool = False,
     proposal_gate: ProposalGate | None = None,
     native_batch_gate: NativeBatchGate | None = None,
     direct_epoch_gate: DirectEpochGate | None = None,
@@ -482,6 +492,29 @@ def run_cpu_episode(
     initial_state_sha256 = movement_state_sha256(state)
     if state_audit is not None:
         state_audit(-1, state, {"transitionKind": "initial_state"})
+    elapsed_clock = (
+        ElapsedClockAuthenticator(
+            scenario_id=definition.scenario_id,
+            horizon_transitions=definition.transitions,
+        )
+        if authenticated_elapsed_clock or authenticated_state_audit is not None
+        else None
+    )
+    if elapsed_clock is not None:
+        initial_clock_record = elapsed_clock.issue(
+            elapsed_transition=0,
+            raw_observation_label=-1,
+            state=state,
+        )
+        if authenticated_state_audit is not None:
+            authenticated_state_audit(
+                initial_clock_record.to_mapping(),
+                state,
+                {
+                    "transitionKind": "initial_state",
+                    "rawObservationLabel": -1,
+                },
+            )
     actor_ids = _cell_actor_ids(state)
     heterogeneous = any(
         item is not None
@@ -784,6 +817,18 @@ def run_cpu_episode(
             transition_summaries.append(summary_record)
             if state_audit is not None:
                 state_audit(transition_index, state, summary_record)
+            if elapsed_clock is not None:
+                elapsed_record = elapsed_clock.issue(
+                    elapsed_transition=state.transition_index,
+                    raw_observation_label=transition_index,
+                    state=state,
+                )
+                if authenticated_state_audit is not None:
+                    authenticated_state_audit(
+                        elapsed_record.to_mapping(),
+                        state,
+                        summary_record,
+                    )
             transition_channel_events.append(
                 {
                     "channelId": direct_event["channelId"],
@@ -1052,6 +1097,18 @@ def run_cpu_episode(
         transition_summaries.append(summary_record)
         if state_audit is not None:
             state_audit(transition_index, state, summary_record)
+        if elapsed_clock is not None:
+            elapsed_record = elapsed_clock.issue(
+                elapsed_transition=state.transition_index,
+                raw_observation_label=transition_index,
+                state=state,
+            )
+            if authenticated_state_audit is not None:
+                authenticated_state_audit(
+                    elapsed_record.to_mapping(),
+                    state,
+                    summary_record,
+                )
         channel_events.extend(transition_channel_events)
         if include_selected_traces and _trace_selected(
             transition_index, definition.transitions
@@ -1129,6 +1186,8 @@ def run_cpu_episode(
             "conjunctiveCompletionEvaluatedOnline": False,
         },
     }
+    if elapsed_clock is not None:
+        result["authenticatedElapsedClockAudit"] = elapsed_clock.finalize()
     result["episodeSha256"] = _sha256_payload(
         "E06/S07/cpu-episode/v1", _episode_body(result)
     )
@@ -1164,10 +1223,25 @@ def validate_episode_result(
         "evaluationSeparation",
         "episodeSha256",
     }
-    if set(result) != required or result["schemaVersion"] != EPISODE_RESULT_VERSION:
+    allowed = (required, required | {"authenticatedElapsedClockAudit"})
+    if (
+        set(result) not in allowed
+        or result["schemaVersion"] != EPISODE_RESULT_VERSION
+    ):
         raise EpisodeValidationError("episode result schema mismatch")
     if result["environmentId"] != environment.environment_id:
         raise EpisodeValidationError("episode environment mismatch")
+    if "authenticatedElapsedClockAudit" in result:
+        try:
+            validate_elapsed_clock_summary(
+                result["authenticatedElapsedClockAudit"],
+                expected_scenario_id=str(result["scenarioId"]),
+                expected_horizon=int(result["transitionBudget"]),
+            )
+        except (TypeError, ValueError) as exc:
+            raise EpisodeValidationError(
+                "episode authenticated elapsed-clock audit failed"
+            ) from exc
     if len(result["transitionSummaries"]) != int(result["transitionBudget"]):
         raise EpisodeValidationError("episode transition count mismatch")
     if set(result["movementLedger"]) != set(LEDGER_FIELDS):
