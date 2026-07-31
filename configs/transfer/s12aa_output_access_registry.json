@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "e07.s12aa.output-access-registry.v1",
+  "researchStepId": "S12AA",
+  "baseDependencyRegistrySha256": "04f2669b2e84193fefdaf545165e66dec367d6ba3ef9ebbceb3c0dc1f450ef37",
+  "purpose": "Authenticate only newly authorized S12AA cache and artifact I/O without widening the frozen S12T dependency-input registry.",
+  "allowedRoots": [
+    "/cache/e07-s12aa",
+    "/artifacts/research_steps/S12AA"
+  ],
+  "prohibitedRoots": [
+    "/artifacts/research_steps/S06",
+    "/artifacts/research_steps/S06A",
+    "/artifacts/research_steps/S07",
+    "/artifacts/research_steps/S08C",
+    "/artifacts/research_steps/S08E",
+    "/artifacts/research_steps/S08G",
+    "/artifacts/research_steps/S08I",
+    "/artifacts/research_steps/S08K",
+    "/artifacts/research_steps/S10",
+    "/artifacts/research_steps/S10B",
+    "/artifacts/research_steps/S10D",
+    "/artifacts/research_steps/S10F",
+    "/artifacts/research_steps/S12S",
+    "/artifacts/research_steps/S12U",
+    "/artifacts/research_steps/S12X",
+    "/artifacts/research_steps/S14",
+    "/cache/e07-s08",
+    "/cache/e07-s10",
+    "/cache/e07-s12r",
+    "/cache/e07-s12s",
+    "/cache/e07-s12u",
+    "/cache/e07-s12x"
+  ],
+  "pathNormalization": "absolute_realpath_with_symlink_resolution_before_policy",
+  "eventHashDomain": "E07/S12AA/output-event/v1",
+  "ledgerHashDomain": "E07/S12AA/output-ledger/v1",
+  "authenticatorDomain": "E07/S12AA/output-ledger-authenticator/v1",
+  "requireContiguousOrdinals": true,
+  "rejectDeniedEvent": true,
+  "rejectMissingLedger": true,
+  "rejectForgedEvent": true,
+  "rejectForgedAuthenticator": true
+}

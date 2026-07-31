@@ -1,0 +1,186 @@
+schemaVersion: e07.s12aa.execution-control.v1
+researchStepId: S12AA
+title: Final fresh execution of the byte-frozen S12R replacement study after S12Z
+registeredDateUtc: "2026-07-31"
+
+historicalRelationship:
+  executesS12RReplacementEstimand: true
+  executesS12P: false
+  executesS12A: false
+  executesOriginalS12Estimand: false
+  amendsOrNarrowsS12R: false
+  patchesResumesOrRetriesS12S: false
+  retriesOrReusesS12U: false
+  retriesOrReusesS12X: false
+
+freshness:
+  executionNamespace: e07-s12aa
+  cacheNamespace: /cache/e07-s12aa
+  artifactNamespace: /artifacts/research_steps/S12AA
+  preRegistrationRepositoryHead: 46b7e41a2c1a05c21fe79c95a8463d4a618d9a35
+  preRegistrationRepositoryTree: 200a47ad8f39102c6bdda25761fcaa845ae74e4f
+  preRegistrationRemoteHead: 10660e8b8837cc2e877a49196f3a5881c5be7636
+  priorAttemptReuse: forbidden
+  predecessorOutcomeOrCacheReads: forbidden
+  s12uCacheAndOutcomeReads: permanently_forbidden
+  s12xCacheAndOutcomeReads: permanently_forbidden
+  requireNoPriorFilesystemMentionAtProspectiveRegistration: true
+  requireNoPriorGitHistoryMentionAtProspectiveRegistration: true
+
+frozenS12R:
+  protocolSha256: aefa8d4bfc56776df69cc45de26bc38e1d7cbda563c0713441e24b658998d85a
+  preregistrationFreezeSha256: b7ff300c0eff455d29bad5c0bf64a9992a84b9ca63e5cab95991c6114550e79e
+  artifactManifestSha256: e16f8d1ac56645756146e350b19d430e1bbe6bfcc12c9cffbdf11f3afb4b5762
+  logicalRosterFileSha256: 888b06524e24dcbf84cce6ca0e44ad3edd5a39e974a45d6a7a091bae9582c158
+  physicalCommitmentFileSha256: eccc33f134f871ed6643d8b3e95ae13ccfb87af7531e507435c1ebf67e23b7b6
+  logicalRosterSemanticSha256: 58c5af390888da6eda90e9069a749707fefe07c515946d37f009365bb07e9d71
+  physicalPlanSemanticSha256: cb8a2ccf97aa45935ee2d58dba934e2728a40f4b9a274d52f04305e1a8f2f55c
+  candidateLockSha256: 1af21d999091a1bd9d46615c367d40ce5efb005e8ccf78e6e145c4d968150839
+  gates: [G01, G02, G03, G04, G05, G06, G07, G08, G09, G10]
+  lineageCount: 7
+  configurationCount: 14
+  adaptationVariantCount: 30
+  replacementComparatorCount: 2
+  taskConditionCellCount: 48
+  scenarioFamilyCount: 3840
+  logicalReservationCount: 195072
+  physicalReplayCommitmentCount: 390144
+  graphTransitionsPerEpisode: 32
+  actorSlotsPerTransition: 4
+
+frozenS12T:
+  protocolSha256: 60d51fc7891ee160832525812064f51c16de126a1cebf65202e3a957e186ffbc
+  registrySha256: 04f2669b2e84193fefdaf545165e66dec367d6ba3ef9ebbceb3c0dc1f450ef37
+  preregistrationFreezeSha256: ae616d0cd72672d65cad0c92f3cc133b3dbdba0dfaee97a2916ccdc2057891a8
+  implementationSha256: 590a177ed5bc0e5f1707701f8e98c35e66230985434a93268f6a1e8bbb5b4a6d
+  executionReviewGateSha256: b4c0a84bebddf9ed5c3a9021769d999272f85591a761744e22ee0f6aaa9a2cb1
+  artifactManifestSha256: 7f2201daac2f73efcc00279773ec840dd01947fc7de2700306c2ed3f8f377ac2
+  exactImplementationRequired: true
+  staticImportGraphRequired: true
+  runtimeModuleProvenanceRequired: true
+  authenticatedPathOpenLedgerRequired: true
+  authenticatedCacheLedgerRequired: true
+  authenticatedSignalLedgerRequired: true
+  installOnEveryWorkerDispatch: true
+  unresolvedOrMissingEvidence: fail_closed
+
+frozenS12W:
+  protocolSha256: d7f32898deafbfa783356f1842439da361d0912f212aedeb004667f3aa78d33c
+  preregistrationFreezeSha256: eb46b189b831a28ab819d5a15e67e7094fd2bcf1915a0da43d8507b0facfc316
+  expectedStateDispositionRegistrySha256: 3702d18ab3a2c8384dd60d6c0867c05df5da8bc97c6a562b7d8478f2008d6182
+  preservedEstimandAndMultiplicitySha256: d9ab2a30dc09ae9b4148a7f9672e625838fe84bda494231d86f3ee9fc40aa2c1
+  executionReviewGateSha256: d0d5bcd62d282b8222d19ad1d03c50b97ce15bbb285b7dcd0d7c9846e1f89983
+  artifactManifestSha256: 287c1aedb0dfef3657f31989d882a5f258afce35ef10873ca2bdaca604da8850
+  implementationSha256: 7a9d47ccc1d5bea99a8774f656c04da54cce44f47f9192515aaa5b64e2415a17
+  exactQualifiedImplementationRequired: true
+  fixedFamilyConservationRequired: true
+  endpointDomainChecksBeforeArithmetic: true
+  exactOneToOnePairSupportRequired: true
+  allReservedFailureAndCostPopulationsRequired: true
+  restrictedNativeTransitionTimeCensor: 32
+  nonEvidentiaryRawPValue: 1.0
+  S12UCachePermanentlyProhibited: true
+  fixedFamilies:
+    - parent_compressed_calibrated_endpoint_family
+    - adaptation_calibrated_endpoint_family
+    - matched_random_calibrated_endpoint_family
+    - scheduler_calibrated_endpoint_family
+    - fault_repair_endpoint_family
+    - failure_harm_family
+    - native_cost_harm_family_by_component
+    - extension_cost_harm_family_by_component
+
+frozenS12Z:
+  protocolSha256: 323657ece67f72697d0c4b6f55451ed337a95dd29cfbadbe0e1ed6643c1abe97
+  preregistrationFreezeSha256: 7d75b5e6e30a92679fcd1fed5e365c7b8d1badfc30e26a26df37eb8e8eac0a2f
+  sourceAndInputHashFreezeSha256: 12bf0679e42124144c54c212ae7cb06b8b2d31784c8bbe2fdbf719386ddcc462
+  preservedS12RCommitmentsSha256: 053f682e71ac18461b9ce7e9b4d21d8ad92eeb9f05d4d9a3f7d54fb6cd5b5ae6
+  expectedClockStateRegistrySha256: f4cfe77e406e678ab8c26de9bf155be27fba2134367c6cd07040eca8fce8545e
+  freezeRevalidationSha256: 1e1d536507ded850aadde14e97c93eba7f63ac0c2d4682453acb84bf29537122
+  scientificContractPreservationSha256: 9d5cdcb04ee3165b2476750f1cf857c7ad3114584124a7454b85829332a287da
+  fixedFamilyConservationSha256: ca54cc4bc538e639650d7ca98741cf0ac6b310ed5abaf9e3e2b6a7f47f939964
+  failAtomicPublicationQualificationSha256: 39499be0d6b0d364c09868ac5b0cbf1815210640c0c681196c5ffa86e9b2d158
+  validationSummarySha256: 03cf2bb990ad40350096d5b72ae2f158605369b675f7f9cf3dfef61de30d856a
+  artifactManifestSha256: 366018a5c321e0b3bc6b81507e0b959d987d0a61f2123dcef4c84ae1623f2c4d
+  elapsedClockImplementationSha256: a8aa74bc0d8ee10011bbc854b210e35aadd8ec2fb383e72f5a2c40448a45e750
+  baselineImplementationSha256: 119918dd2be44afc97e51c791b7ef16ec722928085aa111ae8a5c0f95ff9a8a9
+  engineImplementationSha256: 602bd558750097cf282739c211a158c027e815b6d2b87d5ac69366c867b7bf07
+  dslAdapterImplementationSha256: 40aaa0da698376225109e20e1c95349a359cc26daa522b78c876ae5dd0c7957a
+  spatialExecutionImplementationSha256: 7a26a3090c61cf7fbea23122d78f1734ad4f4c0d8321f593bfbb0e6236f8b27c
+  estimatorImplementationSha256: c5fd5ad9d4f6e6354d6a96fd105eb9f193cfece3edd7c70c62a1fc146268023d
+  exactQualifiedImplementationRequired: true
+  authenticatedElapsedClockRequiredOnNativeAndDsl: true
+  initialElapsedTransition: 0
+  finalElapsedTransition: 32
+  rawObservationLabelsScientificTime: false
+  fixedSlotCount: 7986
+  fixedHolmFamilyCount: 8
+  consumedAttemptCacheMetadataOperations: forbidden
+
+frozenPredecessorManifestHashes:
+  S12P: 81ea45573699f3795e69409d1cb3fe27fee686c04479bc531483896d96f49038
+  S12A: 54c09bf8b5cbfe760be2cb7145c819dcec3cf5735a8e7a971422f81d5342260e
+  S12R: e16f8d1ac56645756146e350b19d430e1bbe6bfcc12c9cffbdf11f3afb4b5762
+  S12S: 31f81a505e0d1b00fa4f019a290c92f73892cc4621f2dc2ef631a5fb758174d9
+  S12T: 7f2201daac2f73efcc00279773ec840dd01947fc7de2700306c2ed3f8f377ac2
+  S12U: df96191e67292386712572d2b85ed6d7fc661cc3f064b8cae8d30ae614a637c6
+  S12V: 3fa8f0a327b94384d1e0a727a7b72c161b504b1c3a81d275f4d13644d1849073
+  S12W: 287c1aedb0dfef3657f31989d882a5f258afce35ef10873ca2bdaca604da8850
+  S12X: 7ad2021e0dbbfde8ab89cc5a668b538bb19d78ccc99e1469d02de05fe6ef2764
+  S12Y: b181e906c579aa5d568d478aa55ccaf87aa10e0950333e3b8a034816e91a7403
+  S12Z: 366018a5c321e0b3bc6b81507e0b959d987d0a61f2123dcef4c84ae1623f2c4d
+
+outputAccess:
+  baseDependencyPermissionsMayBeWidened: false
+  allowedReadWriteRoots:
+    - /cache/e07-s12aa
+    - /artifacts/research_steps/S12AA
+  pathNormalization: absolute_realpath_with_symlink_resolution_before_policy
+  everyEventAuthenticated: true
+  missingForgedOrDeniedEvent: fail_closed
+  purpose: >-
+    Authenticate only the newly authorized S12AA cache and artifact writes.
+    All dependency inputs, imports, runtime origins, and protected signals
+    remain governed by the exact frozen S12T registry, while scientific time
+    remains governed by the exact frozen S12Z authenticated-clock path.
+
+adaptationLockImplementation:
+  population: S12R_development_only
+  diagnosticsUsedForSelection: false
+  universalScore: null
+  rule: >-
+    Compute separately named, direction-aligned means for every calibrated
+    task/panel/condition endpoint; retain the Pareto-nondominated variants for
+    each frozen base configuration; choose the lowest stable S12R variant hash
+    only when more than one variant remains nondominated.
+  tieBreak: lowest_stable_S12R_variant_hash
+  lockBeforePostLockTransfer: true
+
+execution:
+  workers: 8
+  exactReplaysPerLogical: 2
+  earlyStopping: forbidden
+  runtimeDrivenWeakening: forbidden
+  failuresCensorsAndUnavailableEndpointsRetained: true
+  universalOutcomeScore: null
+  scalarCrossFamilyCost: null
+  diagnosticPanelsPromotionEligible: false
+  firstIntegrityFailure: quarantine_attempt_and_publish_zero_scientific_outputs
+
+accessBoundary:
+  validationOutcomeRows: 0
+  confirmationOutcomeRows: 0
+  protectedOutcomeRows: 0
+  s14ReservePayloadMaterializations: 0
+  civicRows: 0
+  s13Rows: 0
+  s14Rows: 0
+  s06OrS06AArtifactLoads: 0
+  s07ArmSignalUses: 0
+
+publication:
+  registry: /artifacts/research_steps/S12R/future_publication_registry.json
+  artifactClassCount: 10
+  completeOrZero: true
+  singleAtomicCommit: true
+  scientificDestination: /artifacts/research_steps/S12AA/scientific_publication
