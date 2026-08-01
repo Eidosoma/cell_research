@@ -27,6 +27,13 @@ from .elapsed_clock import (
     parse_and_validate_elapsed_clock_record,
     summarize_elapsed_clock_records,
 )
+from .episode_origin_clock import (
+    EPISODE_ORIGIN_CLOCK_RECORD_VERSION,
+    build_episode_origin_first_completion_projection,
+    episode_origin_genesis_commitment,
+    parse_and_validate_episode_origin_clock_record,
+    summarize_episode_origin_clock_records,
+)
 from .engine import (
     EngineContext,
     EpisodeDefinition,
@@ -489,7 +496,10 @@ class TargetMetricTracker:
     ) -> None:
         """Legacy observation-label path retained for predecessor compatibility."""
 
-        if self._clock_mode == "authenticated_elapsed":
+        if self._clock_mode in {
+            "authenticated_elapsed",
+            "authenticated_episode_origin",
+        }:
             raise ValueError("cannot mix legacy and authenticated clock observations")
         self._clock_mode = "legacy_observation_label"
         self._observe_at_elapsed(
@@ -508,31 +518,82 @@ class TargetMetricTracker:
 
         if self._clock_mode == "legacy_observation_label":
             raise ValueError("cannot mix authenticated and legacy clock observations")
-        self._clock_mode = "authenticated_elapsed"
         expected_ordinal = len(self._authenticated_clock_records)
-        if expected_ordinal == 0:
-            scenario_id = clock_record.get("scenarioId")
-            horizon = clock_record.get("horizonTransitions")
-            if not isinstance(scenario_id, str) or type(horizon) is not int:
-                raise ValueError("authenticated clock genesis metadata is invalid")
-            expected_previous = genesis_commitment(
-                scenario_id=scenario_id,
-                horizon_transitions=horizon,
+        episode_origin_mode = (
+            clock_record.get("schemaVersion")
+            == EPISODE_ORIGIN_CLOCK_RECORD_VERSION
+        )
+        desired_mode = (
+            "authenticated_episode_origin"
+            if episode_origin_mode
+            else "authenticated_elapsed"
+        )
+        if self._clock_mode not in {None, desired_mode}:
+            raise ValueError("cannot mix authenticated clock schemas")
+        self._clock_mode = desired_mode
+        if episode_origin_mode:
+            if expected_ordinal == 0:
+                scenario_id = clock_record.get("scenarioId")
+                horizon = clock_record.get("horizonTransitions")
+                origin = clock_record.get("episodeOriginTransitionIndex")
+                origin_hash = clock_record.get("episodeOriginMovementStateSha256")
+                if (
+                    not isinstance(scenario_id, str)
+                    or type(horizon) is not int
+                    or type(origin) is not int
+                    or not isinstance(origin_hash, str)
+                ):
+                    raise ValueError(
+                        "authenticated episode-origin genesis metadata is invalid"
+                    )
+                expected_previous = episode_origin_genesis_commitment(
+                    scenario_id=scenario_id,
+                    horizon_transitions=horizon,
+                    episode_origin_transition_index=origin,
+                    episode_origin_movement_state_sha256=origin_hash,
+                )
+            else:
+                previous = self._authenticated_clock_records[-1]
+                scenario_id = str(previous["scenarioId"])
+                horizon = int(previous["horizonTransitions"])
+                origin = int(previous["episodeOriginTransitionIndex"])
+                origin_hash = str(previous["episodeOriginMovementStateSha256"])
+                expected_previous = str(previous["recordCommitmentSha256"])
+            parsed = parse_and_validate_episode_origin_clock_record(
+                clock_record,
+                expected_scenario_id=scenario_id,
+                expected_horizon=horizon,
+                expected_ordinal=expected_ordinal,
+                expected_elapsed=expected_ordinal,
+                expected_origin_transition_index=origin,
+                expected_origin_movement_state_sha256=origin_hash,
+                expected_previous_commitment=expected_previous,
+                state=state,
             )
         else:
-            previous = self._authenticated_clock_records[-1]
-            scenario_id = str(previous["scenarioId"])
-            horizon = int(previous["horizonTransitions"])
-            expected_previous = str(previous["recordCommitmentSha256"])
-        parsed = parse_and_validate_elapsed_clock_record(
-            clock_record,
-            expected_scenario_id=scenario_id,
-            expected_horizon=horizon,
-            expected_ordinal=expected_ordinal,
-            expected_elapsed=expected_ordinal,
-            expected_previous_commitment=expected_previous,
-            state=state,
-        )
+            if expected_ordinal == 0:
+                scenario_id = clock_record.get("scenarioId")
+                horizon = clock_record.get("horizonTransitions")
+                if not isinstance(scenario_id, str) or type(horizon) is not int:
+                    raise ValueError("authenticated clock genesis metadata is invalid")
+                expected_previous = genesis_commitment(
+                    scenario_id=scenario_id,
+                    horizon_transitions=horizon,
+                )
+            else:
+                previous = self._authenticated_clock_records[-1]
+                scenario_id = str(previous["scenarioId"])
+                horizon = int(previous["horizonTransitions"])
+                expected_previous = str(previous["recordCommitmentSha256"])
+            parsed = parse_and_validate_elapsed_clock_record(
+                clock_record,
+                expected_scenario_id=scenario_id,
+                expected_horizon=horizon,
+                expected_ordinal=expected_ordinal,
+                expected_elapsed=expected_ordinal,
+                expected_previous_commitment=expected_previous,
+                state=state,
+            )
         canonical = parsed.to_mapping()
         self._authenticated_clock_records.append(canonical)
         self._observe_at_elapsed(
@@ -602,6 +663,36 @@ class TargetMetricTracker:
                     "authenticatedElapsedClockSummary": clock_summary,
                     "authenticatedFirstCompletionProjection": projection,
                     "rawObservationLabelsUsedAsScientificTime": False,
+                }
+            )
+        elif self._clock_mode == "authenticated_episode_origin":
+            first = self._authenticated_clock_records[0]
+            clock_summary = summarize_episode_origin_clock_records(
+                self._authenticated_clock_records,
+                scenario_id=str(first["scenarioId"]),
+                horizon_transitions=int(first["horizonTransitions"]),
+                episode_origin_transition_index=int(
+                    first["episodeOriginTransitionIndex"]
+                ),
+                episode_origin_movement_state_sha256=str(
+                    first["episodeOriginMovementStateSha256"]
+                ),
+                require_complete=True,
+            )
+            projection = build_episode_origin_first_completion_projection(
+                clock_summary=clock_summary,
+                first_completion_transition=self.first_conjunctive_transition,
+                first_completion_record_commitment_sha256=(
+                    self._first_completion_record_commitment
+                ),
+            )
+            result.update(
+                {
+                    "clockMode": "authenticated_episode_origin_elapsed_transition",
+                    "authenticatedElapsedClockSummary": clock_summary,
+                    "authenticatedFirstCompletionProjection": projection,
+                    "rawObservationLabelsUsedAsScientificTime": False,
+                    "rawLifetimeMovementProvenanceRetained": True,
                 }
             )
         return result

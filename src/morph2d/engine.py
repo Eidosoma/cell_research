@@ -40,6 +40,11 @@ from .elapsed_clock import (
     ElapsedClockAuthenticator,
     validate_elapsed_clock_summary,
 )
+from .episode_origin_clock import (
+    EPISODE_ORIGIN_CLOCK_SUMMARY_VERSION,
+    EpisodeOriginClockAuthenticator,
+    validate_episode_origin_clock_summary,
+)
 from .grammar import RelationalGrammar, load_grammar_catalog
 from .movements import (
     LEDGER_FIELDS,
@@ -418,6 +423,7 @@ def run_cpu_episode(
     state_audit: StateAudit | None = None,
     authenticated_state_audit: AuthenticatedStateAudit | None = None,
     authenticated_elapsed_clock: bool = False,
+    authenticated_episode_origin_clock: bool = False,
     proposal_gate: ProposalGate | None = None,
     native_batch_gate: NativeBatchGate | None = None,
     direct_epoch_gate: DirectEpochGate | None = None,
@@ -492,14 +498,25 @@ def run_cpu_episode(
     initial_state_sha256 = movement_state_sha256(state)
     if state_audit is not None:
         state_audit(-1, state, {"transitionKind": "initial_state"})
-    elapsed_clock = (
-        ElapsedClockAuthenticator(
+    if authenticated_elapsed_clock and authenticated_episode_origin_clock:
+        raise EpisodeValidationError(
+            "legacy and episode-origin authenticated clocks are mutually exclusive"
+        )
+    if authenticated_episode_origin_clock:
+        elapsed_clock = EpisodeOriginClockAuthenticator(
             scenario_id=definition.scenario_id,
             horizon_transitions=definition.transitions,
+            initial_state=state,
         )
-        if authenticated_elapsed_clock or authenticated_state_audit is not None
-        else None
-    )
+    else:
+        elapsed_clock = (
+            ElapsedClockAuthenticator(
+                scenario_id=definition.scenario_id,
+                horizon_transitions=definition.transitions,
+            )
+            if authenticated_elapsed_clock or authenticated_state_audit is not None
+            else None
+        )
     if elapsed_clock is not None:
         initial_clock_record = elapsed_clock.issue(
             elapsed_transition=0,
@@ -819,7 +836,11 @@ def run_cpu_episode(
                 state_audit(transition_index, state, summary_record)
             if elapsed_clock is not None:
                 elapsed_record = elapsed_clock.issue(
-                    elapsed_transition=state.transition_index,
+                    elapsed_transition=(
+                        transition_index + 1
+                        if authenticated_episode_origin_clock
+                        else state.transition_index
+                    ),
                     raw_observation_label=transition_index,
                     state=state,
                 )
@@ -1099,7 +1120,11 @@ def run_cpu_episode(
             state_audit(transition_index, state, summary_record)
         if elapsed_clock is not None:
             elapsed_record = elapsed_clock.issue(
-                elapsed_transition=state.transition_index,
+                elapsed_transition=(
+                    transition_index + 1
+                    if authenticated_episode_origin_clock
+                    else state.transition_index
+                ),
                 raw_observation_label=transition_index,
                 state=state,
             )
@@ -1233,11 +1258,21 @@ def validate_episode_result(
         raise EpisodeValidationError("episode environment mismatch")
     if "authenticatedElapsedClockAudit" in result:
         try:
-            validate_elapsed_clock_summary(
-                result["authenticatedElapsedClockAudit"],
-                expected_scenario_id=str(result["scenarioId"]),
-                expected_horizon=int(result["transitionBudget"]),
-            )
+            if (
+                result["authenticatedElapsedClockAudit"].get("schemaVersion")
+                == EPISODE_ORIGIN_CLOCK_SUMMARY_VERSION
+            ):
+                validate_episode_origin_clock_summary(
+                    result["authenticatedElapsedClockAudit"],
+                    expected_scenario_id=str(result["scenarioId"]),
+                    expected_horizon=int(result["transitionBudget"]),
+                )
+            else:
+                validate_elapsed_clock_summary(
+                    result["authenticatedElapsedClockAudit"],
+                    expected_scenario_id=str(result["scenarioId"]),
+                    expected_horizon=int(result["transitionBudget"]),
+                )
         except (TypeError, ValueError) as exc:
             raise EpisodeValidationError(
                 "episode authenticated elapsed-clock audit failed"

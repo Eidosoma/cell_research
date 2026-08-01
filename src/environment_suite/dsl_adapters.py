@@ -38,6 +38,7 @@ from reference_simulator.transition_primitives import validate_proposal
 from src.morph2d.baseline import TargetMetricTracker, load_baseline_assets
 from src.morph2d.channels import CHANNEL_LEDGER_FIELDS
 from src.morph2d.elapsed_clock import ElapsedClockAuthenticator
+from src.morph2d.episode_origin_clock import EpisodeOriginClockAuthenticator
 from src.morph2d.engine import (
     EpisodeDefinition,
     _initial_state,
@@ -1928,6 +1929,7 @@ def run_spatial_dsl_episode(
     initial_state_override: MovementState | None = None,
     offline_tracker: Any | None = None,
     authenticated_elapsed_clock: bool = False,
+    authenticated_episode_origin_clock: bool = False,
     actor_schedule: (
         Callable[[str, int, Sequence[str], int], Sequence[str]] | None
     ) = None,
@@ -2036,14 +2038,25 @@ def run_spatial_dsl_episode(
         if offline_tracker is None
         else offline_tracker
     )
-    elapsed_clock = (
-        ElapsedClockAuthenticator(
+    if authenticated_elapsed_clock and authenticated_episode_origin_clock:
+        raise SuiteValidationError(
+            "legacy and episode-origin authenticated clocks are mutually exclusive"
+        )
+    if authenticated_episode_origin_clock:
+        elapsed_clock = EpisodeOriginClockAuthenticator(
             scenario_id=definition.scenario_id,
             horizon_transitions=definition.transitions,
+            initial_state=state,
         )
-        if authenticated_elapsed_clock
-        else None
-    )
+    else:
+        elapsed_clock = (
+            ElapsedClockAuthenticator(
+                scenario_id=definition.scenario_id,
+                horizon_transitions=definition.transitions,
+            )
+            if authenticated_elapsed_clock
+            else None
+        )
     if elapsed_clock is None:
         tracker.observe(-1, state, {"transitionKind": "initial_state"})
     else:
@@ -2236,7 +2249,11 @@ def run_spatial_dsl_episode(
             tracker.observe(transition_index, state, summary)
         else:
             elapsed_record = elapsed_clock.issue(
-                elapsed_transition=state.transition_index,
+                elapsed_transition=(
+                    transition_index + 1
+                    if authenticated_episode_origin_clock
+                    else state.transition_index
+                ),
                 raw_observation_label=transition_index,
                 state=state,
             )
